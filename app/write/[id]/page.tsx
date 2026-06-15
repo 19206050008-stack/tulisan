@@ -63,21 +63,39 @@ export default function WriteEditorPage() {
     setLoading(false);
   };
 
-  // Konversi plain text lama ke HTML agar TipTap bisa menampilkannya
+  // Konversi konten dari database ke HTML untuk TipTap
   const normalizeContent = (raw: string): string => {
     if (!raw) return '';
-    // Sudah HTML — langsung pakai
+
+    // Sudah HTML dari TipTap baru — langsung pakai
     if (raw.trimStart().startsWith('<')) return raw;
-    // JSON string yang dibungkus tanda kutip
+
     let text = raw;
+
+    // Kasus 1: JSON string double-encoded — "\"teks...\""
+    // Supabase kadang simpan sebagai JSON string sehingga perlu di-parse dua kali
     if (text.startsWith('"') && text.endsWith('"')) {
-      try { text = JSON.parse(text); } catch {}
+      try {
+        const parsed = JSON.parse(text); // hasil: string biasa
+        if (typeof parsed === 'string') text = parsed;
+      } catch {}
     }
+
+    // Kasus 2: escaped newlines \\n -> \n
     text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-    // Konversi plain text ke paragraf HTML
-    return text
-      .split('\n')
-      .map(line => line.trim() ? `<p>${line.trim()}</p>` : '<p></p>')
+
+    // Kalau setelah decode ternyata sudah HTML
+    if (text.trimStart().startsWith('<')) return text;
+
+    // Konversi plain text paragraf ke HTML
+    const paragraphs = text.split('\n\n').filter(p => p.trim());
+    if (paragraphs.length > 1) {
+      // Ada double newline sebagai pemisah paragraf
+      return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    }
+    // Single newline per baris
+    return text.split('\n')
+      .map(line => line.trim() ? `<p>${line}</p>` : '<p></p>')
       .join('');
   };
 

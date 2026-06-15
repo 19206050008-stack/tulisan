@@ -100,17 +100,26 @@ export default function ReaderPage() {
           : '')
     : null;
 
-  // Deteksi apakah konten adalah HTML (dari TipTap) atau markdown lama
+  // Deteksi apakah konten adalah HTML (dari TipTap) atau plain text lama
   const isHtml = (s: string) => s.trimStart().startsWith('<');
 
-  const parsedContent = chapterContent
-    ? (() => {
-        let text = chapterContent;
-        if (text.startsWith('"') && text.endsWith('"')) text = text.slice(1, -1);
-        text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-        return text;
-      })()
-    : null;
+  // Decode konten dari database (handle double-JSON-encoded string)
+  const decodeContent = (raw: string): string => {
+    if (!raw) return '';
+    if (raw.trimStart().startsWith('<')) return raw;
+    let text = raw;
+    // Handle "\"teks...\"" — JSON string dalam JSON string
+    if (text.startsWith('"') && text.endsWith('"')) {
+      try {
+        const parsed = JSON.parse(text);
+        if (typeof parsed === 'string') text = parsed;
+      } catch {}
+    }
+    text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    return text;
+  };
+
+  const parsedContent = chapterContent ? decodeContent(chapterContent) : null;
 
   // Paragraf hanya dipakai untuk konten lama (non-HTML)
   const paragraphs = parsedContent && !isHtml(parsedContent)
