@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { getStoryById, getChapters, getComments, toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved, getCommentLikes } from '@/lib/supabase';
-import { Share2, Heart, MessageCircle, Bookmark, Settings, X, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Share2, Heart, MessageCircle, Bookmark, Settings, X, ChevronLeft, ChevronRight, Send, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { CommentSection } from '@/components/CommentSection';
 import { LoginPopup } from '@/components/LoginPopup';
@@ -161,6 +161,17 @@ export default function ReaderPage() {
         </div>
         
         <div className="flex items-center gap-1 shrink-0">
+          {/* Tombol Edit — hanya untuk penulis cerita */}
+          {user?.id && story?.author_id === user.id && (
+            <button
+              onClick={() => router.push(`/write/${id}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-medium hover:opacity-90 transition mr-1"
+              title="Edit cerita ini"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Edit</span>
+            </button>
+          )}
           <button
             onClick={handleSave}
             className={`p-2 rounded-full transition ${saved ? 'bg-brand-muted text-accent dark:bg-gray-800/50' : 'hover:bg-brand-muted dark:hover:bg-gray-800 text-gray-500'}`}

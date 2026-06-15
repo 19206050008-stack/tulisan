@@ -284,7 +284,7 @@ export function CoverUpload({ preview, onFileReady, title, category, description
       const imageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=600&height=900&seed=${seed}&nologo=true`;
 
       const response = await fetch(imageUrl, {
-        headers: { 'Authorization': 'Bearer sk_CXBacRDWFN75aHuME09vqzSJF6aCw1hh' },
+        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_POLLINATIONS_KEY}` },
       });
 
       if (!response.ok) {

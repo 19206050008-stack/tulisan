@@ -22,6 +22,15 @@
     </div>
     -->
 
+    <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <label><strong>Pollinations API Key:</strong></label>
+        <input type="text" id="pollinationsKey" placeholder="sk_..." style="width:100%;padding:8px;margin:8px 0;">
+        <script>
+            // Isi dari env jika tersedia (saat dipakai via Node/server)
+            window.POLLINATIONS_KEY = '';
+        </script>
+    </div>
+
     <div id="stories"></div>
 
     <script>
@@ -106,7 +115,7 @@
                 const url = `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=600&height=900&seed=${seed}&nologo=true`;
 
                 const response = await fetch(url, {
-                    headers: { 'Authorization': 'Bearer sk_CXBacRDWFN75aHuME09vqzSJF6aCw1hh' }
+                    headers: { 'Authorization': `Bearer ${document.getElementById('pollinationsKey').value || window.POLLINATIONS_KEY || ''}` }
                 });
 
                 if (!response.ok) {

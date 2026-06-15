@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter } from '@/lib/supabase';
-import { Bold, Italic, List, Image, AlignLeft, Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
 
@@ -27,6 +27,8 @@ export default function WriteEditorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [storyId, setStoryId] = useState<string | null>(id as string || null);
+  // Key untuk force remount RichEditor saat chapter berganti
+  const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
     if (role === 'guest') {
@@ -123,12 +125,15 @@ export default function WriteEditorPage() {
     setActiveChapter(chapters.length);
     setChapterTitle('');
     setChapterContent('');
+    setEditorKey(k => k + 1);
   };
 
   const selectChapter = (index: number) => {
     setActiveChapter(index);
     setChapterTitle(chapters[index].title);
-    setChapterContent(typeof chapters[index].content === 'string' ? chapters[index].content : JSON.stringify(chapters[index].content));
+    const content = typeof chapters[index].content === 'string' ? chapters[index].content : JSON.stringify(chapters[index].content);
+    setChapterContent(content);
+    setEditorKey(k => k + 1); // force remount editor dengan konten baru
   };
 
   const handleDeleteChapter = async (chapterId: string, index: number) => {
@@ -200,14 +205,17 @@ export default function WriteEditorPage() {
             className="w-full text-sm bg-brand-muted dark:bg-gray-800 rounded-lg p-3 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent resize-none"
           />
 
-          <RichEditor
-            value={chapterContent}
-            onChange={setChapterContent}
-            placeholder="Mulai menulis bab ini..."
-            minHeight={400}
-            showWordCount={true}
-            mode="full"
-          />
+          {!loading && (
+            <RichEditor
+              key={editorKey}
+              value={chapterContent}
+              onChange={setChapterContent}
+              placeholder="Mulai menulis bab ini..."
+              minHeight={400}
+              showWordCount={true}
+              mode="full"
+            />
+          )}
         </div>
 
         <div className="space-y-6">

@@ -74,7 +74,7 @@ async function generateImage(prompt: string): Promise<Buffer> {
   const url = `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=600&height=900&seed=${seed}&nologo=true`;
 
   const response = await fetch(url, {
-    headers: { 'Authorization': 'Bearer sk_CXBacRDWFN75aHuME09vqzSJF6aCw1hh' },
+    headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_POLLINATIONS_KEY}` },
   });
 
   if (!response.ok) {
