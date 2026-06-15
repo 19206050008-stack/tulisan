@@ -106,8 +106,8 @@ export default function ReaderPage() {
   // Decode konten dari database (handle double-JSON-encoded string)
   const decodeContent = (raw: string): string => {
     if (!raw) return '';
-    if (raw.trimStart().startsWith('<')) return raw;
     let text = raw;
+    
     // Handle "\"teks...\"" — JSON string dalam JSON string
     if (text.startsWith('"') && text.endsWith('"')) {
       try {
@@ -115,6 +115,15 @@ export default function ReaderPage() {
         if (typeof parsed === 'string') text = parsed;
       } catch {}
     }
+    
+    // Untuk HTML content, bersihkan karakter \n yang mungkin tersisa
+    if (text.trimStart().startsWith('<')) {
+      // Replace literal \n dan \\n dengan spasi atau hapus (karena HTML sudah punya <p>, <br>)
+      text = text.replace(/\\n/g, ' ').replace(/\n/g, ' ');
+      return text;
+    }
+    
+    // Untuk plain text, convert escape sequences
     text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
     return text;
   };
@@ -217,7 +226,7 @@ export default function ReaderPage() {
       <article className="space-y-5 relative" style={{ fontSize: `${textSize}px`, lineHeight: 1.9 }}>
         {parsedContent && isHtml(parsedContent) ? (
           <div
-            className="tiptap-reader"
+            className="tiptap-reader bg-white dark:bg-gray-900 px-4 py-3 rounded-lg"
             style={{ fontSize: `${textSize}px`, lineHeight: 1.9 }}
             dangerouslySetInnerHTML={{ __html: parsedContent }}
           />
