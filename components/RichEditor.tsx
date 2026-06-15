@@ -243,7 +243,7 @@ export function RichEditor({
         <EditorContent
           editor={editor}
           style={{ minHeight }}
-          className="px-4 py-3 cursor-text"
+          className="px-4 py-3 cursor-text bg-white dark:bg-gray-900"
         />
       )}
 
