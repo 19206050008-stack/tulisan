@@ -81,21 +81,45 @@ export default function WriteEditorPage() {
       } catch {}
     }
 
-    // Kasus 2: escaped newlines \\n -> \n
-    text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    // Kasus 2: escaped newlines \\n -> \n (handle multiple escape levels)
+    // Handle \\n, \n sebagai string literal (bukan actual newline)
+    text = text.replace(/\\\\n/g, '\n'); // \\n -> \n
+    text = text.replace(/\\n/g, '\n');   // \n -> actual newline
+    text = text.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 
     // Kalau setelah decode ternyata sudah HTML
     if (text.trimStart().startsWith('<')) return text;
 
     // Konversi plain text paragraf ke HTML
+    // Split by double newlines untuk paragraf
     const paragraphs = text.split('\n\n').filter(p => p.trim());
-    if (paragraphs.length > 1) {
-      // Ada double newline sebagai pemisah paragraf
-      return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+    if (paragraphs.length > 0) {
+      // Map setiap paragraf ke <p>, dan single \n dalam paragraf jadi <br>
+      return paragraphs.map(p => {
+        // Escape HTML entities untuk keamanan
+        const escaped = p
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        // Replace single newlines dengan <br>
+        return `<p>${escaped.replace(/\n/g, '<br>')}</p>`;
+      }).join('');
     }
-    // Single newline per baris
+    
+    // Fallback: single newline per baris
     return text.split('\n')
-      .map(line => line.trim() ? `<p>${line}</p>` : '<p></p>')
+      .map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        const escaped = trimmed
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+        return `<p>${escaped}</p>`;
+      })
+      .filter(Boolean)
       .join('');
   };
 
