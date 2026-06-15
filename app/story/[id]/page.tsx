@@ -37,7 +37,10 @@ export default function ReaderPage() {
       checkLiked(user.id, id as string).then(setLiked);
       checkSaved(user.id, id as string).then(setSaved);
     }
-  }, [user, id]);
+  }, [user?.id, id]);
+
+  // Computed — re-evaluate tiap render, tidak perlu state tambahan
+  const isAuthor = !!(user?.id && story?.author_id && user.id === story.author_id);
 
   const loadStory = async () => {
     setLoading(true);
@@ -162,7 +165,7 @@ export default function ReaderPage() {
         
         <div className="flex items-center gap-1 shrink-0">
           {/* Tombol Edit — hanya untuk penulis cerita */}
-          {user?.id && story?.author_id === user.id && (
+          {isAuthor && (
             <button
               onClick={() => router.push(`/write/${id}`)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-medium hover:opacity-90 transition mr-1"

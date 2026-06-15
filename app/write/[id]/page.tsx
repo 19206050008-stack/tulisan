@@ -55,10 +55,30 @@ export default function WriteEditorPage() {
       setChapters(chs);
       if (chs.length > 0) {
         setChapterTitle(chs[0].title);
-        setChapterContent(typeof chs[0].content === 'string' ? chs[0].content : JSON.stringify(chs[0].content));
+        const raw = typeof chs[0].content === 'string' ? chs[0].content : JSON.stringify(chs[0].content);
+        setChapterContent(normalizeContent(raw));
+        setEditorKey(k => k + 1); // force remount dengan konten yang sudah ada
       }
     }
     setLoading(false);
+  };
+
+  // Konversi plain text lama ke HTML agar TipTap bisa menampilkannya
+  const normalizeContent = (raw: string): string => {
+    if (!raw) return '';
+    // Sudah HTML — langsung pakai
+    if (raw.trimStart().startsWith('<')) return raw;
+    // JSON string yang dibungkus tanda kutip
+    let text = raw;
+    if (text.startsWith('"') && text.endsWith('"')) {
+      try { text = JSON.parse(text); } catch {}
+    }
+    text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    // Konversi plain text ke paragraf HTML
+    return text
+      .split('\n')
+      .map(line => line.trim() ? `<p>${line.trim()}</p>` : '<p></p>')
+      .join('');
   };
 
   const handleCoverReady = (file: File) => {
@@ -131,9 +151,9 @@ export default function WriteEditorPage() {
   const selectChapter = (index: number) => {
     setActiveChapter(index);
     setChapterTitle(chapters[index].title);
-    const content = typeof chapters[index].content === 'string' ? chapters[index].content : JSON.stringify(chapters[index].content);
-    setChapterContent(content);
-    setEditorKey(k => k + 1); // force remount editor dengan konten baru
+    const raw = typeof chapters[index].content === 'string' ? chapters[index].content : JSON.stringify(chapters[index].content);
+    setChapterContent(normalizeContent(raw));
+    setEditorKey(k => k + 1);
   };
 
   const handleDeleteChapter = async (chapterId: string, index: number) => {
