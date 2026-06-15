@@ -5,16 +5,20 @@ import { useStore } from '@/lib/store';
 import { supabase, getProfile } from '@/lib/supabase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { login, logout } = useStore();
+  const { login, logout, _hasHydrated, user } = useStore();
 
   useEffect(() => {
     if (!supabase) return;
 
-    // Selalu validasi session dari Supabase saat mount
+    // Tunggu Zustand selesai hydrate dari localStorage
+    if (!_hasHydrated) return;
+
+    // Validasi session dari Supabase
     const restoreSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          // Session valid di Supabase, sync ke store
           const profile = await getProfile(session.user.id);
           const role = profile?.role || 'user';
           login(
@@ -26,12 +30,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             role
           );
-        } else {
-          // Session tidak ada di Supabase — logout dari store juga
-          logout();
+        } else if (user) {
+          // Store punya user tapi Supabase tidak, coba refresh session
+          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+          if (refreshedSession?.user) {
+            // Refresh berhasil, update store
+            const profile = await getProfile(refreshedSession.user.id);
+            const role = profile?.role || 'user';
+            login(
+              {
+                name: profile?.full_name || refreshedSession.user.email,
+                id: refreshedSession.user.id,
+                username: profile?.username,
+                avatar_url: profile?.avatar_url,
+              },
+              role
+            );
+          } else {
+            // Refresh gagal, session benar-benar expired
+            logout();
+          }
         }
-      } catch {
-        // Supabase error, biarkan store state tetap
+        // Jika store tidak punya user dan Supabase juga tidak, biarkan tetap guest (jangan call logout)
+      } catch (error) {
+        console.error('Session restore error:', error);
+        // Error dari Supabase, JANGAN logout — biarkan store state tetap
       }
     };
 
@@ -70,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [_hasHydrated, user, login, logout]);
 
   return <>{children}</>;
 }

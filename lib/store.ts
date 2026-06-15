@@ -16,6 +16,8 @@ interface AppState {
   setViewMode: (mode: 'grid' | 'list') => void;
   savedStories: string[];
   saveStoryOffline: (id: string) => void;
+  _hasHydrated: boolean;
+  setHasHydrated: (val: boolean) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -37,6 +39,8 @@ export const useStore = create<AppState>()(
           ? state.savedStories.filter(s => s !== id)
           : [...state.savedStories, id]
       })),
+      _hasHydrated: false,
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
     }),
     {
       name: 'storyverse-store', // key di localStorage
@@ -48,6 +52,10 @@ export const useStore = create<AppState>()(
         textSize: state.textSize,
         viewMode: state.viewMode,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Dipanggil setelah state berhasil di-load dari localStorage
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
