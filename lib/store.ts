@@ -20,6 +20,8 @@ interface AppState {
   setHasHydrated: (val: boolean) => void;
 }
 
+console.log('[STORE] Initializing Zustand store...');
+
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
@@ -27,8 +29,14 @@ export const useStore = create<AppState>()(
       setDarkMode: (val) => set({ darkMode: val }),
       user: null,
       role: 'guest' as UserRole,
-      login: (user, role) => set({ user, role }),
-      logout: () => set({ user: null, role: 'guest' }),
+      login: (user, role) => {
+        console.log('[STORE] login() called with:', { userId: user?.id, role });
+        set({ user, role });
+      },
+      logout: () => {
+        console.log('[STORE] logout() called');
+        set({ user: null, role: 'guest' });
+      },
       textSize: 16,
       setTextSize: (size) => set({ textSize: size }),
       viewMode: 'grid' as 'grid' | 'list',
@@ -40,7 +48,10 @@ export const useStore = create<AppState>()(
           : [...state.savedStories, id]
       })),
       _hasHydrated: false,
-      setHasHydrated: (val) => set({ _hasHydrated: val }),
+      setHasHydrated: (val) => {
+        console.log('[STORE] setHasHydrated() called with:', val);
+        set({ _hasHydrated: val });
+      },
     }),
     {
       name: 'storyverse-store', // key di localStorage
@@ -52,10 +63,20 @@ export const useStore = create<AppState>()(
         textSize: state.textSize,
         viewMode: state.viewMode,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Dipanggil setelah state berhasil di-load dari localStorage
-        state?.setHasHydrated(true);
+      onRehydrateStorage: () => {
+        console.log('[STORE] onRehydrateStorage() - Starting hydration from localStorage...');
+        return (state) => {
+          // Dipanggil setelah state berhasil di-load dari localStorage
+          console.log('[STORE] onRehydrateStorage() - Hydration complete. State:', {
+            hasUser: !!state?.user,
+            userId: state?.user?.id,
+            role: state?.role,
+          });
+          state?.setHasHydrated(true);
+        };
       },
     }
   )
 );
+
+console.log('[STORE] Zustand store created');
