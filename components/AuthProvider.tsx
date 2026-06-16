@@ -1,30 +1,22 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { supabase, getProfile } from '@/lib/supabase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { login, logout, _hasHydrated, user } = useStore();
-  const hasRestoredSession = useRef(false);
+  const { login, logout, _hasHydrated } = useStore();
 
   useEffect(() => {
     if (!supabase) return;
-
-    // Tunggu Zustand selesai hydrate dari localStorage
+    
+    // Tunggu store hydrate dari localStorage
     if (!_hasHydrated) return;
 
-    // Prevent running multiple times
-    if (hasRestoredSession.current) return;
-    hasRestoredSession.current = true;
-
-    // Validasi session dari Supabase
-    const restoreSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // Session valid di Supabase, sync ke store
-          const profile = await getProfile(session.user.id);
+    // Check initial session (only once after hydration)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        getProfile(session.user.id).then((profile) => {
           const role = profile?.role || 'user';
           login(
             {
@@ -35,26 +27,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             role
           );
-        } else if (user) {
-          // Store punya user tapi Supabase tidak, coba refresh session
-          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-          if (refreshedSession?.user) {
-            // Refresh berhasil, update store
-            const profile = await getProfile(refreshedSession.user.id);
-            const role = profile?.role || 'user';
-            login(
-              {
-                name: profile?.full_name || refreshedSession.user.email,
-                id: refreshedSession.user.id,
-                username: profile?.username,
-                avatar_url: profile?.avatar_url,
-              },
-              role
-            );
-          } else {
-            // Refresh gagal, session benar-benar expired
-            logout();
-          }
+        });
+      }
+    });
+
+    // Listen to auth changes (login/logout/token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (session?.user) {
+        // User is signed in (SIGNED_IN, TOKEN_REFRESHED, etc)
+        const profile = await getProfile(session.user.id);
+        const role = profile?.role || 'user';
+        login(
+          {
+            name: profile?.full_name || session.user.email,
+            id: session.user.id,
+            username: profile?.username,
+            avatar_url: profile?.avatar_url,
+          },
+          role
+        );
+      } else if (event === 'SIGNED_OUT') {
+        // User explicitly signed out
+        logout();
+      }
+      // For other events without session, do nothing (don't logout)
+    });
+
+    return () => subscription.unsubscribe();
+  }, [_hasHydrated]);
+
+  return <>{children}</>;
+}
         }
         // Jika store tidak punya user dan Supabase juga tidak, biarkan tetap guest (jangan call logout)
       } catch (error) {
