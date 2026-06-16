@@ -281,11 +281,12 @@ export function CoverUpload({ preview, onFileReady, title, category, description
       ].filter(Boolean).join(', ');
 
       const encodedPrompt = encodeURIComponent(finalPrompt);
-      const imageUrl = `https://gen.pollinations.ai/image/${encodedPrompt}?model=flux&width=600&height=900&seed=${seed}&nologo=true`;
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=900&seed=${seed}&nologo=true&enhance=true`;
 
-      const response = await fetch(imageUrl, {
-        headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_POLLINATIONS_KEY}` },
-      });
+      console.log('[AI COVER] Generating with Pollinations.ai (free API)');
+      console.log('[AI COVER] URL:', imageUrl);
+
+      const response = await fetch(imageUrl);
 
       if (!response.ok) {
         const errText = await response.text().catch(() => '');
