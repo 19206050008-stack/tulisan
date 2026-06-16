@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
