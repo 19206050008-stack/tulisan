@@ -7,11 +7,13 @@ import { createStory, updateStory, getStoryById, uploadCover, createChapter, get
 import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
+import { translations } from '@/lib/i18n';
 
 export default function WriteEditorPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user, role, _hasHydrated } = useStore();
+  const { user, role, _hasHydrated, lang } = useStore();
+  const t = translations[lang].write;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -200,7 +202,7 @@ export default function WriteEditorPage() {
   };
 
   const handleDeleteChapter = async (chapterId: string, index: number) => {
-    if (!confirm('Delete this chapter?')) return;
+    if (!confirm(t.deleteChapterConfirm)) return;
     await deleteChapter(chapterId);
     const updated = chapters.filter((_, i) => i !== index);
     setChapters(updated);
@@ -231,7 +233,7 @@ export default function WriteEditorPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <button onClick={() => router.push('/my-stories')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-accent transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to My Stories
+          <ArrowLeft className="h-4 w-4" /> {translations[lang].myStories.title}
         </button>
         <div className="flex items-center gap-3">
           <button
@@ -239,14 +241,14 @@ export default function WriteEditorPage() {
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save Draft'}
+            <Save className="h-4 w-4" /> {saving ? t.saving : t.saveDraft}
           </button>
           <button
             onClick={() => saveStory('published')}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-accent text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            <Send className="h-4 w-4" /> Publish
+            <Send className="h-4 w-4" /> {t.publish}
           </button>
         </div>
       </div>
@@ -255,13 +257,13 @@ export default function WriteEditorPage() {
         <div className="lg:col-span-2 space-y-4">
           <input
             type="text"
-            placeholder="Story Title"
+            placeholder={t.titlePlaceholder}
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
           />
           <textarea
-            placeholder="Write a description..."
+            placeholder={t.descPlaceholder}
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={3}
@@ -273,7 +275,7 @@ export default function WriteEditorPage() {
               key={editorKey}
               value={chapterContent}
               onChange={setChapterContent}
-              placeholder="Mulai menulis bab ini..."
+              placeholder={t.startWriting}
               minHeight={400}
               showWordCount={true}
               mode="full"
@@ -293,7 +295,7 @@ export default function WriteEditorPage() {
               onChange={e => setCategory(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
             >
-              <option value="">Select Category</option>
+              <option value="">{t.selectCategory}</option>
               <option value="Romance">Romance</option>
               <option value="Fantasy">Fantasy</option>
               <option value="Sci-Fi">Sci-Fi</option>
@@ -306,7 +308,7 @@ export default function WriteEditorPage() {
             </select>
             <input
               type="text"
-              placeholder="Tags (comma separated)"
+              placeholder={t.tagsPlaceholder}
               value={tags}
               onChange={e => setTags(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
@@ -315,7 +317,7 @@ export default function WriteEditorPage() {
 
           <div className="space-y-3 p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Chapters</h3>
+              <h3 className="font-semibold text-sm">{t.chapters}</h3>
               <button onClick={addNewChapter} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Plus className="h-4 w-4" />
               </button>
@@ -331,12 +333,12 @@ export default function WriteEditorPage() {
                 onClick={() => setActiveChapter(chapters.length)}
                 className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${activeChapter === chapters.length && chapters.length > 0 ? 'bg-accent/10 text-accent' : activeChapter === chapters.length ? 'bg-accent/10 text-accent' : 'hover:bg-brand-muted dark:hover:bg-gray-700'}`}
               >
-                + New Chapter
+                {t.newChapter}
               </div>
             </div>
             <input
               type="text"
-              placeholder="Chapter title"
+              placeholder={t.chapterTitle}
               value={chapterTitle}
               onChange={e => setChapterTitle(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"

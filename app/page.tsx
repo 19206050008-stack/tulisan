@@ -10,8 +10,11 @@ import { RecentComments } from '@/components/RecentComments';
 import { StoryCover } from '@/components/StoryCover';
 import { GenreFilter } from '@/components/GenreFilter';
 
+import { translations } from '@/lib/i18n';
+
 export default function Home() {
-  const { viewMode, setViewMode } = useStore();
+  const { viewMode, setViewMode, lang } = useStore();
+  const t = translations[lang].home;
   const [stories, setStories] = useState<any[]>([]);
   const [categoryNames, setCategoryNames] = useState<string[]>(['All']);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -42,7 +45,7 @@ export default function Home() {
   };
 
   const topStories = [...stories].sort((a, b) => (b.reads_count || 0) - (a.reads_count || 0)).slice(0, 10);
-  const filteredStories = activeCategory === 'All' ? stories : stories.filter(s => s.category === activeCategory);
+  const filteredStories = activeCategory === t.all ? stories : stories.filter(s => s.category === activeCategory);
 
   if (loading) {
     return (
@@ -66,11 +69,11 @@ export default function Home() {
 
       <GenreFilter categories={categoryNames} active={activeCategory} onChange={setActiveCategory} visibleCount={5} />
 
-      {activeCategory === 'All' ? (
+      {activeCategory === t.all || activeCategory === 'All' ? (
         <>
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl md:text-2xl font-bold font-serif">Popular Stories</h2>
+              <h2 className="text-xl md:text-2xl font-bold font-serif">{t.topStories}</h2>
               <div className="flex items-center gap-1">
                 <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
                   <LayoutGrid className="h-4 w-4" />
@@ -88,7 +91,7 @@ export default function Home() {
             </div>
 
             <div className="text-center pt-2">
-              <Link href="/browse" className="text-sm text-accent hover:underline">View all stories →</Link>
+              <Link href="/browse" className="text-sm text-accent hover:underline">{t.seeAll} →</Link>
             </div>
           </section>
 
@@ -118,7 +121,7 @@ export default function Home() {
 
           {filteredStories.length > 10 && (
             <div className="text-center pt-2">
-              <Link href={`/browse?genre=${encodeURIComponent(activeCategory)}`} className="text-sm text-accent hover:underline">View all {filteredStories.length} stories →</Link>
+              <Link href={`/browse?genre=${encodeURIComponent(activeCategory)}`} className="text-sm text-accent hover:underline">{t.seeAll} →</Link>
             </div>
           )}
         </section>
@@ -167,48 +170,19 @@ function StoryCard({ story, viewMode, formatCount }: { story: any; viewMode: str
 }
 
 function GenreSection({ genre, stories, formatCount }: { genre: string; stories: any[]; formatCount: (n: number) => string }) {
-  const [page, setPage] = useState(0);
-  const [perPage, setPerPage] = useState(5);
+  const { lang } = useStore();
+  const t = translations[lang].home;
 
-  useEffect(() => {
-    const update = () => {
-      if (window.innerWidth < 480) setPerPage(3);
-      else if (window.innerWidth < 640) setPerPage(4);
-      else if (window.innerWidth < 1024) setPerPage(5);
-      else setPerPage(6);
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  const totalPages = Math.ceil(stories.length / perPage);
-  const visible = stories.slice(page * perPage, (page + 1) * perPage);
-
+  if (stories.length === 0) return null;
   return (
-    <section className="space-y-2">
+    <section className="space-y-4 pt-4 border-t border-subtle dark:border-gray-800">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm md:text-base font-bold font-serif">{genre}</h2>
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="w-6 h-6 flex items-center justify-center rounded-full border border-subtle dark:border-gray-700 disabled:opacity-20 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
-            <ChevronLeft className="h-3 w-3" />
-          </button>
-          <span className="text-[9px] text-gray-400 min-w-[24px] text-center">{page + 1}/{totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="w-6 h-6 flex items-center justify-center rounded-full border border-subtle dark:border-gray-700 disabled:opacity-20 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
-            <ChevronRight className="h-3 w-3" />
-          </button>
-          <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-[10px] text-accent hover:underline ml-1">All</Link>
-        </div>
+        <h2 className="text-lg md:text-xl font-bold font-serif">{genre}</h2>
+        <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-xs font-medium text-gray-500 hover:text-accent flex items-center">{t.seeAll} <ChevronRight className="h-3 w-3" /></Link>
       </div>
-
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-        {visible.map(story => (
-          <Link href={`/story/${story.id}`} key={story.id} className="group flex flex-col gap-1">
-            <div className="aspect-[2/3] rounded overflow-hidden bg-brand-muted dark:bg-gray-800">
-              <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
-            </div>
-            <h3 className="text-[9px] md:text-[10px] font-medium leading-tight line-clamp-1 group-hover:text-accent transition-colors">{story.title}</h3>
-          </Link>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        {stories.slice(0, 5).map(story => (
+          <StoryCard key={story.id} story={story} viewMode="grid" formatCount={formatCount} />
         ))}
       </div>
     </section>

@@ -4,8 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getRecentComments } from '@/lib/supabase';
 import { MessageSquare } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { translations } from '@/lib/i18n';
 
 export function RecentComments() {
+  const { lang } = useStore();
+  const t = translations[lang].home;
+  
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,13 +29,24 @@ export function RecentComments() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    
+    if (lang === 'id') {
+      if (mins < 1) return 'baru saja';
+      if (mins < 60) return `${mins}m yang lalu`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}j yang lalu`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days}h yang lalu`;
+      return date.toLocaleDateString('id', { month: 'short', day: 'numeric' });
+    } else {
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days}d ago`;
+      return date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    }
   };
 
   if (loading) {
@@ -42,7 +58,7 @@ export function RecentComments() {
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-bold font-serif flex items-center gap-2">
-        <MessageSquare className="h-5 w-5 text-accent" /> Recent Comments
+        <MessageSquare className="h-5 w-5 text-accent" /> {t.recentComments}
       </h2>
       <div className="space-y-3">
         {comments.map(c => (

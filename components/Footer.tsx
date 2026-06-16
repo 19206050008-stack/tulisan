@@ -1,6 +1,12 @@
 import Link from 'next/link';
+import { useStore } from '@/lib/store';
+import { translations } from '@/lib/i18n';
 
 export function Footer() {
+  const { lang } = useStore();
+  const t = translations[lang].footer;
+  const nav = translations[lang].nav;
+  
   return (
     <footer className="w-full border-t border-subtle dark:border-gray-800 bg-brand-bg dark:bg-gray-900 py-8">
       <div className="container mx-auto px-4 flex flex-col items-center gap-6">
@@ -23,21 +29,21 @@ export function Footer() {
         </div>
 
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" aria-label="Di.tulis links">
-          <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Home</Link>
-          <Link href="/browse" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Browse</Link>
-          <Link href="/community" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Community</Link>
-          <Link href="/write" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Write</Link>
+          <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.home}</Link>
+          <Link href="/browse" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.browse}</Link>
+          <Link href="/community" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.community}</Link>
+          <Link href="/write" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.write}</Link>
           <span className="hidden sm:inline text-gray-300 dark:text-gray-700" aria-hidden="true">|</span>
-          <Link href="/about" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">About</Link>
-          <Link href="/careers" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Careers</Link>
-          <Link href="/press" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Press</Link>
+          <Link href="/about" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.about}</Link>
+          <Link href="/careers" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.careers}</Link>
+          <Link href="/press" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.press}</Link>
         </nav>
 
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" aria-label="Legal links">
-          <Link href="/terms" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">Terms</Link>
-          <Link href="/privacy" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">Privacy</Link>
+          <Link href="/terms" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.terms}</Link>
+          <Link href="/privacy" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.privacy}</Link>
           <Link href="/accessibility" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">Accessibility</Link>
-          <Link href="/help" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">Help</Link>
+          <Link href="/help" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.help}</Link>
         </nav>
 
         <p className="text-xs text-gray-400 dark:text-gray-600">

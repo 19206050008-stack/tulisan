@@ -7,10 +7,12 @@ import { createStory, uploadCover } from '@/lib/supabase';
 import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
+import { translations } from '@/lib/i18n';
 
 export default function WritePage() {
   const router = useRouter();
-  const { user, role, _hasHydrated } = useStore();
+  const { user, role, _hasHydrated, lang } = useStore();
+  const t = translations[lang].write;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -81,7 +83,7 @@ export default function WritePage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <button onClick={() => router.push('/my-stories')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-accent transition-colors">
-          <ArrowLeft className="h-4 w-4" /> My Stories
+          <ArrowLeft className="h-4 w-4" /> {translations[lang].myStories.title}
         </button>
         <div className="flex items-center gap-3">
           <button
@@ -89,14 +91,14 @@ export default function WritePage() {
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            <Save className="h-4 w-4" /> {saving ? 'Saving...' : 'Save Draft'}
+            <Save className="h-4 w-4" /> {saving ? t.saving : t.saveDraft}
           </button>
           <button
             onClick={() => handleSave(true)}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-accent text-white hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            <Send className="h-4 w-4" /> Publish
+            <Send className="h-4 w-4" /> {t.publish}
           </button>
         </div>
       </div>
@@ -105,13 +107,13 @@ export default function WritePage() {
         <div className="lg:col-span-2 space-y-4">
           <input
             type="text"
-            placeholder="Story Title"
+            placeholder={t.titlePlaceholder}
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
           />
           <textarea
-            placeholder="Write a short description..."
+            placeholder={t.descPlaceholder}
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
@@ -119,7 +121,7 @@ export default function WritePage() {
           />
           <input
             type="text"
-            placeholder="Chapter Title"
+            placeholder={t.chapterTitle}
             value={chapterTitle}
             onChange={e => setChapterTitle(e.target.value)}
             className="w-full text-lg font-medium bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
@@ -128,7 +130,7 @@ export default function WritePage() {
           <RichEditor
             value={content}
             onChange={setContent}
-            placeholder="Mulai menulis ceritamu di sini..."
+            placeholder={t.startWriting}
             minHeight={400}
             showWordCount={true}
             mode="full"
@@ -147,7 +149,7 @@ export default function WritePage() {
               onChange={e => setCategory(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
             >
-              <option value="">Select Category</option>
+              <option value="">{t.selectCategory}</option>
               <option value="Romance">Romance</option>
               <option value="Fantasy">Fantasy</option>
               <option value="Sci-Fi">Sci-Fi</option>
@@ -160,7 +162,7 @@ export default function WritePage() {
             </select>
             <input
               type="text"
-              placeholder="Tags (comma separated)"
+              placeholder={t.tagsPlaceholder}
               value={tags}
               onChange={e => setTags(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"

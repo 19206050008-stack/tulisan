@@ -7,9 +7,12 @@ import { signUp } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 import { Eye, EyeOff, UserPlus, BookOpen, PenTool } from 'lucide-react';
 
+import { translations } from '@/lib/i18n';
+
 export default function RegisterPage() {
   const router = useRouter();
-  const { login } = useStore();
+  const { login, lang } = useStore();
+  const t = translations[lang].auth;
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -59,7 +62,7 @@ export default function RegisterPage() {
           <Link href="/" className="font-serif text-3xl font-bold italic">
             <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
           </Link>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Come for the story. Stay for the connection.</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">{t.join}</p>
         </div>
 
         <div className="p-8 rounded-2xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-6">
@@ -69,7 +72,7 @@ export default function RegisterPage() {
 
           {step === 1 && (
             <div className="space-y-6">
-              <h1 className="text-2xl font-bold font-serif text-center">Join Di.tulis</h1>
+              <h1 className="text-2xl font-bold font-serif text-center">{t.join}</h1>
               <p className="text-center text-sm text-gray-500">What brings you here?</p>
               <div className="grid grid-cols-3 gap-3">
                 <button onClick={() => setInterest('read')} className={`p-4 rounded-xl border text-center transition-all ${interest === 'read' ? 'border-accent bg-accent/10 text-accent' : 'border-subtle dark:border-gray-700 hover:border-gray-300'}`}>
@@ -97,22 +100,22 @@ export default function RegisterPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label htmlFor="fullName" className="text-xs font-medium text-gray-600 dark:text-gray-400">Full Name</label>
+                  <label htmlFor="fullName" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t.name}</label>
                   <input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Your name" required className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm" />
                 </div>
                 <div className="space-y-1.5">
-                  <label htmlFor="username" className="text-xs font-medium text-gray-600 dark:text-gray-400">Username</label>
+                  <label htmlFor="username" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t.username}</label>
                   <input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="unique_username" required className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm" />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-xs font-medium text-gray-600 dark:text-gray-400">Email</label>
+                <label htmlFor="email" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t.email}</label>
                 <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm" />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-xs font-medium text-gray-600 dark:text-gray-400">Password</label>
+                <label htmlFor="password" className="text-xs font-medium text-gray-600 dark:text-gray-400">{t.password}</label>
                 <div className="relative">
                   <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 characters" required className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm pr-10" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -130,7 +133,7 @@ export default function RegisterPage() {
                 <button type="button" onClick={() => setStep(1)} className="px-4 py-2.5 rounded-full border border-subtle dark:border-gray-700 text-sm hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">Back</button>
                 <button type="submit" disabled={loading} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
                   <UserPlus className="h-4 w-4" />
-                  {loading ? 'Creating...' : 'Create Account'}
+                  {loading ? t.loading : t.registerBtn}
                 </button>
               </div>
 
@@ -141,7 +144,7 @@ export default function RegisterPage() {
           )}
 
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Already have an account? <Link href="/login" className="text-accent font-medium hover:underline">Log in</Link>
+            {t.hasAccount} <Link href="/login" className="text-accent font-medium hover:underline">{t.loginHere}</Link>
           </p>
         </div>
       </div>

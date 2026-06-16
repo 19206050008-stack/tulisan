@@ -8,9 +8,11 @@ import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
+import { translations } from '@/lib/i18n';
 
 export default function MyStoriesPage() {
-  const { user, role, _hasHydrated } = useStore();
+  const { user, role, _hasHydrated, lang } = useStore();
+  const t = translations[lang].myStories;
   const router = useRouter();
   const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,22 +48,22 @@ export default function MyStoriesPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold font-serif">My Stories</h1>
+        <h1 className="text-2xl md:text-3xl font-bold font-serif">{t.title}</h1>
         <Link href="/write" className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
-          <Plus className="h-4 w-4" /> New Story
+          <Plus className="h-4 w-4" /> {translations[lang].write.newStory}
         </Link>
       </div>
 
       {stories.length === 0 ? (
         <div className="text-center py-16 space-y-4">
-          <p className="text-gray-500 text-lg">You haven&apos;t written any stories yet.</p>
+          <p className="text-gray-500 text-lg">{lang === 'id' ? "Anda belum menulis cerita apa pun." : "You haven't written any stories yet."}</p>
           <Link href="/write" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity">
-            <Plus className="h-4 w-4" /> Write Your First Story
+            <Plus className="h-4 w-4" /> {translations[lang].write.newStory}
           </Link>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">{stories.length} stories</p>
+          <p className="text-sm text-gray-500">{stories.length} {lang === 'id' ? 'cerita' : 'stories'}</p>
           <div className="space-y-3">
             {paginated.map(story => (
               <div key={story.id} className="flex items-center justify-between p-3 md:p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
@@ -74,17 +76,17 @@ export default function MyStoriesPage() {
                     <div className="flex items-center gap-3 mt-1 text-xs md:text-sm text-gray-500">
                       <span className={`flex items-center gap-1 ${story.status === 'published' ? 'text-green-600' : 'text-yellow-600'}`}>
                         {story.status === 'published' ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                        {story.status}
+                        {story.status === 'published' ? t.published : t.draft}
                       </span>
-                      <span className="hidden sm:inline">{story.category || 'No category'}</span>
+                      <span className="hidden sm:inline">{story.category || (lang === 'id' ? 'Tanpa kategori' : 'No category')}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                  <Link href={`/write/${story.id}`} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  <Link href={`/write/${story.id}`} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title={t.edit}>
                     <Edit className="h-4 w-4" />
                   </Link>
-                  <button onClick={() => handleDelete(story.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">
+                  <button onClick={() => handleDelete(story.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors" title={t.delete}>
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

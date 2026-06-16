@@ -1,0 +1,222 @@
+export const translations = {
+  id: {
+    // Navigation
+    nav: {
+      search: "Cari cerita, penulis, tag...",
+      login: "Masuk",
+      register: "Daftar",
+      myStories: "Cerita Saya",
+      library: "Perpustakaan",
+      readingLists: "Daftar Bacaan",
+      profile: "Profil",
+      settings: "Pengaturan",
+      logout: "Keluar",
+      home: "Beranda",
+      browse: "Jelajahi",
+      community: "Komunitas",
+      write: "Tulis",
+    },
+    // Home Page
+    home: {
+      topStories: "Cerita Teratas",
+      seeAll: "Lihat Semua",
+      discover: "Temukan Berdasarkan Kategori",
+      all: "Semua",
+      recentComments: "Komentar Terbaru",
+      noComments: "Belum ada komentar.",
+      noStories: "Belum ada cerita di kategori ini.",
+      reads: "dibaca",
+      chapters: "bab",
+    },
+    // Browse & Filter
+    browse: {
+      title: "Jelajahi Cerita",
+      searchPlaceholder: "Cari judul, tag, atau penulis...",
+      sort: {
+        newest: "Terbaru",
+        popular: "Terpopuler",
+        likes: "Paling Banyak Disukai",
+      },
+      perPage: "Per halaman:",
+      showing: "Menampilkan",
+      to: "sampai",
+      of: "dari",
+      results: "hasil",
+    },
+    // Writing/Author
+    write: {
+      newStory: "Cerita Baru",
+      editStory: "Edit Cerita",
+      titlePlaceholder: "Judul Cerita",
+      descPlaceholder: "Tulis deskripsi singkat...",
+      selectCategory: "Pilih Kategori",
+      tagsPlaceholder: "Tag (pisahkan dengan koma)",
+      chapters: "Bab",
+      newChapter: "+ Bab Baru",
+      chapterTitle: "Judul bab",
+      startWriting: "Mulai menulis bab ini...",
+      saveDraft: "Simpan Draf",
+      publish: "Terbitkan",
+      saving: "Menyimpan...",
+      deleteConfirm: "Yakin ingin menghapus cerita ini?",
+      deleteChapterConfirm: "Yakin ingin menghapus bab ini?",
+    },
+    // Reader
+    reader: {
+      part: "Bagian",
+      by: "karya",
+      edit: "Edit",
+      textSize: "Ukuran Teks",
+      previous: "Sebelumnya",
+      next: "Selanjutnya",
+      comments: "Komentar",
+      addComment: "Tambahkan komentar...",
+      loginToComment: "Masuk untuk berkomentar",
+      signIn: "Masuk",
+    },
+    // My Stories
+    myStories: {
+      title: "Cerita Saya",
+      published: "Diterbitkan",
+      draft: "Draf",
+      edit: "Edit",
+      delete: "Hapus",
+    },
+    // Auth
+    auth: {
+      welcome: "Selamat Datang di Di.tulis",
+      join: "Bergabung dengan Di.tulis",
+      email: "Email",
+      password: "Password",
+      name: "Nama Lengkap",
+      username: "Username",
+      loginBtn: "Masuk",
+      registerBtn: "Daftar",
+      noAccount: "Belum punya akun?",
+      hasAccount: "Sudah punya akun?",
+      registerHere: "Daftar di sini",
+      loginHere: "Masuk di sini",
+      loading: "Memproses...",
+    },
+    // Footer
+    footer: {
+      about: "Tentang",
+      careers: "Karier",
+      press: "Pers",
+      terms: "Syarat",
+      privacy: "Privasi",
+      help: "Bantuan",
+    }
+  },
+  en: {
+    // Navigation
+    nav: {
+      search: "Search stories, authors, tags...",
+      login: "Log in",
+      register: "Sign up",
+      myStories: "My Stories",
+      library: "Library",
+      readingLists: "Reading Lists",
+      profile: "Profile",
+      settings: "Settings",
+      logout: "Log out",
+      home: "Home",
+      browse: "Browse",
+      community: "Community",
+      write: "Write",
+    },
+    // Home Page
+    home: {
+      topStories: "Top Stories",
+      seeAll: "See All",
+      discover: "Discover by Category",
+      all: "All",
+      recentComments: "Recent Comments",
+      noComments: "No comments yet.",
+      noStories: "No stories in this category yet.",
+      reads: "reads",
+      chapters: "chapters",
+    },
+    // Browse & Filter
+    browse: {
+      title: "Browse Stories",
+      searchPlaceholder: "Search title, tags, or author...",
+      sort: {
+        newest: "Newest",
+        popular: "Most Popular",
+        likes: "Most Liked",
+      },
+      perPage: "Per page:",
+      showing: "Showing",
+      to: "to",
+      of: "of",
+      results: "results",
+    },
+    // Writing/Author
+    write: {
+      newStory: "New Story",
+      editStory: "Edit Story",
+      titlePlaceholder: "Story Title",
+      descPlaceholder: "Write a short description...",
+      selectCategory: "Select Category",
+      tagsPlaceholder: "Tags (comma separated)",
+      chapters: "Chapters",
+      newChapter: "+ New Chapter",
+      chapterTitle: "Chapter title",
+      startWriting: "Start writing this chapter...",
+      saveDraft: "Save Draft",
+      publish: "Publish",
+      saving: "Saving...",
+      deleteConfirm: "Are you sure you want to delete this story?",
+      deleteChapterConfirm: "Are you sure you want to delete this chapter?",
+    },
+    // Reader
+    reader: {
+      part: "Part",
+      by: "by",
+      edit: "Edit",
+      textSize: "Text Size",
+      previous: "Previous",
+      next: "Next",
+      comments: "Comments",
+      addComment: "Add a comment...",
+      loginToComment: "Log in to comment",
+      signIn: "Sign in",
+    },
+    // My Stories
+    myStories: {
+      title: "My Stories",
+      published: "Published",
+      draft: "Draft",
+      edit: "Edit",
+      delete: "Delete",
+    },
+    // Auth
+    auth: {
+      welcome: "Welcome back to Di.tulis",
+      join: "Join Di.tulis",
+      email: "Email",
+      password: "Password",
+      name: "Full Name",
+      username: "Username",
+      loginBtn: "Log in",
+      registerBtn: "Sign up",
+      noAccount: "Don't have an account?",
+      hasAccount: "Already have an account?",
+      registerHere: "Sign up here",
+      loginHere: "Log in here",
+      loading: "Processing...",
+    },
+    // Footer
+    footer: {
+      about: "About",
+      careers: "Careers",
+      press: "Press",
+      terms: "Terms",
+      privacy: "Privacy",
+      help: "Help",
+    }
+  }
+};
+
+export type TranslationKey = keyof typeof translations.id;

@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut } from '@/lib/supabase';
-import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List } from 'lucide-react';
+import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe } from 'lucide-react';
 import { useState } from 'react';
+import { translations } from '@/lib/i18n';
 
 export function Navbar() {
   const router = useRouter();
-  const { darkMode, setDarkMode, role, user, logout } = useStore();
+  const { darkMode, setDarkMode, role, user, logout, lang, setLang } = useStore();
   const [showMenu, setShowMenu] = useState(false);
+  
+  const t = translations[lang].nav;
 
   const handleLogout = async () => {
     try {
@@ -25,7 +28,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-subtle bg-brand-bg/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-brand-bg/60 dark:border-gray-800">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-serif text-2xl font-bold italic tracking-tighter hover:opacity-80 transition-opacity">
+          <Link href="/" className="flex items-center font-serif text-2xl font-bold italic tracking-tighter hover:opacity-80 transition-opacity">
             <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
           </Link>
           
@@ -33,7 +36,7 @@ export function Navbar() {
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
-              placeholder="Search stories, authors, tags..." 
+              placeholder={t.search} 
               className="pl-9 pr-4 py-2 bg-brand-muted dark:bg-gray-800 rounded-full text-sm focus:outline-none border border-transparent focus:border-accent w-64 transition-all"
             />
           </div>
@@ -44,6 +47,15 @@ export function Navbar() {
             {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
           
+          <button 
+            onClick={() => setLang(lang === 'id' ? 'en' : 'id')} 
+            className="flex items-center gap-1 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-medium text-gray-600 dark:text-gray-300"
+            title={lang === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+          >
+            <Globe className="h-5 w-5" />
+            <span className="hidden sm:inline uppercase">{lang}</span>
+          </button>
+          
           {role !== 'guest' && (
             <Link href="/notifications" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
               <Bell className="h-5 w-5" />
@@ -51,12 +63,12 @@ export function Navbar() {
           )}
 
           {role === 'guest' ? (
-            <div className="flex items-center gap-2">
-              <Link href="/login" className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                <LogIn className="h-4 w-4" /> Sign In
+            <div className="hidden md:flex items-center gap-2 ml-2">
+              <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-accent transition-colors">
+                {t.login}
               </Link>
-              <Link href="/register" className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-accent text-white hover:opacity-90 transition-opacity">
-                Sign Up
+              <Link href="/register" className="px-4 py-2 rounded-full bg-brand-text text-white dark:bg-white dark:text-brand-text text-sm font-medium hover:opacity-90 transition-opacity">
+                {t.register}
               </Link>
             </div>
           ) : (
@@ -75,16 +87,16 @@ export function Navbar() {
                     {role}
                   </div>
                   <Link href="/my-stories" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setShowMenu(false)}>
-                    <PenTool className="h-4 w-4" /> My Stories
+                    <PenTool className="h-4 w-4" /> {t.myStories}
                   </Link>
                   <Link href="/library" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setShowMenu(false)}>
-                    <BookOpen className="h-4 w-4" /> Library
+                    <BookOpen className="h-4 w-4" /> {t.library}
                   </Link>
                   <Link href="/reading-lists" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setShowMenu(false)}>
-                    <List className="h-4 w-4" /> Reading Lists
+                    <List className="h-4 w-4" /> {t.readingLists}
                   </Link>
                   <Link href={`/profile/${user?.username || 'me'}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setShowMenu(false)}>
-                    <UserCircle className="h-4 w-4" /> My Profile
+                    <UserCircle className="h-4 w-4" /> {t.profile}
                   </Link>
                   {role === 'admin' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => setShowMenu(false)}>
@@ -96,7 +108,7 @@ export function Navbar() {
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
                   >
-                    <LogOut className="h-4 w-4" /> Sign Out
+                    <LogOut className="h-4 w-4" /> {t.logout}
                   </button>
                 </div>
               )}

@@ -7,6 +7,8 @@ import { Search, Eye, Heart, ChevronLeft } from 'lucide-react';
 import { getStories, getCategories } from '@/lib/supabase';
 import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
+import { useStore } from '@/lib/store';
+import { translations } from '@/lib/i18n';
 
 export default function BrowsePageWrapper() {
   return (
@@ -18,6 +20,8 @@ export default function BrowsePageWrapper() {
 
 function BrowsePage() {
   const searchParams = useSearchParams();
+  const { lang } = useStore();
+  const t = translations[lang].browse;
   const genreParam = searchParams.get('genre') || '';
   const [activeCategory, setActiveCategory] = useState(genreParam || 'All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,7 +48,7 @@ function BrowsePage() {
   };
 
   const filtered = stories.filter(s => {
-    const matchCategory = activeCategory === 'All' || s.category === activeCategory;
+    const matchCategory = activeCategory === 'All' || activeCategory === translations.en.home.all || activeCategory === translations.id.home.all || s.category === activeCategory;
     const matchSearch = !searchQuery || s.title.toLowerCase().includes(searchQuery.toLowerCase()) || (s.profiles?.full_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
@@ -67,9 +71,9 @@ function BrowsePage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        {activeCategory !== 'All' ? (
+        {activeCategory !== 'All' && activeCategory !== translations.id.home.all && activeCategory !== translations.en.home.all ? (
           <div className="flex items-center gap-3">
-            <button onClick={() => setActiveCategory('All')} className="p-1.5 rounded-full hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
+            <button onClick={() => setActiveCategory(translations[lang].home.all)} className="p-1.5 rounded-full hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div>
@@ -78,7 +82,7 @@ function BrowsePage() {
             </div>
           </div>
         ) : (
-          <h1 className="text-2xl md:text-3xl font-bold font-serif">Browse Stories</h1>
+          <h1 className="text-2xl md:text-3xl font-bold font-serif">{t.title}</h1>
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
@@ -86,7 +90,7 @@ function BrowsePage() {
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search stories or authors..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-brand-muted dark:bg-gray-800 rounded-full text-sm focus:outline-none border border-transparent focus:border-accent"
@@ -94,21 +98,21 @@ function BrowsePage() {
           </div>
           <div className="flex items-center gap-2">
             <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="px-3 py-2 text-xs rounded-lg bg-brand-muted dark:bg-gray-800 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent">
-              <option value="newest">Newest</option>
-              <option value="popular">Most Read</option>
-              <option value="most_liked">Most Liked</option>
+              <option value="newest">{t.sort.newest}</option>
+              <option value="popular">{t.sort.popular}</option>
+              <option value="most_liked">{t.sort.likes}</option>
             </select>
             <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} className="px-3 py-2 text-xs rounded-lg bg-brand-muted dark:bg-gray-800 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent">
-              <option value={10}>10 per page</option>
-              <option value={20}>20 per page</option>
-              <option value={30}>30 per page</option>
+              <option value={10}>10 {t.perPage.replace(':', '')}</option>
+              <option value={20}>20 {t.perPage.replace(':', '')}</option>
+              <option value={30}>30 {t.perPage.replace(':', '')}</option>
             </select>
           </div>
         </div>
 
-        {activeCategory === 'All' && (
+        {(activeCategory === 'All' || activeCategory === translations.id.home.all || activeCategory === translations.en.home.all) && (
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setActiveCategory('All')} className="px-4 py-2 rounded-full text-sm font-medium bg-brand-text text-brand-bg dark:bg-white dark:text-gray-900">All</button>
+            <button onClick={() => setActiveCategory(translations[lang].home.all)} className="px-4 py-2 rounded-full text-sm font-medium bg-brand-text text-brand-bg dark:bg-white dark:text-gray-900">{translations[lang].home.all}</button>
             {categories.map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)} className="px-4 py-2 rounded-full text-sm font-medium bg-brand-muted text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
                 {cat}
@@ -129,7 +133,7 @@ function BrowsePage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">{sorted.length} stories found</p>
+          <p className="text-sm text-gray-500">{sorted.length} {t.results}</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {paginated.map(story => (
               <Link href={`/story/${story.id}`} key={story.id} className="group flex flex-col gap-2">

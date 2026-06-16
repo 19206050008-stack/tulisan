@@ -2,8 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type UserRole = 'guest' | 'user' | 'admin';
+export type Language = 'id' | 'en';
 
 interface AppState {
+  lang: Language;
+  setLang: (lang: Language) => void;
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
   user: any | null;
@@ -25,6 +28,8 @@ console.log('[STORE] Initializing Zustand store...');
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
+      lang: 'id' as Language,
+      setLang: (lang) => set({ lang }),
       darkMode: false,
       setDarkMode: (val) => set({ darkMode: val }),
       user: null,
@@ -57,6 +62,7 @@ export const useStore = create<AppState>()(
       name: 'storyverse-store', // key di localStorage
       // Hanya persist data yang perlu, jangan persist semua
       partialize: (state) => ({
+        lang: state.lang,
         darkMode: state.darkMode,
         user: state.user,
         role: state.role,
