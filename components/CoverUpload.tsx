@@ -287,11 +287,24 @@ export function CoverUpload({ preview, onFileReady, title, category, description
       console.log('[AI COVER] Prompt length:', finalPrompt.length, 'chars');
       console.log('[AI COVER] Prompt:', finalPrompt.substring(0, 100) + '...');
 
+      // Test with super simple URL first
+      const simplePrompt = 'book cover art';
+      const testUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(simplePrompt)}`;
+      
+      console.log('[AI COVER] Testing simple URL first:', testUrl);
+      
+      const testResponse = await fetch(testUrl);
+      console.log('[AI COVER] Test response status:', testResponse.status);
+      
+      if (!testResponse.ok) {
+        throw new Error(`Pollinations.ai tidak bisa diakses (${testResponse.status}). Coba lagi nanti atau upload cover manual.`);
+      }
+
       const encodedPrompt = encodeURIComponent(finalPrompt);
       const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=900&seed=${seed}&nologo=true`;
 
       console.log('[AI COVER] URL length:', imageUrl.length, 'chars');
-      console.log('[AI COVER] Fetching from Pollinations.ai...');
+      console.log('[AI COVER] Fetching full prompt from Pollinations.ai...');
 
       const response = await fetch(imageUrl);
 
