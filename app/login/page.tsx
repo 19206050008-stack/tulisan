@@ -40,7 +40,9 @@ export default function LoginPage() {
     <div className="min-h-[70vh] flex items-center justify-center">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="font-serif text-3xl font-bold italic text-accent">StoryVerse.</Link>
+          <Link href="/" className="font-serif text-3xl font-bold italic">
+            <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
+          </Link>
           <p className="text-gray-600 dark:text-gray-400 mt-2">Welcome back. Your stories are waiting.</p>
         </div>
 

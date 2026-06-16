@@ -25,8 +25,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-subtle bg-brand-bg/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-brand-bg/60 dark:border-gray-800">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-serif text-2xl font-bold italic tracking-tighter text-accent hover:opacity-80 transition-opacity">
-            <span>StoryVerse.</span>
+          <Link href="/" className="flex items-center gap-2 font-serif text-2xl font-bold italic tracking-tighter hover:opacity-80 transition-opacity">
+            <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
           </Link>
           
           <div className="hidden md:flex relative group">

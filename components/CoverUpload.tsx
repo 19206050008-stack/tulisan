@@ -242,7 +242,7 @@ export function CoverUpload({ preview, onFileReady, title, category, description
 
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.font = 'italic 11px Georgia, serif';
-    ctx.fillText('StoryVerse', 50, COVER_HEIGHT - 40);
+    ctx.fillText('Di.tulis', 50, COVER_HEIGHT - 40);
 
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;

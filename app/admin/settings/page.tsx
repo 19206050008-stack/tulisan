@@ -32,7 +32,7 @@ export default function AdminSettingsPage() {
   const loadConfig = async () => {
     setLoading(true);
     const data = await getAllSiteConfig();
-    setSiteName(data.site_name || 'StoryVerse');
+    setSiteName(data.site_name || 'Di.tulis');
     setSiteDescription(data.site_description || '');
     setSiteTagline(data.site_tagline || '');
     setFaviconUrl(data.favicon_url || '');

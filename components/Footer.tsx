@@ -22,7 +22,7 @@ export function Footer() {
           </SocialLink>
         </div>
 
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" aria-label="StoryVerse links">
+        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" aria-label="Di.tulis links">
           <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Home</Link>
           <Link href="/browse" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Browse</Link>
           <Link href="/community" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">Community</Link>
@@ -41,7 +41,7 @@ export function Footer() {
         </nav>
 
         <p className="text-xs text-gray-400 dark:text-gray-600">
-          &copy; {new Date().getFullYear()} StoryVerse
+          &copy; {new Date().getFullYear()} <span className="text-accent">Di.</span><span>tulis</span>
         </p>
       </div>
     </footer>

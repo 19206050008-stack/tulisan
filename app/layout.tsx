@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-serif', style: ['normal', 'italic'] });
 
 export const metadata: Metadata = {
-  title: 'StoryVerse - Read & Write Stories',
+  title: 'Di.tulis - Read & Write Stories',
   description: 'User-generated stories platform with reading interface and author tools.',
 };
 

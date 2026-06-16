@@ -56,7 +56,9 @@ export default function RegisterPage() {
     <div className="min-h-[70vh] flex items-center justify-center py-8">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <Link href="/" className="font-serif text-3xl font-bold italic text-accent">StoryVerse.</Link>
+          <Link href="/" className="font-serif text-3xl font-bold italic">
+            <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
+          </Link>
           <p className="text-gray-600 dark:text-gray-400 mt-2">Come for the story. Stay for the connection.</p>
         </div>
 
@@ -67,7 +69,7 @@ export default function RegisterPage() {
 
           {step === 1 && (
             <div className="space-y-6">
-              <h1 className="text-2xl font-bold font-serif text-center">Join StoryVerse</h1>
+              <h1 className="text-2xl font-bold font-serif text-center">Join Di.tulis</h1>
               <p className="text-center text-sm text-gray-500">What brings you here?</p>
               <div className="grid grid-cols-3 gap-3">
                 <button onClick={() => setInterest('read')} className={`p-4 rounded-xl border text-center transition-all ${interest === 'read' ? 'border-accent bg-accent/10 text-accent' : 'border-subtle dark:border-gray-700 hover:border-gray-300'}`}>

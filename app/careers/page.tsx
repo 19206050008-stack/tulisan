@@ -51,7 +51,7 @@ export default function CareersPage() {
       <section className="text-center p-8 rounded-xl bg-brand-muted dark:bg-gray-800 space-y-3">
         <Briefcase className="h-10 w-10 mx-auto text-accent" />
         <h3 className="text-lg font-bold">Tertarik Bergabung?</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Kirim CV Anda ke careers@storyverse.app dan kami akan menghubungi Anda ketika ada posisi yang sesuai.</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Kirim CV Anda ke careers@ditulis.tech dan kami akan menghubungi Anda ketika ada posisi yang sesuai.</p>
       </section>
     </div>
   );

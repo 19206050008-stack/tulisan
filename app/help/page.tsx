@@ -70,7 +70,7 @@ export default function HelpPage() {
         <div className="p-6 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
           <MessageCircle className="h-6 w-6 text-accent" />
           <h3 className="font-bold">Forum Komunitas</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Tanyakan dan dapatkan bantuan dari pengguna StoryVerse lainnya di halaman Community.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Tanyakan dan dapatkan bantuan dari pengguna Di.tulis lainnya di halaman Community.</p>
         </div>
       </section>
     </div>
