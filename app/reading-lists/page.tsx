@@ -8,7 +8,7 @@ import { getReadingLists, createReadingList, deleteReadingList } from '@/lib/sup
 import { Plus, Trash2, BookOpen, X } from 'lucide-react';
 
 export default function ReadingListsPage() {
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const router = useRouter();
   const [lists, setLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,12 +17,13 @@ export default function ReadingListsPage() {
   const [newDesc, setNewDesc] = useState('');
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
       router.push('/login');
       return;
     }
     if (user?.id) loadLists();
-  }, [user, role]);
+  }, [user, role, _hasHydrated]);
 
   const loadLists = async () => {
     setLoading(true);

@@ -9,12 +9,13 @@ import { useRouter } from 'next/navigation';
 import { StoryCover } from '@/components/StoryCover';
 
 export default function LibraryPage() {
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const router = useRouter();
   const [saves, setSaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
       router.push('/login');
       return;
@@ -22,7 +23,7 @@ export default function LibraryPage() {
     if (user?.id) {
       loadLibrary();
     }
-  }, [user, role]);
+  }, [user, role, _hasHydrated]);
 
   const loadLibrary = async () => {
     setLoading(true);

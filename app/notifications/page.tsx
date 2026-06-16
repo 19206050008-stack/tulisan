@@ -15,12 +15,13 @@ const ICON_MAP: Record<string, any> = {
 };
 
 export default function NotificationsPage() {
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const router = useRouter();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
       router.push('/login');
       return;
@@ -28,7 +29,7 @@ export default function NotificationsPage() {
     if (user?.id) {
       loadNotifications();
     }
-  }, [user, role]);
+  }, [user, role, _hasHydrated]);
 
   const loadNotifications = async () => {
     setLoading(true);

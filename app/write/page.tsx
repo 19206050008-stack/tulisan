@@ -10,7 +10,7 @@ import { RichEditor } from '@/components/RichEditor';
 
 export default function WritePage() {
   const router = useRouter();
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -22,9 +22,11 @@ export default function WritePage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') router.push('/login');
-  }, [role]);
+  }, [role, _hasHydrated]);
 
+  if (!_hasHydrated) return <div className="text-center py-16 text-gray-500">Loading...</div>;
   if (role === 'guest') return null;
 
   const handleCoverReady = (file: File) => {

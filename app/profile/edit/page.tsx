@@ -8,7 +8,7 @@ import { Camera, Save, ArrowLeft } from 'lucide-react';
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { user, role, login } = useStore();
+  const { user, role, login, _hasHydrated } = useStore();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -24,6 +24,7 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
       router.push('/login');
       return;
@@ -31,7 +32,7 @@ export default function EditProfilePage() {
     if (user?.id) {
       loadProfile();
     }
-  }, [user, role]);
+  }, [user, role, _hasHydrated]);
 
   const loadProfile = async () => {
     setLoading(true);

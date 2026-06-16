@@ -11,7 +11,7 @@ import { RichEditor } from '@/components/RichEditor';
 export default function WriteEditorPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -31,6 +31,7 @@ export default function WriteEditorPage() {
   const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
       router.push('/login');
       return;
@@ -38,7 +39,7 @@ export default function WriteEditorPage() {
     if (id) {
       loadStory();
     }
-  }, [id, role]);
+  }, [id, role, _hasHydrated]);
 
   const loadStory = async () => {
     setLoading(true);

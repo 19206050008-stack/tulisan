@@ -10,7 +10,7 @@ import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
 
 export default function MyStoriesPage() {
-  const { user, role } = useStore();
+  const { user, role, _hasHydrated } = useStore();
   const router = useRouter();
   const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,10 @@ export default function MyStoriesPage() {
   const perPage = 10;
 
   useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') { router.push('/login'); return; }
     if (user?.id) loadStories();
-  }, [user, role]);
+  }, [user, role, _hasHydrated]);
 
   const loadStories = async () => {
     setLoading(true);
