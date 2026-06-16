@@ -266,25 +266,32 @@ export function CoverUpload({ preview, onFileReady, title, category, description
 
     try {
       // Gunakan promptPreview jika sudah di-generate, atau build langsung
-      const basePrompt = promptPreview.trim() || buildPromptFromForm();
+      let basePrompt = promptPreview.trim() || buildPromptFromForm();
+      
+      // Truncate prompt yang terlalu panjang (max 200 chars untuk base prompt)
+      if (basePrompt.length > 200) {
+        basePrompt = basePrompt.substring(0, 200).trim() + '...';
+      }
 
       const styleText = STYLE_MODIFIERS[aiStyle];
       const seed = Math.floor(Math.random() * 999999);
 
+      // Simplified prompt untuk avoid URL terlalu panjang
       const finalPrompt = [
-        'Ilustrasi sampul buku profesional yang memukau',
+        'professional book cover illustration',
         basePrompt,
         styleText,
-        'rasio portrait 2:3',
-        'tanpa teks, tanpa kata, tanpa huruf, tanpa judul, tanpa nama pengarang, tanpa watermark',
-        'komposisi: subjek terpusat, rule of thirds, secara visual mencolok',
+        'portrait 2:3 ratio, no text, clean composition',
       ].filter(Boolean).join(', ');
 
-      const encodedPrompt = encodeURIComponent(finalPrompt);
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=900&seed=${seed}&nologo=true&enhance=true`;
+      console.log('[AI COVER] Prompt length:', finalPrompt.length, 'chars');
+      console.log('[AI COVER] Prompt:', finalPrompt.substring(0, 100) + '...');
 
-      console.log('[AI COVER] Generating with Pollinations.ai (free API)');
-      console.log('[AI COVER] URL:', imageUrl);
+      const encodedPrompt = encodeURIComponent(finalPrompt);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=900&seed=${seed}&nologo=true`;
+
+      console.log('[AI COVER] URL length:', imageUrl.length, 'chars');
+      console.log('[AI COVER] Fetching from Pollinations.ai...');
 
       const response = await fetch(imageUrl);
 
