@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { supabase, getProfile } from '@/lib/supabase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { login, logout, _hasHydrated, user } = useStore();
+  const hasRestoredSession = useRef(false);
 
   useEffect(() => {
     if (!supabase) return;
 
     // Tunggu Zustand selesai hydrate dari localStorage
     if (!_hasHydrated) return;
+
+    // Prevent running multiple times
+    if (hasRestoredSession.current) return;
+    hasRestoredSession.current = true;
 
     // Validasi session dari Supabase
     const restoreSession = async () => {
@@ -93,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [_hasHydrated, user, login, logout]);
+  }, [_hasHydrated]); // Only depend on _hasHydrated, not user
 
   return <>{children}</>;
 }
