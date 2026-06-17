@@ -14,6 +14,8 @@ import {
   List, ListOrdered, Quote, Minus, Undo, Redo, Link as LinkIcon,
   Eye, Code2,
 } from 'lucide-react';
+import { useStore } from '@/lib/store';
+import { translations } from '@/lib/i18n';
 
 interface RichEditorProps {
   value: string;
@@ -34,6 +36,9 @@ export function RichEditor({
   mode = 'full',
 }: RichEditorProps) {
   const [viewMode, setViewMode] = useState<'editor' | 'html' | 'preview'>('editor');
+  const { lang } = useStore();
+  const t = translations[lang].editor;
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -63,8 +68,7 @@ export function RichEditor({
       attributes: {
         class: [
           'tiptap-content outline-none',
-          'prose prose-sm dark:prose-invert max-w-none',
-          'text-gray-800 dark:text-gray-200',
+          'prose prose-sm max-w-none',
         ].join(' '),
       },
     },
@@ -88,25 +92,25 @@ export function RichEditor({
   const setLink = useCallback(() => {
     if (!editor) return;
     const prev = editor.getAttributes('link').href;
-    const url = window.prompt('URL:', prev);
+    const url = window.prompt(t.linkPrompt, prev);
     if (url === null) return;
     if (url === '') { editor.chain().focus().unsetLink().run(); return; }
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  }, [editor]);
+  }, [editor, t.linkPrompt]);
 
   if (!editor) return null;
 
   const btnBase = 'p-1.5 rounded transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30';
   const btnActive = 'bg-accent/15 text-accent';
-  const btn = (active: boolean) => `${btnBase} ${active ? btnActive : 'text-gray-600 dark:text-gray-400'}`;
+  const btn = (active: boolean) => `${btnBase} ${active ? btnActive : 'text-tx-soft'}`;
 
   const wordCount = editor.storage.characterCount?.words() ?? 0;
   const charCount = editor.storage.characterCount?.characters() ?? 0;
 
   return (
-    <div className="border border-subtle dark:border-gray-700 rounded-xl overflow-hidden bg-brand-bg dark:bg-gray-900">
+    <div className="border border-border rounded-xl overflow-hidden bg-bg">
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-subtle dark:border-gray-700 bg-brand-muted dark:bg-gray-800">
+      <div className="flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-border bg-bg-input">
 
         {/* Heading (full only) */}
         {mode === 'full' && (
@@ -123,28 +127,28 @@ export function RichEditor({
                 if (v === 0) editor.chain().focus().setParagraph().run();
                 else editor.chain().focus().toggleHeading({ level: v as 1|2|3 }).run();
               }}
-              className="text-xs px-2 py-1 rounded bg-transparent border border-subtle dark:border-gray-600 text-gray-700 dark:text-gray-300 mr-1"
+              className="text-xs px-2 py-1 rounded bg-bg-input text-tx border border-border mr-1"
             >
-              <option value="0">Paragraf</option>
-              <option value="1">Judul 1</option>
-              <option value="2">Judul 2</option>
-              <option value="3">Judul 3</option>
+              <option value="0">{t.paragraph}</option>
+              <option value="1">{t.heading1}</option>
+              <option value="2">{t.heading2}</option>
+              <option value="3">{t.heading3}</option>
             </select>
             <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
           </>
         )}
 
         {/* Bold / Italic / Underline / Strike */}
-        <button title="Tebal" onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive('bold'))}>
+        <button title={t.bold} onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive('bold'))}>
           <Bold className="h-3.5 w-3.5" />
         </button>
-        <button title="Miring" onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive('italic'))}>
+        <button title={t.italic} onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive('italic'))}>
           <Italic className="h-3.5 w-3.5" />
         </button>
-        <button title="Garis bawah" onClick={() => editor.chain().focus().toggleUnderline().run()} className={btn(editor.isActive('underline'))}>
+        <button title={t.underline} onClick={() => editor.chain().focus().toggleUnderline().run()} className={btn(editor.isActive('underline'))}>
           <UnderlineIcon className="h-3.5 w-3.5" />
         </button>
-        <button title="Coret" onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive('strike'))}>
+        <button title={t.strike} onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive('strike'))}>
           <Strikethrough className="h-3.5 w-3.5" />
         </button>
 
@@ -153,16 +157,16 @@ export function RichEditor({
         {/* Align (full only) */}
         {mode === 'full' && (
           <>
-            <button title="Rata kiri" onClick={() => editor.chain().focus().setTextAlign('left').run()} className={btn(editor.isActive({ textAlign: 'left' }))}>
+            <button title={t.alignLeft} onClick={() => editor.chain().focus().setTextAlign('left').run()} className={btn(editor.isActive({ textAlign: 'left' }))}>
               <AlignLeft className="h-3.5 w-3.5" />
             </button>
-            <button title="Rata tengah" onClick={() => editor.chain().focus().setTextAlign('center').run()} className={btn(editor.isActive({ textAlign: 'center' }))}>
+            <button title={t.alignCenter} onClick={() => editor.chain().focus().setTextAlign('center').run()} className={btn(editor.isActive({ textAlign: 'center' }))}>
               <AlignCenter className="h-3.5 w-3.5" />
             </button>
-            <button title="Rata kanan" onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btn(editor.isActive({ textAlign: 'right' }))}>
+            <button title={t.alignRight} onClick={() => editor.chain().focus().setTextAlign('right').run()} className={btn(editor.isActive({ textAlign: 'right' }))}>
               <AlignRight className="h-3.5 w-3.5" />
             </button>
-            <button title="Rata penuh" onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={btn(editor.isActive({ textAlign: 'justify' }))}>
+            <button title={t.alignJustify} onClick={() => editor.chain().focus().setTextAlign('justify').run()} className={btn(editor.isActive({ textAlign: 'justify' }))}>
               <AlignJustify className="h-3.5 w-3.5" />
             </button>
             <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
@@ -170,23 +174,23 @@ export function RichEditor({
         )}
 
         {/* List */}
-        <button title="Daftar poin" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btn(editor.isActive('bulletList'))}>
+        <button title={t.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()} className={btn(editor.isActive('bulletList'))}>
           <List className="h-3.5 w-3.5" />
         </button>
-        <button title="Daftar nomor" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btn(editor.isActive('orderedList'))}>
+        <button title={t.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btn(editor.isActive('orderedList'))}>
           <ListOrdered className="h-3.5 w-3.5" />
         </button>
 
         {/* Blockquote & HR (full only) */}
         {mode === 'full' && (
           <>
-            <button title="Kutipan" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btn(editor.isActive('blockquote'))}>
+            <button title={t.blockquote} onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btn(editor.isActive('blockquote'))}>
               <Quote className="h-3.5 w-3.5" />
             </button>
-            <button title="Garis pemisah" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btn(false)}>
+            <button title={t.horizontalRule} onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btn(false)}>
               <Minus className="h-3.5 w-3.5" />
             </button>
-            <button title="Link" onClick={setLink} className={btn(editor.isActive('link'))}>
+            <button title={t.link} onClick={setLink} className={btn(editor.isActive('link'))}>
               <LinkIcon className="h-3.5 w-3.5" />
             </button>
           </>
@@ -195,10 +199,10 @@ export function RichEditor({
         <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
         {/* Undo / Redo */}
-        <button title="Batalkan" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className={btn(false)}>
+        <button title={t.undo} onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} className={btn(false)}>
           <Undo className="h-3.5 w-3.5" />
         </button>
-        <button title="Ulangi" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className={btn(false)}>
+        <button title={t.redo} onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} className={btn(false)}>
           <Redo className="h-3.5 w-3.5" />
         </button>
 
@@ -206,12 +210,12 @@ export function RichEditor({
         <div className="ml-auto flex items-center gap-1.5 pr-1">
           {showWordCount && (
             <span className="text-[10px] text-gray-400 mr-1">
-              {wordCount} kata · {charCount} karakter
+              {wordCount} {t.words} · {charCount} {t.characters}
             </span>
           )}
           {/* Tombol Preview */}
           <button
-            title="Pratinjau tampilan"
+            title={t.preview}
             onClick={() => setViewMode(viewMode === 'preview' ? 'editor' : 'preview')}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
               viewMode === 'preview'
@@ -220,11 +224,11 @@ export function RichEditor({
             }`}
           >
             <Eye className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Pratinjau</span>
+            <span className="hidden sm:inline">{t.preview}</span>
           </button>
           {/* Tombol HTML source */}
           <button
-            title="Lihat kode HTML"
+            title={t.htmlSource}
             onClick={() => setViewMode(viewMode === 'html' ? 'editor' : 'html')}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
               viewMode === 'html'
@@ -243,13 +247,13 @@ export function RichEditor({
         <EditorContent
           editor={editor}
           style={{ minHeight }}
-          className="px-4 py-3 cursor-text bg-white dark:bg-gray-900"
+          className="px-4 py-3 cursor-text bg-bg"
         />
       )}
 
       {viewMode === 'preview' && (
         <div
-          className="story-reader-preview px-6 py-5"
+          className="story-reader-preview px-6 py-5 bg-bg"
           style={{ minHeight }}
         >
           <div

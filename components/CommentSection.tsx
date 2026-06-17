@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store';
 import { createComment, updateComment, deleteComment, toggleCommentLike, createReport, createNotification } from '@/lib/supabase';
 import { Heart, Reply, Edit, Trash2, Flag, Send, X, MoreHorizontal } from 'lucide-react';
 import { RichEditor, RichContent } from '@/components/RichEditor';
+import { ConfirmDialog, PromptDialog } from '@/components/ConfirmDialog';
 
 interface Comment {
   id: string;
@@ -41,6 +42,10 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
   const [likedIds, setLikedIds] = useState<string[]>(likedCommentIds);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [commentToReport, setCommentToReport] = useState<string | null>(null);
 
   const topLevel = comments.filter(c => !c.parent_id);
   const getReplies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
@@ -85,12 +90,19 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
     } catch {}
   };
 
-  const handleDelete = async (commentId: string) => {
-    if (!confirm('Delete this comment?')) return;
+  const handleDelete = async () => {
+    if (!commentToDelete) return;
     try {
-      await deleteComment(commentId);
-      onCommentDeleted(commentId);
+      await deleteComment(commentToDelete);
+      onCommentDeleted(commentToDelete);
+      setCommentToDelete(null);
     } catch {}
+  };
+
+  const initiateDelete = (commentId: string) => {
+    setCommentToDelete(commentId);
+    setDeleteDialogOpen(true);
+    setMenuOpen(null);
   };
 
   const handleLike = async (commentId: string) => {
@@ -103,14 +115,17 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
     }
   };
 
-  const handleReport = async (commentId: string) => {
-    if (role === 'guest') return;
-    const reason = prompt('Why are you reporting this comment?');
-    if (!reason) return;
+  const handleReport = async (reason: string) => {
+    if (role === 'guest' || !commentToReport) return;
     try {
-      await createReport(user.id, reason, storyId, commentId);
-      alert('Report submitted. Thank you.');
+      await createReport(user.id, reason, storyId, commentToReport);
+      setCommentToReport(null);
     } catch {}
+  };
+
+  const initiateReport = (commentId: string) => {
+    setCommentToReport(commentId);
+    setReportDialogOpen(true);
     setMenuOpen(null);
   };
 
@@ -131,6 +146,12 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
   const renderComment = (comment: Comment, isReply = false) => {
     const isOwn = user?.id === comment.user_id;
     const isLiked = likedIds.includes(comment.id);
+    const wasOriginallyLiked = likedCommentIds.includes(comment.id);
+    
+    // Calculate optimistic likes count (show immediate UI feedback before server update)
+    const likesAdjustment = isLiked && !wasOriginallyLiked ? 1 : !isLiked && wasOriginallyLiked ? -1 : 0;
+    const displayLikesCount = (comment.likes_count || 0) + likesAdjustment;
+    
     const replies = getReplies(comment.id);
 
     return (
@@ -140,7 +161,7 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
             {comment.profiles?.avatar_url ? (
               <img src={comment.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-brand-muted dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
+              <div className="w-8 h-8 rounded-full bg-bg-input flex items-center justify-center text-xs font-bold text-gray-500">
                 {(comment.profiles?.full_name || comment.profiles?.username || 'U')[0].toUpperCase()}
               </div>
             )}
@@ -158,26 +179,24 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
                 />
                 <div className="flex gap-2">
                   <button onClick={() => handleEdit(comment.id)} className="px-3 py-1 text-xs rounded-full bg-accent text-white hover:opacity-90">Simpan</button>
-                  <button onClick={() => setEditId(null)} className="px-3 py-1 text-xs rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted">Batal</button>
+                  <button onClick={() => setEditId(null)} className="px-3 py-1 text-xs rounded-full border border-border hover:bg-bg-soft">Batal</button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="bg-brand-muted dark:bg-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-none">
+                <div className="bg-bg-input px-4 py-2.5 rounded-2xl rounded-tl-none">
                   <div className="flex items-center gap-2">
                     <Link href={`/profile/${comment.profiles?.username}`} className="text-xs font-bold hover:text-accent transition-colors">
                       {comment.profiles?.full_name || comment.profiles?.username}
                     </Link>
                     <span className="text-[10px] text-gray-400">{formatTime(comment.created_at)}</span>
                   </div>
-                  <RichContent html={comment.content} className="text-sm mt-1 text-gray-800 dark:text-gray-200" />
+                  <RichContent html={comment.content} className="text-sm mt-1 text-tx" />
                 </div>
                 <div className="flex items-center gap-4 mt-1.5 ml-2">
                   <button onClick={() => handleLike(comment.id)} className={`flex items-center gap-1 text-xs transition-colors ${isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}>
                     <Heart className={`h-3.5 w-3.5 ${isLiked ? 'fill-current' : ''}`} />
-                    {(comment.likes_count || 0) + (isLiked && !likedCommentIds.includes(comment.id) ? 1 : !isLiked && likedCommentIds.includes(comment.id) ? -1 : 0) > 0 && (
-                      <span>{(comment.likes_count || 0) + (isLiked && !likedCommentIds.includes(comment.id) ? 1 : !isLiked && likedCommentIds.includes(comment.id) ? -1 : 0)}</span>
-                    )}
+                    {displayLikesCount > 0 && <span>{displayLikesCount}</span>}
                   </button>
                   {role !== 'guest' && (
                     <button onClick={() => { setReplyTo(comment.id); setReplyText(''); }} className="flex items-center gap-1 text-xs text-gray-400 hover:text-accent transition-colors">
@@ -189,19 +208,19 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
                     {menuOpen === comment.id && (
-                      <div className="absolute left-0 mt-1 w-32 bg-brand-bg dark:bg-gray-800 rounded-lg shadow-xl border border-subtle dark:border-gray-700 py-1 z-10">
+                      <div className="absolute left-0 mt-1 w-32 bg-bg-card rounded-lg shadow-xl border border-border py-1 z-10">
                         {isOwn && (
                           <>
-                            <button onClick={() => { setEditId(comment.id); setEditText(comment.content); setMenuOpen(null); }} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left hover:bg-brand-muted dark:hover:bg-gray-700">
+                            <button onClick={() => { setEditId(comment.id); setEditText(comment.content); setMenuOpen(null); }} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left hover:bg-bg-soft">
                               <Edit className="h-3 w-3" /> Edit
                             </button>
-                            <button onClick={() => { handleDelete(comment.id); setMenuOpen(null); }} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left text-red-600 hover:bg-brand-muted dark:hover:bg-gray-700">
+                            <button onClick={() => initiateDelete(comment.id)} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left text-red-600 hover:bg-bg-soft">
                               <Trash2 className="h-3 w-3" /> Delete
                             </button>
                           </>
                         )}
                         {!isOwn && role !== 'guest' && (
-                          <button onClick={() => handleReport(comment.id)} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left text-yellow-600 hover:bg-brand-muted dark:hover:bg-gray-700">
+                          <button onClick={() => initiateReport(comment.id)} className="flex items-center gap-2 px-3 py-1.5 text-xs w-full text-left text-yellow-600 hover:bg-bg-soft">
                             <Flag className="h-3 w-3" /> Report
                           </button>
                         )}
@@ -263,7 +282,7 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-brand-muted dark:bg-gray-800 rounded-xl text-center">
+        <div className="p-4 bg-bg-input rounded-xl text-center">
           <p className="text-sm text-gray-500">
             <Link href="/login" className="text-accent hover:underline">Sign in</Link> to leave a comment.
           </p>
@@ -277,6 +296,30 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
           topLevel.map(c => renderComment(c))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+      />
+
+      {/* Report Dialog */}
+      <PromptDialog
+        isOpen={reportDialogOpen}
+        onClose={() => setReportDialogOpen(false)}
+        onConfirm={handleReport}
+        title="Report Comment"
+        message="Why are you reporting this comment?"
+        placeholder="Reason for reporting..."
+        confirmText="Submit Report"
+        cancelText="Cancel"
+      />
     </div>
   );
 }

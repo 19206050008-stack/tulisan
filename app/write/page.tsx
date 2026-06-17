@@ -8,6 +8,7 @@ import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-rea
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
 import { translations } from '@/lib/i18n';
+import { countWords, determineTier } from '@/lib/tier-utils';
 
 export default function WritePage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function WritePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [selectedTier, setSelectedTier] = useState('');
   const [tags, setTags] = useState('');
   const [content, setContent] = useState('');
   const [chapterTitle, setChapterTitle] = useState('Chapter 1');
@@ -43,7 +45,24 @@ export default function WritePage() {
     }
     setSaving(true);
     try {
-      const story = await createStory(user.id, title, description, category, tags.split(',').map(t => t.trim()).filter(Boolean));
+      // Prepare tags array and add tier if exists
+      let tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+      
+      let finalTier = selectedTier || null;
+      if (!finalTier) {
+        // Calculate tier from content if not manually selected
+        const wordCount = countWords(content);
+        finalTier = determineTier(wordCount);
+      }
+      
+      if (finalTier) {
+        // Remove old tier tags (if any)
+        tagsArray = tagsArray.filter(t => !['Pendek', 'Sedang', 'Panjang'].includes(t));
+        // Add new tier
+        tagsArray.push(finalTier);
+      }
+      
+      const story = await createStory(user.id, title, description, category, tagsArray);
 
       if (coverFile) {
         const coverUrl = await uploadCover(coverFile, story.id);
@@ -70,15 +89,6 @@ export default function WritePage() {
     }
   };
 
-  const insertFormatting = (prefix: string, suffix: string) => {
-    const textarea = document.getElementById('editor') as HTMLTextAreaElement;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = content.substring(start, end);
-    setContent(content.substring(0, start) + prefix + selected + suffix + content.substring(end));
-  };
-
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -89,7 +99,7 @@ export default function WritePage() {
           <button
             onClick={() => handleSave(false)}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-border hover:bg-bg-soft transition-colors disabled:opacity-50"
           >
             <Save className="h-4 w-4" /> {saving ? t.saving : t.saveDraft}
           </button>
@@ -110,21 +120,21 @@ export default function WritePage() {
             placeholder={t.titlePlaceholder}
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
           <textarea
             placeholder={t.descPlaceholder}
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
-            className="w-full text-sm bg-brand-muted dark:bg-gray-800 rounded-lg p-3 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent resize-none"
+            className="w-full text-sm bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:outline-none focus:border-accent resize-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <input
             type="text"
             placeholder={t.chapterTitle}
             value={chapterTitle}
             onChange={e => setChapterTitle(e.target.value)}
-            className="w-full text-lg font-medium bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            className="w-full text-lg font-medium bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
 
           <RichEditor
@@ -138,16 +148,16 @@ export default function WritePage() {
         </div>
 
         <div className="space-y-6">
-          <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <CoverUpload preview={coverPreview} onFileReady={handleCoverReady} title={title} category={category} description={description} tags={tags.split(',').map(t => t.trim()).filter(Boolean)} />
               </div>
 
-          <div className="space-y-3 p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <h3 className="font-semibold text-sm">Details</h3>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               <option value="">{t.selectCategory}</option>
               <option value="Romance">Romance</option>
@@ -160,12 +170,22 @@ export default function WritePage() {
               <option value="Adventure">Adventure</option>
               <option value="Fanfiction">Fanfiction</option>
             </select>
+            <select
+              value={selectedTier}
+              onChange={e => setSelectedTier(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
+            >
+              <option value="">Auto (Berdasarkan jumlah kata)</option>
+              <option value="Pendek">Pendek (0-700 kata)</option>
+              <option value="Sedang">Sedang (701-1.000 kata)</option>
+              <option value="Panjang">Panjang (&gt; 1.000 kata)</option>
+            </select>
             <input
               type="text"
               placeholder={t.tagsPlaceholder}
               value={tags}
               onChange={e => setTags(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
         </div>

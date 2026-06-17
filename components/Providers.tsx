@@ -1,19 +1,23 @@
 'use client';
 
-import { useStore } from '@/lib/store';
-import { useEffect } from 'react';
+import { ThemeProvider } from 'next-themes';
 
+/**
+ * next-themes handles semua dark mode:
+ * - Menyimpan preference ke localStorage (key: 'theme')
+ * - Apply class 'dark' ke <html>
+ * - No flash berkat script inline di <head>
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
-  const { darkMode } = useStore();
-
-  // Sync class `dark` ke <html> setiap kali darkMode berubah
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  return <>{children}</>;
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem={false}
+      disableTransitionOnChange={false}
+      storageKey="sv-theme"
+    >
+      {children}
+    </ThemeProvider>
+  );
 }

@@ -1,4 +1,4 @@
-# StoryVerse
+# Di.tulis
 
 Platform menulis dan membaca cerita berbasis web, dibangun dengan Next.js 15, Supabase, dan TipTap editor.
 

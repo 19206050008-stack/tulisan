@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAllSiteConfig, setSiteConfig } from '@/lib/supabase';
-import { Save, Settings, Globe, Key, Copy, Heart } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { getAllSiteConfig, setSiteConfig, supabase } from '@/lib/supabase';
+import { Save, Settings, Globe, Key, Copy, Heart, Upload, RotateCcw, Image as ImageIcon } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +13,8 @@ export default function AdminSettingsPage() {
   const [siteDescription, setSiteDescription] = useState('');
   const [siteTagline, setSiteTagline] = useState('');
   const [faviconUrl, setFaviconUrl] = useState('');
+  const [faviconUploading, setFaviconUploading] = useState(false);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
   const [allowRegistration, setAllowRegistration] = useState(true);
   const [allowComments, setAllowComments] = useState(true);
   const [maxStoriesPerUser, setMaxStoriesPerUser] = useState(50);
@@ -100,48 +102,155 @@ export default function AdminSettingsPage() {
       )}
 
       <div className="space-y-5">
-        <section className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h2 className="font-semibold">General</h2>
           <div className="space-y-2">
             <label className="text-sm font-medium">Site Name</label>
-            <input type="text" value={siteName} onChange={e => setSiteName(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+            <input type="text" value={siteName} onChange={e => setSiteName(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Description</label>
-            <textarea value={siteDescription} onChange={e => setSiteDescription(e.target.value)} rows={2} className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent resize-none" />
+            <textarea value={siteDescription} onChange={e => setSiteDescription(e.target.value)} rows={2} className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent resize-none" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Tagline</label>
-            <input type="text" value={siteTagline} onChange={e => setSiteTagline(e.target.value)} placeholder="Read & Write Stories" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+            <input type="text" value={siteTagline} onChange={e => setSiteTagline(e.target.value)} placeholder="Read & Write Stories" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
           </div>
         </section>
 
-        <section className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h2 className="font-semibold flex items-center gap-2"><Globe className="h-4 w-4" /> Branding</h2>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Favicon URL</label>
-            <input type="text" value={faviconUrl} onChange={e => setFaviconUrl(e.target.value)} placeholder="https://example.com/favicon.ico" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
-            <p className="text-xs text-gray-500">Enter URL to a .ico, .png, or .svg file. Recommended size: 32x32px or 64x64px.</p>
-          </div>
-          {faviconUrl && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500">Preview:</span>
-              <img src={faviconUrl} alt="Favicon preview" className="w-8 h-8 rounded border border-subtle" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+
+          {/* Favicon Upload & Preview */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Favicon</label>
+
+            <div className="flex items-start gap-4">
+              {/* Preview box */}
+              <div className="w-16 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-bg-input shrink-0 overflow-hidden">
+                {faviconUrl ? (
+                  <img
+                    src={faviconUrl}
+                    alt="Favicon preview"
+                    className="w-10 h-10 object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <img
+                    src="/favicon.png"
+                    alt="Default favicon"
+                    className="w-10 h-10 object-contain"
+                  />
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <p className="text-xs text-gray-500">
+                  {faviconUrl ? 'Custom favicon aktif.' : 'Menggunakan favicon default.'}
+                  {' '}Recommended: PNG/ICO 32x32 atau 64x64px.
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    onClick={() => faviconInputRef.current?.click()}
+                    disabled={faviconUploading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-bg-soft transition-colors disabled:opacity-50"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    {faviconUploading ? 'Uploading...' : 'Upload Image'}
+                  </button>
+
+                  {/* URL input toggle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = prompt('Enter favicon URL:', faviconUrl);
+                      if (url !== null) setFaviconUrl(url);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-bg-soft transition-colors"
+                  >
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    Set URL
+                  </button>
+
+                  {/* Reset to default */}
+                  {faviconUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFaviconUrl('')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Reset to Default
+                    </button>
+                  )}
+                </div>
+
+                {faviconUrl && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] text-gray-400 font-mono truncate max-w-xs">{faviconUrl}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+
+            {/* Hidden file input */}
+            <input
+              ref={faviconInputRef}
+              type="file"
+              accept="image/png,image/x-icon,image/svg+xml,image/jpeg"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                // Validate file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                  alert('File terlalu besar. Maksimal 2MB.');
+                  e.target.value = '';
+                  return;
+                }
+
+                setFaviconUploading(true);
+                try {
+                  if (!supabase) throw new Error('Supabase not configured');
+
+                  const ext = file.name.split('.').pop() || 'png';
+                  const path = `site/favicon.${ext}`;
+
+                  const { error } = await supabase.storage
+                    .from('covers')
+                    .upload(path, file, { upsert: true, cacheControl: '0' });
+
+                  if (error) throw error;
+
+                  const { data: urlData } = supabase.storage.from('covers').getPublicUrl(path);
+                  // Add cache-busting query param
+                  setFaviconUrl(urlData.publicUrl + '?t=' + Date.now());
+                } catch (err: any) {
+                  alert('Upload gagal: ' + err.message);
+                } finally {
+                  setFaviconUploading(false);
+                  e.target.value = '';
+                }
+              }}
+            />
+          </div>
         </section>
 
-        <section className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h2 className="font-semibold">Features</h2>
           <ToggleRow label="Allow Registration" desc="New users can create accounts" value={allowRegistration} onChange={setAllowRegistration} />
           <ToggleRow label="Allow Comments" desc="Users can comment on stories" value={allowComments} onChange={setAllowComments} />
           <div className="space-y-2">
             <label className="text-sm font-medium">Max Stories Per User</label>
-            <input type="number" value={maxStoriesPerUser} onChange={e => setMaxStoriesPerUser(parseInt(e.target.value) || 0)} className="w-24 px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+            <input type="number" value={maxStoriesPerUser} onChange={e => setMaxStoriesPerUser(parseInt(e.target.value) || 0)} className="w-24 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
           </div>
         </section>
 
-        <section className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h2 className="font-semibold flex items-center gap-2"><Heart className="h-4 w-4" /> Donation</h2>
           <ToggleRow label="Enable Donation" desc="Show donation button on story pages" value={donationEnabled} onChange={setDonationEnabled} />
           {donationEnabled && (
@@ -174,7 +283,7 @@ export default function AdminSettingsPage() {
           )}
         </section>
 
-        <section className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h2 className="font-semibold flex items-center gap-2"><Key className="h-4 w-4" /> SSO / OAuth Configuration</h2>
           <ToggleRow label="Enable SSO" desc="Allow users to sign in with third-party providers" value={ssoEnabled} onChange={setSsoEnabled} />
 
@@ -182,7 +291,7 @@ export default function AdminSettingsPage() {
             <>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Provider</label>
-                <select value={ssoProvider} onChange={e => setSsoProvider(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent">
+                <select value={ssoProvider} onChange={e => setSsoProvider(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg bg-bg-input text-tx border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx">
                   <option value="google">Google</option>
                   <option value="github">GitHub</option>
                   <option value="discord">Discord</option>
@@ -192,17 +301,17 @@ export default function AdminSettingsPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client ID</label>
-                <input type="text" value={ssoClientId} onChange={e => setSsoClientId(e.target.value)} placeholder="Your OAuth client ID" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent font-mono" />
+                <input type="text" value={ssoClientId} onChange={e => setSsoClientId(e.target.value)} placeholder="Your OAuth client ID" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent font-mono" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Client Secret</label>
-                <input type="password" value={ssoClientSecret} onChange={e => setSsoClientSecret(e.target.value)} placeholder="Your OAuth client secret" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent font-mono" />
+                <input type="password" value={ssoClientSecret} onChange={e => setSsoClientSecret(e.target.value)} placeholder="Your OAuth client secret" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent font-mono" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Callback URL</label>
                 <div className="flex gap-2">
-                  <input type="text" value={ssoCallbackUrl} onChange={e => setSsoCallbackUrl(e.target.value)} className="flex-1 px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent font-mono" readOnly />
-                  <button onClick={() => copyToClipboard(ssoCallbackUrl)} className="p-2 rounded-lg border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors" title="Copy">
+                  <input type="text" value={ssoCallbackUrl} onChange={e => setSsoCallbackUrl(e.target.value)} className="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent font-mono" readOnly />
+                  <button onClick={() => copyToClipboard(ssoCallbackUrl)} className="p-2 rounded-lg border border-border hover:bg-bg-soft transition-colors" title="Copy">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -243,7 +352,7 @@ function ToggleRow({ label, desc, value, onChange }: { label: string; desc: stri
         <p className="text-xs text-gray-500">{desc}</p>
       </div>
       <button onClick={() => onChange(!value)} className={`w-11 h-6 rounded-full transition-colors relative ${value ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}>
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-bg-card shadow transition-transform ${value ? 'translate-x-5' : ''}`} />
       </button>
     </div>
   );

@@ -54,8 +54,8 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="animate-pulse space-y-2">
-              <div className="aspect-[2/3] bg-brand-muted dark:bg-gray-800 rounded-lg" />
-              <div className="h-3 bg-brand-muted dark:bg-gray-800 rounded w-3/4" />
+              <div className="aspect-[2/3] bg-bg-input rounded-lg" />
+              <div className="h-3 bg-bg-input rounded w-3/4" />
             </div>
           ))}
         </div>
@@ -75,10 +75,10 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl md:text-2xl font-bold font-serif">{t.topStories}</h2>
               <div className="flex items-center gap-1">
-                <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft'}`}>
                   <LayoutGrid className="h-4 w-4" />
                 </button>
-                <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft'}`}>
                   <List className="h-4 w-4" />
                 </button>
               </div>
@@ -104,10 +104,10 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold font-serif">{activeCategory}</h2>
             <div className="flex items-center gap-1">
-              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+              <button onClick={() => setViewMode('grid')} className={`p-2 rounded ${viewMode === 'grid' ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft'}`}>
                 <LayoutGrid className="h-4 w-4" />
               </button>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-200 dark:bg-gray-700' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded ${viewMode === 'list' ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft'}`}>
                 <List className="h-4 w-4" />
               </button>
             </div>
@@ -135,18 +135,23 @@ export default function Home() {
 function StoryCard({ story, viewMode, formatCount }: { story: any; viewMode: string; formatCount: (n: number) => string }) {
   if (viewMode === 'list') {
     return (
-      <Link href={`/story/${story.id}`} className="group flex gap-4 p-3 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 hover:border-accent/30 transition-colors">
+      <Link href={`/story/${story.id}`} className="group flex gap-4 p-3 rounded-xl border border-border bg-bg-card hover:border-accent/30 transition-colors">
         <div className="w-16 h-22 md:w-20 md:h-28 rounded-lg overflow-hidden shrink-0">
           <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} />
         </div>
         <div className="flex-1 min-w-0 flex flex-col justify-center">
           <h3 className="font-semibold text-sm md:text-base group-hover:text-accent transition-colors line-clamp-1">{story.title}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{story.profiles?.full_name || 'Anonymous'}</p>
-          <p className="text-xs text-gray-400 mt-1 line-clamp-1 hidden sm:block">{story.description}</p>
-          <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400 font-medium">
+          <p className="text-xs text-tx-soft mt-0.5">{story.profiles?.full_name || 'Anonymous'}</p>
+          <p className="text-xs text-tx-muted mt-1 line-clamp-1 hidden sm:block">{story.description}</p>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] text-tx-muted font-medium">
             <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
             <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
-            <span className="px-1.5 py-0.5 rounded bg-brand-muted dark:bg-gray-700 text-gray-500">{story.category}</span>
+            <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
+            {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+              <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
+                {story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t))}
+              </span>
+            )}
           </div>
         </div>
       </Link>
@@ -155,15 +160,20 @@ function StoryCard({ story, viewMode, formatCount }: { story: any; viewMode: str
 
   return (
     <Link href={`/story/${story.id}`} className="group flex flex-col gap-2">
-      <div className="aspect-[2/3] rounded-lg overflow-hidden bg-brand-muted dark:bg-gray-800">
+      <div className="aspect-[2/3] rounded-lg overflow-hidden bg-bg-input">
         <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
       </div>
       <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>
-      <p className="text-xs text-gray-500 truncate">{story.profiles?.full_name || 'Anonymous'}</p>
-      <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium">
+      <p className="text-xs text-tx-soft truncate">{story.profiles?.full_name || 'Anonymous'}</p>
+      <div className="flex flex-wrap items-center gap-2 text-[10px] text-tx-muted font-medium">
         <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
         <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
-        <span className="px-1.5 py-0.5 rounded bg-brand-muted dark:bg-gray-700 text-gray-500">{story.category}</span>
+        <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
+        {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+          <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
+            {story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t))}
+          </span>
+        )}
       </div>
     </Link>
   );
@@ -175,7 +185,7 @@ function GenreSection({ genre, stories, formatCount }: { genre: string; stories:
 
   if (stories.length === 0) return null;
   return (
-    <section className="space-y-4 pt-4 border-t border-subtle dark:border-gray-800">
+    <section className="space-y-4 pt-4 border-t border-border">
       <div className="flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold font-serif">{genre}</h2>
         <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-xs font-medium text-gray-500 hover:text-accent flex items-center">{t.seeAll} <ChevronRight className="h-3 w-3" /></Link>

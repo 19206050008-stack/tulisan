@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Upload, AlertTriangle, Check, Info, Wand2, Sparkles, Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Upload, AlertTriangle, Check, Info, Wand2 } from 'lucide-react';
 
 const COVER_WIDTH = 600;
 const COVER_HEIGHT = 900;
@@ -25,38 +25,6 @@ const GENRE_COLORS: Record<string, string[][]> = {
   'Inspirational': [['#ffc107','#ff9800'],['#f57c00','#ff6f00']],
 };
 
-// Tema visual per genre — dipakai untuk membangun prompt otomatis
-const GENRE_VISUALS: Record<string, string> = {
-  'Romance':       'suasana romantis, cahaya senja keemasan, dua siluet, kelopak mawar, warna pastel hangat, suasana intim',
-  'Horror':        'atmosfer gelap mencekam, kabut tebal, bayangan misterius, arsitektur gothic, cahaya lilin redup, langit muram',
-  'Mystery':       'suasana noir, jalan basah hujan, sosok bayangan, lorong gelap, kabut misterius, tanda tanya tersembunyi',
-  'Sci-Fi':        'kota futuristik, nebula luar angkasa, teknologi neon bercahaya, pesawat antariksa, lanskap alien, cyberpunk',
-  'Fantasy':       'hutan ajaib, rune bercahaya, kastil megah, siluet naga, sinar cahaya sihir, makhluk mistis',
-  'Drama':         'adegan emosional close-up, pencahayaan sinematik, bayangan dalam, emosi manusia yang kuat, latar kota',
-  'Humor':         'warna cerah menyenangkan, elemen kartun lucu, karakter ekspresi komedi, suasana ringan',
-  'Adventure':     'lanskap luas, puncak gunung, siluet penjelajah, peta harta karun, hutan belantara, aksi dramatis',
-  'Thriller':      'ketegangan tinggi, bahaya kota malam, sosok pengintai, aksen warna merah, setting malam mencurigakan',
-  'Teen Fiction':  'energi muda, koridor sekolah, persahabatan, warna cerah, kehidupan remaja relatable',
-  'Slice of Life': 'suasana kafe nyaman, daun musim gugur, lingkungan tenang, cahaya pagi yang lembut, kehidupan sehari-hari',
-  'Historical':    'arsitektur bersejarah, warna sepia vintage, reruntuhan kuno, kostum masa lampau, suasana era klasik',
-  'Inspirational': 'matahari terbit di atas gunung, sinar cahaya, warna membangkitkan semangat, sosok berdiri di puncak',
-  'Fanfiction':    'siluet karakter ikonik, seni bertema fandom, komposisi dinamis, warna vibrant',
-};
-
-const STYLE_LABELS: Record<string, string> = {
-  realistic:    'Realistis',
-  illustration: 'Ilustrasi',
-  anime:        'Anime',
-  fantasy:      'Fantasi',
-};
-
-const STYLE_MODIFIERS: Record<string, string> = {
-  realistic:    'photorealistic, hyperdetailed, 8k, cinematic photography, professional lighting, depth of field',
-  illustration: 'detailed digital painting, concept art, vibrant palette, clean sharp lines',
-  anime:        'anime key visual, cel shading, clean linework, vivid saturated colors',
-  fantasy:      'epic fantasy art, oil painting, dramatic lighting, intricate details, luminous',
-};
-
 interface CoverUploadProps {
   preview: string;
   onFileReady: (file: File) => void;
@@ -66,68 +34,12 @@ interface CoverUploadProps {
   tags?: string[];
 }
 
-export function CoverUpload({ preview, onFileReady, title, category, description, tags }: CoverUploadProps) {
+export function CoverUpload({ preview, onFileReady, title, category }: CoverUploadProps) {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [aiGenerating, setAiGenerating] = useState(false);
-  const [showAiPanel, setShowAiPanel] = useState(false);
-  const [aiStyle, setAiStyle] = useState<'realistic' | 'illustration' | 'anime' | 'fantasy'>('illustration');
-
-  // Form fields (Bahasa Indonesia)
-  const [fieldJudul, setFieldJudul]       = useState('');
-  const [fieldSuasana, setFieldSuasana]   = useState('');
-  const [fieldTokoh, setFieldTokoh]       = useState('');
-  const [fieldLatar, setFieldLatar]       = useState('');
-  const [fieldWarna, setFieldWarna]       = useState('');
-  const [promptPreview, setPromptPreview] = useState('');
-  const [promptGenerated, setPromptGenerated] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // ── Bangun prompt dari form fields ──────────────────────────────────────
-  const buildPromptFromForm = () => {
-    const judulFinal   = fieldJudul.trim()   || title?.trim()    || '';
-    const genre        = category || '';
-    const genreVisual  = GENRE_VISUALS[genre] || 'adegan dramatis, komposisi sinematik';
-    const descSnippet  = description?.trim().substring(0, 100) || '';
-    const tagList      = tags?.filter(Boolean).join(', ') || '';
-
-    const parts: string[] = [];
-
-    // Judul & genre
-    if (judulFinal) parts.push(`sampul buku untuk cerita berjudul "${judulFinal}"`);
-    if (genre) parts.push(`genre ${genre}`);
-
-    // Visual genre otomatis
-    parts.push(genreVisual);
-
-    // Suasana
-    if (fieldSuasana.trim()) parts.push(`suasana: ${fieldSuasana.trim()}`);
-
-    // Tokoh
-    if (fieldTokoh.trim()) parts.push(`tokoh utama: ${fieldTokoh.trim()}`);
-
-    // Latar
-    if (fieldLatar.trim()) parts.push(`latar tempat: ${fieldLatar.trim()}`);
-
-    // Warna
-    if (fieldWarna.trim()) parts.push(`palet warna: ${fieldWarna.trim()}`);
-
-    // Dari deskripsi cerita
-    if (descSnippet) parts.push(`terinspirasi dari: ${descSnippet}`);
-
-    // Tags
-    if (tagList) parts.push(`tema: ${tagList}`);
-
-    return parts.join(', ');
-  };
-
-  const handleGeneratePrompt = () => {
-    const prompt = buildPromptFromForm();
-    setPromptPreview(prompt);
-    setPromptGenerated(true);
-  };
 
   // ── Crop & resize canvas ─────────────────────────────────────────────────
   const cropAndResize = (img: HTMLImageElement): Promise<File> => {
@@ -254,229 +166,14 @@ export function CoverUpload({ preview, onFileReady, title, category, description
     }, 'image/png');
   };
 
-  // ── Generate cover AI ────────────────────────────────────────────────────
-  const generateCoverAI = async () => {
-    const hasData = title?.trim() || fieldJudul.trim() || promptPreview.trim();
-    if (!hasData) {
-      setError('Isi judul atau gunakan tombol "Buat Prompt Otomatis" terlebih dahulu.');
-      return;
-    }
-
-    setError(''); setInfo(''); setAiGenerating(true);
-
-    try {
-      // Gunakan promptPreview jika sudah di-generate, atau build langsung
-      let basePrompt = promptPreview.trim() || buildPromptFromForm();
-      
-      // Truncate prompt yang terlalu panjang (max 200 chars untuk base prompt)
-      if (basePrompt.length > 200) {
-        basePrompt = basePrompt.substring(0, 200).trim() + '...';
-      }
-
-      const styleText = STYLE_MODIFIERS[aiStyle];
-      const seed = Math.floor(Math.random() * 999999);
-
-      // Simplified prompt untuk avoid URL terlalu panjang
-      const finalPrompt = [
-        'professional book cover illustration',
-        basePrompt,
-        styleText,
-        'portrait 2:3 ratio, no text, clean composition',
-      ].filter(Boolean).join(', ');
-
-      console.log('[AI COVER] Prompt length:', finalPrompt.length, 'chars');
-      console.log('[AI COVER] Prompt:', finalPrompt.substring(0, 100) + '...');
-
-      // Test with super simple URL first
-      const simplePrompt = 'book cover art';
-      const testUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(simplePrompt)}`;
-      
-      console.log('[AI COVER] Testing simple URL first:', testUrl);
-      
-      const testResponse = await fetch(testUrl);
-      console.log('[AI COVER] Test response status:', testResponse.status);
-      
-      if (!testResponse.ok) {
-        throw new Error(`Pollinations.ai tidak bisa diakses (${testResponse.status}). Coba lagi nanti atau upload cover manual.`);
-      }
-
-      const encodedPrompt = encodeURIComponent(finalPrompt);
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=600&height=900&seed=${seed}&nologo=true`;
-
-      console.log('[AI COVER] URL length:', imageUrl.length, 'chars');
-      console.log('[AI COVER] Fetching full prompt from Pollinations.ai...');
-
-      const response = await fetch(imageUrl);
-
-      if (!response.ok) {
-        const errText = await response.text().catch(() => '');
-        throw new Error(`Gagal generate gambar (${response.status})${errText ? ': ' + errText : ''}`);
-      }
-
-      const blob = await response.blob();
-      if (!blob.type.startsWith('image/')) throw new Error('Format gambar tidak valid dari server');
-
-      const img = new Image();
-      img.onload = async () => {
-        const croppedFile = await cropAndResize(img);
-        onFileReady(croppedFile);
-        setInfo('Cover AI berhasil di-generate!');
-        setAiGenerating(false);
-      };
-      img.onerror = () => { setError('Gagal memuat gambar yang di-generate.'); setAiGenerating(false); };
-      img.src = URL.createObjectURL(blob);
-    } catch (err: any) {
-      setError(err.message || 'Gagal generate cover AI. Coba lagi.');
-      setAiGenerating(false);
-    }
-  };
-
-  // ── Panel AI settings (shared antara ada preview / tidak) ────────────────
-  const renderAiPanel = () => (
-    <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 space-y-3">
-      <p className="text-[11px] text-purple-600 dark:text-purple-400 font-medium">
-        Isi detail cerita agar gambar yang di-generate lebih akurat dan sesuai.
-      </p>
-
-      {/* Judul */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-          Judul Cerita
-        </label>
-        <input
-          type="text"
-          value={fieldJudul || title || ''}
-          onChange={(e) => setFieldJudul(e.target.value)}
-          placeholder={title || 'Contoh: Sang Penjaga Waktu'}
-          className="w-full px-3 py-2 text-xs border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Suasana */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-          Suasana / Mood
-        </label>
-        <input
-          type="text"
-          value={fieldSuasana}
-          onChange={(e) => setFieldSuasana(e.target.value)}
-          placeholder="Contoh: gelap dan mencekam, atau hangat dan romantis"
-          className="w-full px-3 py-2 text-xs border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Tokoh */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-          Tokoh Utama <span className="text-purple-400">(opsional)</span>
-        </label>
-        <input
-          type="text"
-          value={fieldTokoh}
-          onChange={(e) => setFieldTokoh(e.target.value)}
-          placeholder="Contoh: gadis berambut merah, pria berbaju zirah"
-          className="w-full px-3 py-2 text-xs border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Latar */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-          Latar Tempat <span className="text-purple-400">(opsional)</span>
-        </label>
-        <input
-          type="text"
-          value={fieldLatar}
-          onChange={(e) => setFieldLatar(e.target.value)}
-          placeholder="Contoh: kastil tua, kota Tokyo malam hari"
-          className="w-full px-3 py-2 text-xs border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Warna */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-          Palet Warna <span className="text-purple-400">(opsional)</span>
-        </label>
-        <input
-          type="text"
-          value={fieldWarna}
-          onChange={(e) => setFieldWarna(e.target.value)}
-          placeholder="Contoh: hitam dan ungu, merah dan emas"
-          className="w-full px-3 py-2 text-xs border border-purple-200 dark:border-purple-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Tombol buat prompt otomatis */}
-      <button
-        onClick={handleGeneratePrompt}
-        className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-white dark:bg-gray-800 border border-purple-400 text-purple-700 dark:text-purple-300 text-xs font-medium hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
-      >
-        <RefreshCw className="h-3.5 w-3.5" /> Buat Prompt Otomatis dari Data di Atas
-      </button>
-
-      {/* Preview prompt */}
-      {promptGenerated && promptPreview && (
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-purple-700 dark:text-purple-300">
-            Preview Prompt (bisa diedit)
-          </label>
-          <textarea
-            value={promptPreview}
-            onChange={(e) => setPromptPreview(e.target.value)}
-            rows={4}
-            className="w-full px-3 py-2 text-xs border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none leading-relaxed"
-          />
-          <p className="text-[10px] text-purple-500">Prompt ini yang akan dikirim ke AI. Kamu bisa edit sesuai kebutuhan.</p>
-        </div>
-      )}
-
-      {/* Style */}
-      <div>
-        <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-2">Gaya Gambar</label>
-        <div className="grid grid-cols-4 gap-1.5">
-          {(['realistic', 'illustration', 'anime', 'fantasy'] as const).map((style) => (
-            <button
-              key={style}
-              onClick={() => setAiStyle(style)}
-              className={`py-1.5 px-1 text-[10px] rounded-md transition-colors ${
-                aiStyle === style
-                  ? 'bg-purple-600 text-white font-medium'
-                  : 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60'
-              }`}
-            >
-              {STYLE_LABELS[style]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tombol generate */}
-      <button
-        onClick={generateCoverAI}
-        disabled={aiGenerating}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium hover:opacity-90 disabled:opacity-50 transition-all"
-      >
-        {aiGenerating ? (
-          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sedang Generate...</>
-        ) : (
-          <><Sparkles className="h-3.5 w-3.5" /> Generate Cover AI</>
-        )}
-      </button>
-
-
-    </div>
-  );
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm">Cover Image</h3>
         <div className="group relative">
           <Info className="h-4 w-4 text-gray-400 cursor-help" />
-          <div className="absolute right-0 top-6 w-52 p-3 bg-brand-bg dark:bg-gray-800 border border-subtle dark:border-gray-700 rounded-lg shadow-xl text-xs text-gray-600 dark:text-gray-400 invisible group-hover:visible z-10 space-y-1">
-            <p className="font-medium text-brand-text dark:text-gray-200">Ukuran:</p>
+          <div className="absolute right-0 top-6 w-52 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl text-xs text-gray-600 dark:text-gray-400 invisible group-hover:visible z-10 space-y-1">
+            <p className="font-medium text-gray-900 dark:text-gray-100">Ukuran:</p>
             <p>600 x 900 px (rasio 2:3)</p>
             <p>Min: 400 x 600 px</p>
             <p>Max file: 5MB</p>
@@ -485,7 +182,9 @@ export function CoverUpload({ preview, onFileReady, title, category, description
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-500">600x900px (2:3). Upload atau generate otomatis.</p>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400">
+        Upload cover dari Canva atau generate sederhana dari judul. Ukuran: 600x900px (2:3)
+      </p>
 
       {preview ? (
         <div className="space-y-2">
@@ -493,8 +192,8 @@ export function CoverUpload({ preview, onFileReady, title, category, description
           <div className="relative">
             <img src={preview} alt="Cover" className="w-full aspect-[2/3] object-cover rounded-lg" />
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded-lg flex-wrap p-4">
-              <label className="px-3 py-1.5 bg-white text-gray-900 text-xs font-medium rounded-full cursor-pointer hover:bg-gray-100">
-                Upload
+              <label className="px-3 py-1.5 bg-white text-gray-900 text-xs font-medium rounded-full cursor-pointer hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
+                Upload Baru
                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
               </label>
               <button
@@ -503,26 +202,8 @@ export function CoverUpload({ preview, onFileReady, title, category, description
               >
                 Regenerate
               </button>
-              <button
-                onClick={() => setShowAiPanel(!showAiPanel)}
-                className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium rounded-full hover:opacity-90 flex items-center gap-1"
-              >
-                <Sparkles className="h-3 w-3" /> AI Generate
-              </button>
             </div>
           </div>
-
-          {/* Toggle button AI panel saat preview ada */}
-          <button
-            onClick={() => setShowAiPanel(!showAiPanel)}
-            className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-400 text-xs hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-          >
-            <Sparkles className="h-3 w-3" />
-            {showAiPanel ? 'Tutup Panel AI' : 'Generate Ulang dengan AI'}
-            {showAiPanel ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-
-          {showAiPanel && renderAiPanel()}
         </div>
       ) : (
         <div className="space-y-2">
@@ -533,7 +214,7 @@ export function CoverUpload({ preview, onFileReady, title, category, description
             ) : (
               <>
                 <Upload className="h-7 w-7 text-gray-400" />
-                <span className="text-xs text-gray-500 mt-2">Upload Cover</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">Upload Cover dari Canva</span>
                 <span className="text-[10px] text-gray-400">600x900px (2:3)</span>
               </>
             )}
@@ -546,20 +227,12 @@ export function CoverUpload({ preview, onFileReady, title, category, description
             disabled={processing}
             className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent text-accent text-xs font-medium hover:bg-accent/10 transition-colors disabled:opacity-50"
           >
-            <Wand2 className="h-3.5 w-3.5" /> Generate dari Judul
+            <Wand2 className="h-3.5 w-3.5" /> Generate Sederhana dari Judul
           </button>
 
-          {/* Toggle AI panel */}
-          <button
-            onClick={() => setShowAiPanel(!showAiPanel)}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-medium hover:opacity-90 transition-colors"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Generate dengan AI
-            {showAiPanel ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-
-          {showAiPanel && renderAiPanel()}
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
+            Buat cover di Canva lalu upload, atau generate sederhana menggunakan judul + gradient warna
+          </p>
         </div>
       )}
 

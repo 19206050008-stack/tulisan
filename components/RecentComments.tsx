@@ -50,7 +50,7 @@ export function RecentComments() {
   };
 
   if (loading) {
-    return <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-brand-muted dark:bg-gray-800 rounded-xl" />)}</div>;
+    return <div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-bg-input rounded-xl" />)}</div>;
   }
 
   if (comments.length === 0) return null;
@@ -62,18 +62,18 @@ export function RecentComments() {
       </h2>
       <div className="space-y-3">
         {comments.map(c => (
-          <Link href={`/story/${c.stories?.id || c.story_id}`} key={c.id} className="flex gap-3 p-3 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 hover:border-accent/30 transition-colors group">
+          <Link href={`/story/${c.stories?.id || c.story_id}`} key={c.id} className="flex gap-3 p-3 rounded-xl border border-border bg-bg-card hover:border-accent/30 transition-colors group">
             {c.profiles?.avatar_url ? (
               <img src={c.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-brand-muted dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
+              <div className="w-8 h-8 rounded-full bg-bg-input flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
                 {(c.profiles?.full_name || c.profiles?.username || 'U')[0].toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm line-clamp-1 text-gray-800 dark:text-gray-200">{c.content}</p>
+              <p className="text-sm line-clamp-1 text-tx">{c.content}</p>
               <p className="text-xs text-gray-500 mt-1">
-                <span className="font-medium text-gray-700 dark:text-gray-300">{c.profiles?.full_name || c.profiles?.username}</span>
+                <span className="font-medium text-tx-soft">{c.profiles?.full_name || c.profiles?.username}</span>
                 {c.stories?.title && <> on <span className="text-accent group-hover:underline">{c.stories.title}</span></>}
                 <span className="ml-2">{formatTime(c.created_at)}</span>
               </p>

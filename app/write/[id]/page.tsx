@@ -8,6 +8,8 @@ import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
 import { translations } from '@/lib/i18n';
+import { countWords, determineTier } from '@/lib/tier-utils';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 export default function WriteEditorPage() {
   const { id } = useParams();
@@ -17,6 +19,7 @@ export default function WriteEditorPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [selectedTier, setSelectedTier] = useState('');
   const [tags, setTags] = useState('');
   const [coverUrl, setCoverUrl] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -31,6 +34,8 @@ export default function WriteEditorPage() {
   const [storyId, setStoryId] = useState<string | null>(id as string || null);
   // Key untuk force remount RichEditor saat chapter berganti
   const [editorKey, setEditorKey] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [chapterToDelete, setChapterToDelete] = useState<{ id: string; index: number } | null>(null);
 
   useEffect(() => {
     if (!_hasHydrated) return; // Wait for store hydration
@@ -50,7 +55,14 @@ export default function WriteEditorPage() {
       setTitle(story.title);
       setDescription(story.description || '');
       setCategory(story.category || '');
-      setTags(story.tags?.join(', ') || '');
+      
+      const tierTags = ['Pendek', 'Sedang', 'Panjang'];
+      const foundTier = story.tags?.find((t: string) => tierTags.includes(t));
+      if (foundTier) setSelectedTier(foundTier);
+      
+      const restTags = story.tags?.filter((t: string) => !tierTags.includes(t)) || [];
+      setTags(restTags.join(', '));
+      
       setCoverUrl(story.cover_url || '');
       setCoverPreview(story.cover_url || '');
       setStatus(story.status);
@@ -137,8 +149,39 @@ export default function WriteEditorPage() {
       let currentStoryId = storyId;
       let finalCoverUrl = coverUrl;
 
+      // Save chapter first (if there's content)
+      if (currentStoryId && (chapterTitle || chapterContent)) {
+        if (chapters[activeChapter]) {
+          await updateChapter(chapters[activeChapter].id, {
+            title: chapterTitle,
+            content: chapterContent,
+            status: publishStatus === 'published' ? 'published' : 'draft'
+          });
+        } else {
+          const ch = await createChapter(currentStoryId, chapterTitle || 'Untitled Chapter', chapterContent, chapters.length + 1);
+          setChapters([...chapters, ch]);
+        }
+      }
+
+      // Use selected tier, or calculate tier from all chapters if not selected
+      let finalTier = selectedTier || null;
+      if (!finalTier && currentStoryId) {
+        const allChapters = await getChapters(currentStoryId);
+        const totalWords = allChapters.reduce((sum, ch) => sum + countWords(ch.content || ''), 0);
+        finalTier = determineTier(totalWords);
+      }
+      
+      // Prepare tags array and add tier if exists
+      let tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (finalTier) {
+        // Remove old tier tags
+        tagsArray = tagsArray.filter(t => !['Pendek', 'Sedang', 'Panjang'].includes(t));
+        // Add new tier
+        tagsArray.push(finalTier);
+      }
+
       if (!currentStoryId) {
-        const story = await createStory(user.id, title, description, category, tags.split(',').map(t => t.trim()).filter(Boolean));
+        const story = await createStory(user.id, title, description, category, tagsArray);
         currentStoryId = story.id;
         setStoryId(story.id);
       } else {
@@ -146,7 +189,7 @@ export default function WriteEditorPage() {
           title,
           description,
           category,
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+          tags: tagsArray,
           status: publishStatus || status
         });
       }
@@ -161,19 +204,6 @@ export default function WriteEditorPage() {
       if (publishStatus) {
         await updateStory(currentStoryId!, { status: publishStatus });
         setStatus(publishStatus);
-      }
-
-      if (chapterTitle || chapterContent) {
-        if (chapters[activeChapter]) {
-          await updateChapter(chapters[activeChapter].id, {
-            title: chapterTitle,
-            content: chapterContent,
-            status: publishStatus === 'published' ? 'published' : 'draft'
-          });
-        } else {
-          const ch = await createChapter(currentStoryId!, chapterTitle || 'Untitled Chapter', chapterContent, chapters.length + 1);
-          setChapters([...chapters, ch]);
-        }
       }
 
       if (!id && currentStoryId) {
@@ -201,28 +231,45 @@ export default function WriteEditorPage() {
     setEditorKey(k => k + 1);
   };
 
-  const handleDeleteChapter = async (chapterId: string, index: number) => {
-    if (!confirm(t.deleteChapterConfirm)) return;
-    await deleteChapter(chapterId);
-    const updated = chapters.filter((_, i) => i !== index);
-    setChapters(updated);
-    if (updated.length > 0) {
-      selectChapter(0);
-    } else {
-      setChapterTitle('');
-      setChapterContent('');
-      setActiveChapter(0);
+  const handleDeleteChapter = async () => {
+    if (!chapterToDelete) return;
+    
+    try {
+      // Delete the chapter from database
+      await deleteChapter(chapterToDelete.id);
+      
+      // Remove from local array
+      const updated = chapters.filter((_, i) => i !== chapterToDelete.index);
+      
+      // 🔧 FIX: Re-number all chapters sequentially to avoid gaps
+      for (let i = 0; i < updated.length; i++) {
+        const expectedChapterNumber = i + 1;
+        if (updated[i].chapter_number !== expectedChapterNumber) {
+          await updateChapter(updated[i].id, { chapter_number: expectedChapterNumber });
+          updated[i].chapter_number = expectedChapterNumber;
+        }
+      }
+      
+      setChapters(updated);
+      
+      if (updated.length > 0) {
+        selectChapter(0);
+      } else {
+        setChapterTitle('');
+        setChapterContent('');
+        setActiveChapter(0);
+      }
+      
+      setChapterToDelete(null);
+      setDeleteDialogOpen(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete chapter');
     }
   };
 
-  const insertFormatting = (prefix: string, suffix: string) => {
-    const textarea = document.getElementById('chapter-editor') as HTMLTextAreaElement;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = chapterContent.substring(start, end);
-    const newContent = chapterContent.substring(0, start) + prefix + selected + suffix + chapterContent.substring(end);
-    setChapterContent(newContent);
+  const initiateDeleteChapter = (chapterId: string, index: number) => {
+    setChapterToDelete({ id: chapterId, index });
+    setDeleteDialogOpen(true);
   };
 
   if (loading) {
@@ -239,7 +286,7 @@ export default function WriteEditorPage() {
           <button
             onClick={() => saveStory('draft')}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-border hover:bg-bg-soft transition-colors disabled:opacity-50"
           >
             <Save className="h-4 w-4" /> {saving ? t.saving : t.saveDraft}
           </button>
@@ -260,14 +307,14 @@ export default function WriteEditorPage() {
             placeholder={t.titlePlaceholder}
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600"
+            className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
           <textarea
             placeholder={t.descPlaceholder}
             value={description}
             onChange={e => setDescription(e.target.value)}
-            rows={3}
-            className="w-full text-sm bg-brand-muted dark:bg-gray-800 rounded-lg p-3 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent resize-none"
+            rows={2}
+            className="w-full text-sm bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:outline-none focus:border-accent resize-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
 
           {!loading && (
@@ -284,16 +331,16 @@ export default function WriteEditorPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <CoverUpload preview={coverPreview} onFileReady={handleCoverReady} title={title} category={category} description={description} tags={tags.split(',').map(t => t.trim()).filter(Boolean)} />
           </div>
 
-          <div className="space-y-3 p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <h3 className="font-semibold text-sm">Details</h3>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               <option value="">{t.selectCategory}</option>
               <option value="Romance">Romance</option>
@@ -306,32 +353,42 @@ export default function WriteEditorPage() {
               <option value="Adventure">Adventure</option>
               <option value="Fanfiction">Fanfiction</option>
             </select>
+            <select
+              value={selectedTier}
+              onChange={e => setSelectedTier(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
+            >
+              <option value="">Auto (Berdasarkan jumlah kata)</option>
+              <option value="Pendek">Pendek (0-700 kata)</option>
+              <option value="Sedang">Sedang (701-1.000 kata)</option>
+              <option value="Panjang">Panjang (&gt; 1.000 kata)</option>
+            </select>
             <input
               type="text"
               placeholder={t.tagsPlaceholder}
               value={tags}
               onChange={e => setTags(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
 
-          <div className="space-y-3 p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">{t.chapters}</h3>
-              <button onClick={addNewChapter} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={addNewChapter} className="p-1 rounded hover:bg-bg-soft transition-colors">
                 <Plus className="h-4 w-4" />
               </button>
             </div>
             <div className="space-y-1 max-h-60 overflow-y-auto">
               {chapters.map((ch, i) => (
-                <div key={ch.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${i === activeChapter ? 'bg-accent/10 text-accent' : 'hover:bg-brand-muted dark:hover:bg-gray-700'}`}>
-                  <span onClick={() => selectChapter(i)} className="flex-1 truncate">{ch.title || `Chapter ${i + 1}`}</span>
-                  <button onClick={() => handleDeleteChapter(ch.id, i)} className="p-1 hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
+                <div key={ch.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${i === activeChapter ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                  <span onClick={() => selectChapter(i)} className="flex-1 truncate">{ch.title || `Chapter ${ch.chapter_number || i + 1}`}</span>
+                  <button onClick={() => initiateDeleteChapter(ch.id, i)} className="p-1 hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
                 </div>
               ))}
               <div
                 onClick={() => setActiveChapter(chapters.length)}
-                className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${activeChapter === chapters.length && chapters.length > 0 ? 'bg-accent/10 text-accent' : activeChapter === chapters.length ? 'bg-accent/10 text-accent' : 'hover:bg-brand-muted dark:hover:bg-gray-700'}`}
+                className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${activeChapter === chapters.length ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 {t.newChapter}
               </div>
@@ -341,11 +398,23 @@ export default function WriteEditorPage() {
               placeholder={t.chapterTitle}
               value={chapterTitle}
               onChange={e => setChapterTitle(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent"
+              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
         </div>
       </div>
+
+      {/* Delete Chapter Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleDeleteChapter}
+        title={t.deleteChapterConfirm || 'Delete Chapter'}
+        message="Are you sure you want to delete this chapter? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+      />
     </div>
   );
 }

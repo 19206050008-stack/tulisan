@@ -9,7 +9,7 @@ export const supabase = (supabaseUrl.startsWith('http') && supabaseKey && supaba
 
 export const isSupabaseConfigured = () => supabase !== null;
 
-export async function signUp(email: string, password: string, username: string, fullName: string) {
+export async function signUp(email: string, password: string, username: string, fullName: string, interest?: string) {
   if (!supabase) throw new Error('Supabase not configured');
   
   const { data, error } = await supabase.auth.signUp({
@@ -26,9 +26,17 @@ export async function signUp(email: string, password: string, username: string, 
       id: data.user.id,
       username,
       full_name: fullName,
-      role: 'user'
+      role: 'user',
+      interest: interest || 'both'
     });
-    if (profileError) throw profileError;
+    
+    // CRITICAL FIX: If profile creation fails, we should attempt to clean up the auth user
+    if (profileError) {
+      // Note: Supabase doesn't provide easy way to delete auth user from client
+      // In production, you should handle this via a database trigger or cloud function
+      console.error('Profile creation failed after auth signup:', profileError);
+      throw new Error('Registration failed. Please try again or contact support if the issue persists.');
+    }
   }
 
   return data;
@@ -394,7 +402,23 @@ export async function createNotification(userId: string, type: string, actorId: 
 // Site Config
 export async function getSiteConfig(key: string) {
   if (!supabase) return null;
-  const { data } = await supabase.from('site_config').select('value').eq('key', key).single();
+  const { data } = await supabase.from('site_config').select('value').eq('key', key).maybeSingle();
+  return data?.value || null;
+}
+
+/**
+ * Fetch site_config value based on language.
+ * For 'en', tries `${key}_en` first, falls back to `${key}`.
+ * For 'id' (default), uses `${key}` directly.
+ */
+export async function getSiteConfigLocalized(key: string, lang: string) {
+  if (!supabase) return null;
+  if (lang === 'en') {
+    const { data: enData } = await supabase.from('site_config').select('value').eq('key', `${key}_en`).maybeSingle();
+    if (enData?.value) return enData.value;
+    // Fallback to default (Indonesian) if English not available
+  }
+  const { data } = await supabase.from('site_config').select('value').eq('key', key).maybeSingle();
   return data?.value || null;
 }
 
@@ -532,4 +556,578 @@ export async function getAdminStats() {
     comments: commentsRes.count || 0,
     reads: totalReads
   };
+}
+
+// Avatar & Frame System
+export async function getAvatarOptions() {
+  if (!supabase) return [];
+  const { data } = await supabase.from('avatar_options').select('*').eq('is_active', true).order('category').order('sort_order', { ascending: true });
+  return data || [];
+}
+
+export async function getProfileFrames() {
+  if (!supabase) return [];
+  const { data } = await supabase.from('profile_frames').select('*').eq('is_active', true).order('sort_order', { ascending: true });
+  return data || [];
+}
+
+// Chat System
+export async function getConversations(userId: string) {
+  if (!supabase) return [];
+
+  // Step 1: Get all conversation IDs the user is in
+  const { data: myParts, error: partsErr } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', userId);
+
+  if (partsErr) {
+    console.error('getConversations: failed to fetch participants:', partsErr.message);
+    return [];
+  }
+  if (!myParts || myParts.length === 0) return [];
+
+  const convoIds = myParts.map(p => p.conversation_id);
+
+  // Step 2: Get ALL participants for these conversations (batch)
+  const { data: allParts } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id, user_id')
+    .in('conversation_id', convoIds);
+
+  // Build a map: conversation_id -> [user_ids]
+  const partsMap: Record<string, string[]> = {};
+  for (const p of (allParts || [])) {
+    if (!partsMap[p.conversation_id]) partsMap[p.conversation_id] = [];
+    partsMap[p.conversation_id].push(p.user_id);
+  }
+
+  // Step 3: Collect all "other" user IDs
+  const otherUserIds = new Set<string>();
+  for (const convoId of convoIds) {
+    const users = partsMap[convoId] || [];
+    for (const uid of users) {
+      if (uid !== userId) otherUserIds.add(uid);
+    }
+  }
+
+  // Step 4: Batch fetch all profiles
+  const profilesMap: Record<string, any> = {};
+  if (otherUserIds.size > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', [...otherUserIds]);
+    for (const p of (profiles || [])) {
+      profilesMap[p.id] = p;
+    }
+  }
+
+  // Step 5: Batch fetch last messages for all conversations
+  const lastMsgMap: Record<string, any> = {};
+  if (convoIds.length > 0) {
+    // Get the latest message per conversation
+    const { data: allMsgs } = await supabase
+      .from('messages')
+      .select('conversation_id, content, sender_id, created_at')
+      .in('conversation_id', convoIds)
+      .order('created_at', { ascending: false });
+
+    // Take only the first (latest) per conversation
+    for (const msg of (allMsgs || [])) {
+      if (!lastMsgMap[msg.conversation_id]) {
+        lastMsgMap[msg.conversation_id] = msg;
+      }
+    }
+  }
+
+  // Step 6: Batch fetch unread counts
+  const unreadMap: Record<string, number> = {};
+  for (const convoId of convoIds) {
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', convoId)
+      .eq('is_read', false)
+      .neq('sender_id', userId);
+    unreadMap[convoId] = count || 0;
+  }
+
+  // Step 7: Build conversation list
+  const convos: any[] = [];
+  for (const convoId of convoIds) {
+    const users = partsMap[convoId] || [];
+    const otherUid = users.find(uid => uid !== userId);
+    if (!otherUid) continue;
+
+    const otherProfile = profilesMap[otherUid] || {
+      id: otherUid,
+      username: 'Unknown',
+      full_name: 'Unknown User',
+      avatar_url: null,
+    };
+
+    convos.push({
+      conversation_id: convoId,
+      other_user: otherProfile,
+      last_message: lastMsgMap[convoId] || null,
+      unread_count: unreadMap[convoId] || 0,
+    });
+  }
+
+  // Sort: conversations with messages first (by time), then without
+  convos.sort((a, b) => {
+    const timeA = a.last_message?.created_at ? new Date(a.last_message.created_at).getTime() : 0;
+    const timeB = b.last_message?.created_at ? new Date(b.last_message.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  return convos;
+}
+
+export async function getOrCreateConversation(userId: string, otherUserId: string) {
+  if (!supabase) return null;
+
+  try {
+    // Step 1: Check if conversation already exists between these 2 users
+    const { data: myParts } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', userId);
+
+    if (myParts && myParts.length > 0) {
+      const myConvoIds = myParts.map(p => p.conversation_id);
+
+      const { data: sharedParts } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', otherUserId)
+        .in('conversation_id', myConvoIds)
+        .limit(1);
+
+      if (sharedParts && sharedParts.length > 0) {
+        return sharedParts[0].conversation_id;
+      }
+    }
+
+    // Step 2: Create new conversation
+    const { data: newConvo, error: convoErr } = await supabase
+      .from('conversations')
+      .insert({})
+      .select('id')
+      .maybeSingle();
+
+    if (convoErr) {
+      console.error('Create conversation error:', convoErr.message);
+      return null;
+    }
+    if (!newConvo) {
+      console.error('Create conversation: no data returned');
+      return null;
+    }
+
+    // Step 3: Add both participants
+    const { error: partErr } = await supabase
+      .from('conversation_participants')
+      .insert([
+        { conversation_id: newConvo.id, user_id: userId },
+        { conversation_id: newConvo.id, user_id: otherUserId }
+      ]);
+
+    if (partErr) {
+      console.error('Add participants error:', partErr.message);
+      return null;
+    }
+
+    return newConvo.id;
+  } catch (e: any) {
+    console.error('getOrCreateConversation exception:', e.message || e);
+    return null;
+  }
+}
+
+export async function getMessages(conversationId: string, page = 1, perPage = 50) {
+  if (!supabase) return { messages: [], count: 0 };
+  const from = (page - 1) * perPage;
+
+  // Fetch messages without FK join (FK points to auth.users, not profiles)
+  const { data, count, error } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact' })
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .range(from, from + perPage - 1);
+
+  if (error) {
+    console.error('getMessages error:', error.message);
+    return { messages: [], count: 0 };
+  }
+
+  // Fetch sender profiles separately
+  const messagesWithSenders = await Promise.all(
+    (data || []).map(async (msg: any) => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .eq('id', msg.sender_id)
+        .maybeSingle();
+      return { ...msg, sender: profile || { id: msg.sender_id, username: 'Unknown', full_name: 'Unknown', avatar_url: null } };
+    })
+  );
+
+  // Mark as read
+  const user = await getCurrentUser();
+  if (user && data) {
+    const unreadIds = data.filter(m => !m.is_read && m.sender_id !== user.id).map(m => m.id);
+    if (unreadIds.length > 0) {
+      await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
+    }
+  }
+
+  return { messages: messagesWithSenders.reverse(), count: count || 0 };
+}
+
+export async function sendMessage(conversationId: string, content: string) {
+  if (!supabase) throw new Error('Not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Insert message (no .select() to avoid RLS/FK issues)
+  const { error: insertErr } = await supabase
+    .from('messages')
+    .insert({ conversation_id: conversationId, sender_id: user.id, content });
+
+  if (insertErr) {
+    console.error('Insert message error:', insertErr.message, insertErr.code);
+    throw new Error(insertErr.message || 'Failed to send message');
+  }
+
+  // Get sender profile separately (FK is to auth.users, not profiles)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, username, full_name, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  // Fetch the latest message
+  const { data: latestMsg } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .eq('sender_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // Update conversation timestamp
+  await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+
+  // Combine message with sender profile
+  if (latestMsg) {
+    return { ...latestMsg, sender: profile };
+  }
+
+  // Fallback: return optimistic message
+  return {
+    id: 'temp-' + Date.now(),
+    content,
+    sender_id: user.id,
+    sender: profile || { id: user.id, username: 'You', full_name: 'You', avatar_url: null },
+    created_at: new Date().toISOString(),
+    is_read: false,
+  };
+}
+
+export async function getUnreadMessageCount(userId: string) {
+  if (!supabase) return 0;
+  // Get all conversation IDs for this user
+  const { data: convos } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', userId);
+
+  if (!convos || convos.length === 0) return 0;
+
+  const convoIds = convos.map(c => c.conversation_id);
+  const { count } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .in('conversation_id', convoIds)
+    .eq('is_read', false)
+    .neq('sender_id', userId);
+
+  return count || 0;
+}
+
+// Ad Requests
+export async function getAdRequests(userId?: string) {
+  if (!supabase) return [];
+  let query = supabase.from('ad_requests').select('*, profiles!ad_requests_user_id_fkey(username, full_name), stories(title)').order('created_at', { ascending: false });
+  if (userId) query = query.eq('user_id', userId);
+  const { data } = await query;
+  return data || [];
+}
+
+export async function createAdRequest(req: { story_id?: string; title: string; description?: string; image_url?: string; start_date: string; end_date: string }) {
+  if (!supabase) throw new Error('Not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data, error } = await supabase.from('ad_requests').insert({
+    user_id: user.id,
+    ...req,
+    status: 'pending'
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAdRequestStatus(id: string, status: string, reason?: string, adminNotes?: string) {
+  if (!supabase) throw new Error('Not configured');
+  const user = await getCurrentUser();
+  const updates: any = { status, updated_at: new Date().toISOString() };
+  if (status === 'approved') { updates.approved_by = user?.id; updates.approved_at = new Date().toISOString(); }
+  if (status === 'rejected' && reason) updates.rejection_reason = reason;
+  if (adminNotes) updates.admin_notes = adminNotes;
+  if (status === 'published') updates.published_at = new Date().toISOString();
+  const { error } = await supabase.from('ad_requests').update(updates).eq('id', id);
+  if (error) throw error;
+}
+
+export async function getActiveAds() {
+  if (!supabase) return [];
+  const now = new Date().toISOString().split('T')[0];
+  const { data } = await supabase
+    .from('ad_requests')
+    .select('*')
+    .eq('status', 'published')
+    .lte('start_date', now)
+    .gte('end_date', now)
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
+// Press Articles
+export async function getPressArticles(publishedOnly = true) {
+  if (!supabase) return [];
+  let query = supabase.from('press_articles').select('*').order('published_at', { ascending: false });
+  if (publishedOnly) query = query.eq('published', true);
+  const { data } = await query;
+  return data || [];
+}
+
+export async function getPressArticle(slug: string) {
+  if (!supabase) return null;
+  const { data } = await supabase.from('press_articles').select('*').eq('slug', slug).single();
+  if (data) {
+    supabase.from('press_articles').update({ views_count: (data.views_count || 0) + 1 }).eq('id', data.id).then(() => {});
+  }
+  return data;
+}
+
+export async function createPressArticle(article: { title: string; title_en?: string; slug: string; excerpt?: string; excerpt_en?: string; content: any[]; content_en?: any[]; cover_url?: string; category?: string; tags?: string[] }) {
+  if (!supabase) throw new Error('Not configured');
+  const { data, error } = await supabase.from('press_articles').insert({
+    ...article,
+    published: false,
+    published_at: new Date().toISOString()
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePressArticle(id: string, updates: Record<string, any>) {
+  if (!supabase) throw new Error('Not configured');
+  const { error } = await supabase.from('press_articles').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deletePressArticle(id: string) {
+  if (!supabase) throw new Error('Not configured');
+  const { error } = await supabase.from('press_articles').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Forum System
+export async function getForumCategories() {
+  if (!supabase) return [];
+  const { data } = await supabase.from('forum_categories').select('*').eq('active', true).order('sort_order', { ascending: true });
+  return data || [];
+}
+
+export async function getForumThreads(categorySlug?: string, page = 1, perPage = 20) {
+  if (!supabase) return { threads: [], count: 0 };
+  let query = supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url), forum_categories(name, name_en, slug)', { count: 'exact' });
+  if (categorySlug) query = query.eq('forum_categories.slug', categorySlug);
+  const from = (page - 1) * perPage;
+  query = query.order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).range(from, from + perPage - 1);
+  const { data, error, count } = await query;
+  if (error) return { threads: [], count: 0 };
+  return { threads: data || [], count: count || 0 };
+}
+
+export async function getForumThread(threadId: string) {
+  if (!supabase) return null;
+  const { data } = await supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url), forum_categories(name, name_en, slug)').eq('id', threadId).single();
+  if (data) {
+    supabase.from('forum_threads').update({ views_count: (data.views_count || 0) + 1 }).eq('id', threadId).then(() => {});
+  }
+  return data;
+}
+
+export async function createForumThread(categoryId: string, title: string, content: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data, error } = await supabase.from('forum_threads').insert({
+    category_id: categoryId,
+    author_id: user.id,
+    title,
+    content
+  }).select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url)').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteForumThread(threadId: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.from('forum_threads').delete().eq('id', threadId);
+  if (error) throw error;
+}
+
+export async function getForumPosts(threadId: string, page = 1, perPage = 20) {
+  if (!supabase) return { posts: [], count: 0 };
+  const from = (page - 1) * perPage;
+  const { data, error, count } = await supabase
+    .from('forum_posts')
+    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)', { count: 'exact' })
+    .eq('thread_id', threadId)
+    .is('parent_id', null)
+    .order('created_at', { ascending: true })
+    .range(from, from + perPage - 1);
+  if (error) return { posts: [], count: 0 };
+  return { posts: data || [], count: count || 0 };
+}
+
+export async function getForumReplies(postId: string) {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('forum_posts')
+    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)')
+    .eq('parent_id', postId)
+    .order('created_at', { ascending: true });
+  return data || [];
+}
+
+export async function createForumPost(threadId: string, content: string, parentId?: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data, error } = await supabase.from('forum_posts').insert({
+    thread_id: threadId,
+    author_id: user.id,
+    content,
+    parent_id: parentId || null
+  }).select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)').single();
+  if (error) throw error;
+  // Update thread replies count and last_reply_at
+  await supabase.from('forum_threads').update({ replies_count: supabase.rpc ? undefined : 0, last_reply_at: new Date().toISOString() }).eq('id', threadId);
+  return data;
+}
+
+export async function deleteForumPost(postId: string) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const { error } = await supabase.from('forum_posts').delete().eq('id', postId);
+  if (error) throw error;
+}
+
+export async function voteForumThread(threadId: string, value: 1 | -1) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  // Check existing vote
+  const { data: existing } = await supabase.from('forum_votes').select('*').eq('user_id', user.id).eq('thread_id', threadId).is('post_id', null).single();
+  if (existing) {
+    if (existing.value === value) {
+      // Remove vote (toggle off)
+      await supabase.from('forum_votes').delete().eq('id', existing.id);
+      return 0;
+    } else {
+      // Change vote
+      await supabase.from('forum_votes').update({ value }).eq('id', existing.id);
+      return value;
+    }
+  } else {
+    await supabase.from('forum_votes').insert({ user_id: user.id, thread_id: threadId, value });
+    return value;
+  }
+}
+
+export async function voteForumPost(postId: string, value: 1 | -1) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data: existing } = await supabase.from('forum_votes').select('*').eq('user_id', user.id).eq('post_id', postId).is('thread_id', null).single();
+  if (existing) {
+    if (existing.value === value) {
+      await supabase.from('forum_votes').delete().eq('id', existing.id);
+      return 0;
+    } else {
+      await supabase.from('forum_votes').update({ value }).eq('id', existing.id);
+      return value;
+    }
+  } else {
+    await supabase.from('forum_votes').insert({ user_id: user.id, post_id: postId, value });
+    return value;
+  }
+}
+
+export async function getUserForumVoteThreads(threadIds: string[]) {
+  if (!supabase || threadIds.length === 0) return [];
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const { data } = await supabase.from('forum_votes').select('thread_id, value').eq('user_id', user.id).in('thread_id', threadIds).is('post_id', null);
+  return data || [];
+}
+
+// Support Tickets
+export async function createSupportTicket(subject: string, description: string, category = 'general') {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  const { data, error } = await supabase.from('support_tickets').insert({
+    user_id: user?.id || null,
+    subject,
+    description,
+    category
+  }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getSupportTickets(userId: string) {
+  if (!supabase) return [];
+  const { data } = await supabase.from('support_tickets').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  return data || [];
+}
+
+export async function getSupportTicket(ticketId: string) {
+  if (!supabase) return null;
+  const { data } = await supabase.from('support_tickets').select('*, replies:support_ticket_replies(*, author:profiles!support_ticket_replies_user_id_fkey(username, full_name, avatar_url))').eq('id', ticketId).single();
+  return data;
+}
+
+export async function replySupportTicket(ticketId: string, content: string, isStaff = false) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const user = await getCurrentUser();
+  const { data, error } = await supabase.from('support_ticket_replies').insert({
+    ticket_id: ticketId,
+    user_id: user?.id || null,
+    content,
+    is_staff: isStaff
+  }).select().single();
+  if (error) throw error;
+  // Update ticket status if staff replies
+  if (isStaff) {
+    await supabase.from('support_tickets').update({ status: 'in_progress', updated_at: new Date().toISOString() }).eq('id', ticketId);
+  }
+  return data;
 }

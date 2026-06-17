@@ -1,5 +1,5 @@
 -- ================================================================
--- RLS POLICIES untuk StoryVerse
+-- RLS POLICIES untuk Di.tulis
 -- Jalankan di Supabase SQL Editor
 -- ================================================================
 

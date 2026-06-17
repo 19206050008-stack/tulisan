@@ -29,8 +29,8 @@ export function DonatePopup({ show, onClose, authorName, links }: DonatePopupPro
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm p-6 bg-brand-bg dark:bg-gray-800 rounded-2xl shadow-2xl border border-subtle dark:border-gray-700">
-        <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm p-6 bg-bg-card rounded-2xl shadow-2xl border border-border">
+        <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-full hover:bg-bg-soft transition-colors">
           <X className="h-4 w-4" />
         </button>
 
@@ -51,7 +51,7 @@ export function DonatePopup({ show, onClose, authorName, links }: DonatePopupPro
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between w-full p-3 rounded-xl border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-700 transition-colors group"
+                className="flex items-center justify-between w-full p-3 rounded-xl border border-border hover:bg-bg-soft transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: platform.color }}>

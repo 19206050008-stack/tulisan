@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn, getProfile } from '@/lib/supabase';
+import { signIn, getProfile, supabase } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
-
+import { Eye, EyeOff, LogIn, Mail, CheckCircle, ArrowLeft } from 'lucide-react';
 import { translations } from '@/lib/i18n';
 
 export default function LoginPage() {
@@ -19,17 +18,46 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Password reset state
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetError, setResetError] = useState('');
+
+  const resetLabels = lang === 'en' ? {
+    title: 'Reset Password',
+    desc: 'Enter your email and we\'ll send you a link to reset your password.',
+    emailLabel: 'Email',
+    send: 'Send Reset Link',
+    sent: 'Reset link sent! Check your email inbox.',
+    back: 'Back to login',
+    forgot: 'Forgot password?',
+    error: 'Failed to send reset link. Please try again.',
+  } : {
+    title: 'Reset Password',
+    desc: 'Masukkan email Anda dan kami akan mengirim link untuk mereset password.',
+    emailLabel: 'Email',
+    send: 'Kirim Link Reset',
+    sent: 'Link reset terkirim! Cek inbox email Anda.',
+    back: 'Kembali ke login',
+    forgot: 'Lupa password?',
+    error: 'Gagal mengirim link reset. Silakan coba lagi.',
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const data = await signIn(email, password);
       if (data.user) {
         const profile = await getProfile(data.user.id);
         const userRole = profile?.role || 'user';
-        login({ name: profile?.full_name || data.user.email, id: data.user.id, username: profile?.username, avatar_url: profile?.avatar_url }, userRole);
+        login(
+          { name: profile?.full_name || data.user.email, id: data.user.id, username: profile?.username, avatar_url: profile?.avatar_url },
+          userRole
+        );
         router.push('/');
       }
     } catch (err: any) {
@@ -39,46 +67,161 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) return;
+    setResetLoading(true);
+    setResetError('');
+    try {
+      if (!supabase) throw new Error('Not configured');
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/login?reset=true`,
+      });
+      if (error) throw error;
+      setResetSuccess(true);
+    } catch (err: any) {
+      setResetError(err.message || resetLabels.error);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // Password reset view
+  if (showReset) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
+            <Link href="/" className="font-serif text-3xl font-bold italic">
+              <span className="text-accent">Di.</span>
+              <span className="text-tx">tulis</span>
+            </Link>
+          </div>
+
+          <div className="p-8 rounded-2xl border border-border bg-bg-card space-y-5">
+            <h1 className="text-2xl font-bold font-serif text-center">{resetLabels.title}</h1>
+            <p className="text-sm text-tx-soft text-center">{resetLabels.desc}</p>
+
+            {resetSuccess ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 text-sm text-center flex items-center justify-center gap-2">
+                  <CheckCircle className="h-5 w-5 shrink-0" /> {resetLabels.sent}
+                </div>
+                <button
+                  onClick={() => { setShowReset(false); setResetSuccess(false); setResetEmail(''); }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-bg-soft transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" /> {resetLabels.back}
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                {resetError && (
+                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm text-center">
+                    {resetError}
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-tx-soft uppercase tracking-wider">{resetLabels.emailLabel}</label>
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    value={resetEmail}
+                    onChange={e => setResetEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full px-4 py-3 rounded-lg border border-border bg-gray-100 dark:bg-gray-900 focus:outline-none focus:border-accent transition-colors text-sm"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  <Mail className="h-4 w-4" />
+                  {resetLoading ? t.loading : resetLabels.send}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowReset(false); setResetError(''); setResetEmail(''); }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-bg-soft transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" /> {resetLabels.back}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Login view
   return (
     <div className="min-h-[70vh] flex items-center justify-center">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center">
           <Link href="/" className="font-serif text-3xl font-bold italic">
-            <span className="text-accent">Di.</span><span className="text-brand-text dark:text-white">tulis</span>
+            <span className="text-accent">Di.</span>
+            <span className="text-tx">tulis</span>
           </Link>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">{t.welcome}</p>
+          <p className="text-tx-soft mt-2">{t.welcome}</p>
         </div>
 
-        <div className="p-8 rounded-2xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-6">
+        <div className="p-8 rounded-2xl border border-border bg-bg-card space-y-5">
           <h1 className="text-2xl font-bold font-serif text-center">{t.loginBtn}</h1>
 
-          {error && <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">{error}</div>}
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm text-center">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.email}</label>
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-xs font-semibold text-tx-soft uppercase tracking-wider">
+                {t.email}
+              </label>
               <input
+                id="email"
                 type="email"
                 required
+                autoFocus
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-subtle dark:border-gray-700 bg-brand-muted dark:bg-gray-900 focus:outline-none focus:border-accent transition-colors"
                 placeholder="you@example.com"
+                className="w-full px-4 py-3 rounded-lg border border-border bg-gray-100 dark:bg-gray-900 focus:outline-none focus:border-accent transition-colors text-sm"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.password}</label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-xs font-semibold text-tx-soft uppercase tracking-wider">
+                  {t.password}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowReset(true)}
+                  className="text-xs text-accent hover:underline"
+                >
+                  {resetLabels.forgot}
+                </button>
+              </div>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full pl-4 pr-10 py-2.5 rounded-lg border border-subtle dark:border-gray-700 bg-brand-muted dark:bg-gray-900 focus:outline-none focus:border-accent transition-colors"
                   placeholder="••••••••"
+                  className="w-full pl-4 pr-10 py-3 rounded-lg border border-border bg-gray-100 dark:bg-gray-900 focus:outline-none focus:border-accent transition-colors text-sm"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -87,51 +230,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? t.loading : <><LogIn className="h-4 w-4" /> {t.loginBtn}</>}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500">
-            {t.noAccount} <Link href="/register" className="text-accent hover:underline">{t.registerHere}</Link>
-          </p>
-        </div>
-
-        <div className="p-8 rounded-2xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-6">
-          <h1 className="text-2xl font-bold font-serif text-center">Log In</h1>
-
-          {error && (
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">{error}</div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-medium text-gray-600 dark:text-gray-400">Email</label>
-              <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required className="w-full px-4 py-3 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm" autoFocus />
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-xs font-medium text-gray-600 dark:text-gray-400">Password</label>
-                <Link href="/help" className="text-xs text-accent hover:underline">Forgot password?</Link>
-              </div>
-              <div className="relative">
-                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" required className="w-full px-4 py-3 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm pr-10" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-accent text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50">
               <LogIn className="h-4 w-4" />
-              {loading ? 'Signing in...' : 'Log In'}
+              {loading ? t.loading : t.loginBtn}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Don&apos;t have an account? <Link href="/register" className="text-accent font-medium hover:underline">Sign Up</Link>
+          <p className="text-center text-sm text-tx-soft">
+            {t.noAccount}{' '}
+            <Link href="/register" className="text-accent font-medium hover:underline">
+              {t.registerHere}
+            </Link>
           </p>
         </div>
       </div>

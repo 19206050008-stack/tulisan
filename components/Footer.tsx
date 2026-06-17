@@ -10,7 +10,7 @@ export function Footer() {
   const nav = translations[lang].nav;
   
   return (
-    <footer className="w-full border-t border-subtle dark:border-gray-800 bg-brand-bg dark:bg-gray-900 py-8">
+    <footer className="w-full border-t border-border bg-bg py-8">
       <div className="container mx-auto px-4 flex flex-col items-center gap-6">
         <div className="flex items-center gap-4" aria-label="Social media links">
           <SocialLink href="https://instagram.com" label="Instagram">
@@ -31,25 +31,25 @@ export function Footer() {
         </div>
 
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm" aria-label="Di.tulis links">
-          <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.home}</Link>
-          <Link href="/browse" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.browse}</Link>
-          <Link href="/community" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.community}</Link>
-          <Link href="/write" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{nav.write}</Link>
+          <Link href="/" className="text-tx-soft hover:text-accent transition-colors">{nav.home}</Link>
+          <Link href="/browse" className="text-tx-soft hover:text-accent transition-colors">{nav.browse}</Link>
+          <Link href="/community" className="text-tx-soft hover:text-accent transition-colors">{nav.community}</Link>
+          <Link href="/write" className="text-tx-soft hover:text-accent transition-colors">{nav.write}</Link>
           <span className="hidden sm:inline text-gray-300 dark:text-gray-700" aria-hidden="true">|</span>
-          <Link href="/about" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.about}</Link>
-          <Link href="/careers" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.careers}</Link>
-          <Link href="/press" className="text-gray-600 dark:text-gray-400 hover:text-accent transition-colors">{t.press}</Link>
+          <Link href="/about" className="text-tx-soft hover:text-accent transition-colors">{t.about}</Link>
+          <Link href="/careers" className="text-tx-soft hover:text-accent transition-colors">{t.careers}</Link>
+          <Link href="/press" className="text-tx-soft hover:text-accent transition-colors">{t.press}</Link>
         </nav>
 
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" aria-label="Legal links">
-          <Link href="/terms" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.terms}</Link>
-          <Link href="/privacy" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.privacy}</Link>
-          <Link href="/accessibility" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">Accessibility</Link>
-          <Link href="/help" className="text-gray-500 dark:text-gray-500 hover:text-accent transition-colors">{t.help}</Link>
+          <Link href="/terms" className="text-tx-soft hover:text-accent transition-colors">{t.terms}</Link>
+          <Link href="/privacy" className="text-tx-soft hover:text-accent transition-colors">{t.privacy}</Link>
+          <Link href="/accessibility" className="text-tx-soft hover:text-accent transition-colors">Accessibility</Link>
+          <Link href="/help" className="text-tx-soft hover:text-accent transition-colors">{t.help}</Link>
         </nav>
 
-        <p className="text-xs text-gray-400 dark:text-gray-600">
-          &copy; {new Date().getFullYear()} <span className="text-accent">Di.</span><span>tulis</span>
+        <p className="text-xs text-tx-muted">
+          Copyright &copy; {new Date().getFullYear()} <span className="font-serif text-accent">Di.</span><span className="font-serif">tulis</span>
         </p>
       </div>
     </footer>
@@ -63,7 +63,7 @@ function SocialLink({ href, label, children }: { href: string; label: string; ch
       target="_blank"
       rel="nofollow noreferrer"
       aria-label={label}
-      className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-accent hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors"
+      className="p-2 rounded-full text-tx-soft hover:text-accent hover:bg-bg-soft transition-colors"
     >
       {children}
     </a>

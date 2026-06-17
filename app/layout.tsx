@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
@@ -7,17 +7,25 @@ import { Providers } from '@/components/Providers';
 import { AuthProvider } from '@/components/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-serif', style: ['normal', 'italic'] });
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  style: ['normal', 'italic'],
+});
 
 export const metadata: Metadata = {
   title: 'Di.tulis - Read & Write Stories',
   description: 'User-generated stories platform with reading interface and author tools.',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    // suppressHydrationWarning wajib karena next-themes update class di <html> client-side
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
-      <body className="font-sans min-h-screen bg-brand-bg text-brand-text dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200">
+      <body className="font-sans min-h-screen transition-colors duration-150">
         <Providers>
           <AuthProvider>
             <div className="flex flex-col min-h-screen">
@@ -33,4 +41,3 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     </html>
   );
 }
-

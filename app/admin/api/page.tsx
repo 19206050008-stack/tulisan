@@ -104,11 +104,11 @@ export default function AdminApiPage() {
         </button>
       </div>
 
-      <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
+      <div className="p-4 rounded-xl border border-border bg-bg-card space-y-3">
         <h3 className="font-semibold text-sm">API Base URL</h3>
         <div className="flex gap-2">
-          <code className="flex-1 px-3 py-2 text-sm bg-brand-muted dark:bg-gray-900 rounded-lg border border-subtle dark:border-gray-700 font-mono">{baseUrl}/api/v1</code>
-          <button onClick={() => copyToClipboard(`${baseUrl}/api/v1`)} className="p-2 rounded-lg border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
+          <code className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-900 rounded-lg border border-border font-mono">{baseUrl}/api/v1</code>
+          <button onClick={() => copyToClipboard(`${baseUrl}/api/v1`)} className="p-2 rounded-lg border border-border hover:bg-bg-soft transition-colors">
             <Copy className="h-4 w-4" />
           </button>
         </div>
@@ -119,16 +119,16 @@ export default function AdminApiPage() {
           <p className="font-mono">GET /api/v1/stories/:id/chapters — Get chapters</p>
           <p className="font-mono">GET /api/v1/categories — List categories</p>
           <p className="font-mono">GET /api/v1/comments?story_id=:id — Get comments</p>
-          <p className="mt-2">Include header: <code className="bg-brand-muted dark:bg-gray-900 px-1 rounded">X-API-Key: your_key</code></p>
+          <p className="mt-2">Include header: <code className="bg-gray-100 dark:bg-gray-900 px-1 rounded">X-API-Key: your_key</code></p>
         </div>
       </div>
 
       {showCreate && (
-        <div className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <div className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h3 className="font-semibold">Create New API Key</h3>
           <div className="space-y-2">
             <label className="text-sm font-medium">Key Name</label>
-            <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Mobile App, External Service" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+            <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Mobile App, External Service" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Permissions</label>
@@ -151,7 +151,7 @@ export default function AdminApiPage() {
           </div>
           <div className="flex gap-3">
             <button onClick={handleCreate} className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90">Generate Key</button>
-            <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-full border border-subtle dark:border-gray-700 text-sm hover:bg-brand-muted dark:hover:bg-gray-800">Cancel</button>
+            <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-full border border-border text-sm hover:bg-bg-soft">Cancel</button>
           </div>
         </div>
       )}
@@ -166,7 +166,7 @@ export default function AdminApiPage() {
           </div>
         ) : (
           apiKeys.map(apiKey => (
-            <div key={apiKey.id} className={`p-4 rounded-xl border ${apiKey.active ? 'border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800' : 'border-dashed border-gray-300 dark:border-gray-700 opacity-60'}`}>
+            <div key={apiKey.id} className={`p-4 rounded-xl border ${apiKey.active ? 'border-border bg-bg-card' : 'border-dashed border-gray-300 dark:border-gray-700 opacity-60'}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center gap-2">
@@ -177,25 +177,25 @@ export default function AdminApiPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="text-xs font-mono bg-brand-muted dark:bg-gray-900 px-2 py-1 rounded border border-subtle dark:border-gray-700 flex-1 truncate">
+                    <code className="text-xs font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded border border-border flex-1 truncate">
                       {revealedKeys.includes(apiKey.id) ? apiKey.key : apiKey.key.substring(0, 7) + '•'.repeat(20)}
                     </code>
-                    <button onClick={() => toggleReveal(apiKey.id)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <button onClick={() => toggleReveal(apiKey.id)} className="p-1.5 rounded hover:bg-bg-soft transition-colors">
                       {revealedKeys.includes(apiKey.id) ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
-                    <button onClick={() => copyToClipboard(apiKey.key)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <button onClick={() => copyToClipboard(apiKey.key)} className="p-1.5 rounded hover:bg-bg-soft transition-colors">
                       <Copy className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {apiKey.permissions.map(p => (
-                      <span key={p} className="text-[10px] px-1.5 py-0.5 rounded bg-brand-muted dark:bg-gray-700 text-gray-600 dark:text-gray-400">{p}</span>
+                      <span key={p} className="text-[10px] px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{p}</span>
                     ))}
                   </div>
                   <p className="text-[10px] text-gray-400">Created {new Date(apiKey.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => toggleActive(apiKey.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title={apiKey.active ? 'Disable' : 'Enable'}>
+                  <button onClick={() => toggleActive(apiKey.id)} className="p-2 rounded-lg hover:bg-bg-soft transition-colors" title={apiKey.active ? 'Disable' : 'Enable'}>
                     {apiKey.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                   <button onClick={() => handleDelete(apiKey.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">

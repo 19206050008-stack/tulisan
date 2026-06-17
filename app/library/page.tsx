@@ -59,7 +59,7 @@ export default function LibraryPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {saves.map(save => (
-            <div key={save.story_id} className="flex items-start gap-4 p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+            <div key={save.story_id} className="flex items-start gap-4 p-4 rounded-xl border border-border bg-bg-card">
               <Link href={`/story/${save.story_id}`} className="flex-1 flex items-start gap-3">
                 <div className="w-12 h-16 rounded overflow-hidden shrink-0">
                   <StoryCover coverUrl={save.stories?.cover_url} category={save.stories?.category} title={save.stories?.title || ''} />
@@ -69,7 +69,7 @@ export default function LibraryPage() {
                   <p className="text-sm text-gray-500 mt-1">by {save.stories?.profiles?.full_name || save.stories?.profiles?.username}</p>
                 </div>
               </Link>
-              <button onClick={() => handleRemove(save.story_id)} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors">
+              <button onClick={() => handleRemove(save.story_id)} className="p-1.5 rounded hover:bg-bg-soft text-gray-400 hover:text-red-500 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>

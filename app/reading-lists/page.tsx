@@ -63,24 +63,24 @@ export default function ReadingListsPage() {
       </div>
 
       {showCreate && (
-        <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
+        <div className="p-4 rounded-xl border border-border bg-bg-card space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Create Reading List</h3>
-            <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><X className="h-4 w-4" /></button>
+            <button onClick={() => setShowCreate(false)} className="p-1 hover:bg-bg-soft rounded"><X className="h-4 w-4" /></button>
           </div>
           <input
             type="text"
             placeholder="List name"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent text-sm"
           />
           <input
             type="text"
             placeholder="Description (optional)"
             value={newDesc}
             onChange={e => setNewDesc(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent text-sm"
           />
           <button onClick={handleCreate} className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
             Create
@@ -96,7 +96,7 @@ export default function ReadingListsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {lists.map(list => (
-            <div key={list.id} className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
+            <div key={list.id} className="p-5 rounded-xl border border-border bg-bg-card space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold text-lg">{list.name}</h3>

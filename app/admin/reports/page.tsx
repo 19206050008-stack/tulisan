@@ -41,7 +41,7 @@ export default function AdminReportsPage() {
 
       <div className="flex gap-2">
         {(['all', 'pending', 'resolved', 'dismissed'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${filter === f ? 'bg-accent text-white' : 'bg-brand-muted dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${filter === f ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}>
             {f}
           </button>
         ))}
@@ -49,7 +49,7 @@ export default function AdminReportsPage() {
 
       <div className="space-y-2">
         {filtered.map(r => (
-          <div key={r.id} className={`p-4 rounded-xl border ${r.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10' : 'border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800'}`}>
+          <div key={r.id} className={`p-4 rounded-xl border ${r.status === 'pending' ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10' : 'border-border bg-bg-card'}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export default function AdminReportsPage() {
                   <button onClick={() => handleResolve(r.id)} className="p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 transition-colors" title="Resolve">
                     <CheckCircle className="h-4 w-4" />
                   </button>
-                  <button onClick={() => handleDismiss(r.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors" title="Dismiss">
+                  <button onClick={() => handleDismiss(r.id)} className="p-2 rounded-lg hover:bg-bg-soft text-gray-500 transition-colors" title="Dismiss">
                     <XCircle className="h-4 w-4" />
                   </button>
                 </div>

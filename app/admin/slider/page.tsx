@@ -97,7 +97,7 @@ export default function AdminSliderPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold font-serif">Hero Slider</h1>
         <div className="flex items-center gap-2">
-          <button onClick={autoGenerateSlides} className="flex items-center gap-2 px-4 py-2 rounded-full border border-subtle dark:border-gray-700 text-sm font-medium hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
+          <button onClick={autoGenerateSlides} className="flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:bg-bg-soft transition-colors">
             <RefreshCw className="h-4 w-4" /> Auto Generate
           </button>
           <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
@@ -106,13 +106,13 @@ export default function AdminSliderPage() {
         </div>
       </div>
 
-      <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
+      <div className="p-4 rounded-xl border border-border bg-bg-card space-y-3">
         <h3 className="font-semibold text-sm">Slider Mode</h3>
         <div className="flex gap-3">
-          <button onClick={() => handleModeChange('auto')} className={`flex-1 p-3 rounded-lg border text-sm text-center transition-colors ${sliderMode === 'auto' ? 'border-accent bg-accent/10 text-accent font-medium' : 'border-subtle dark:border-gray-700'}`}>
+          <button onClick={() => handleModeChange('auto')} className={`flex-1 p-3 rounded-lg border text-sm text-center transition-colors ${sliderMode === 'auto' ? 'border-accent bg-accent/10 text-accent font-medium' : 'border-border'}`}>
             Auto (Top Popular)
           </button>
-          <button onClick={() => handleModeChange('custom')} className={`flex-1 p-3 rounded-lg border text-sm text-center transition-colors ${sliderMode === 'custom' ? 'border-accent bg-accent/10 text-accent font-medium' : 'border-subtle dark:border-gray-700'}`}>
+          <button onClick={() => handleModeChange('custom')} className={`flex-1 p-3 rounded-lg border text-sm text-center transition-colors ${sliderMode === 'custom' ? 'border-accent bg-accent/10 text-accent font-medium' : 'border-border'}`}>
             Custom Slides
           </button>
         </div>
@@ -122,11 +122,11 @@ export default function AdminSliderPage() {
       </div>
 
       {sliderMode === 'auto' && (
-        <div className="p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-3">
+        <div className="p-4 rounded-xl border border-border bg-bg-card space-y-3">
           <h3 className="font-semibold text-sm">Current Top 5 Stories (Auto)</h3>
           <div className="space-y-2">
             {topStories.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg bg-brand-muted dark:bg-gray-700/50 text-sm">
+              <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg bg-bg-input/50 text-sm">
                 <span className="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center font-bold">{i + 1}</span>
                 <span className="flex-1 truncate">{s.title}</span>
                 <span className="text-xs text-gray-500">{s.reads_count || 0} reads</span>
@@ -139,36 +139,36 @@ export default function AdminSliderPage() {
       )}
 
       {showAdd && (
-        <div className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <div className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h3 className="font-semibold">Add New Slide</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
-              <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Slide title" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+              <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Slide title" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Subtitle</label>
-              <input type="text" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="Short description" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+              <input type="text" value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="Short description" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Link to Story</label>
-              <select value={form.story_id} onChange={e => setForm({ ...form, story_id: e.target.value })} className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent">
+              <select value={form.story_id} onChange={e => setForm({ ...form, story_id: e.target.value })} className="w-full px-3 py-2 text-sm rounded-lg bg-bg-input text-tx border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx">
                 <option value="">None (custom slide)</option>
                 {stories.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Badge Text</label>
-              <input type="text" value={form.badge} onChange={e => setForm({ ...form, badge: e.target.value })} placeholder="e.g. Editor's Pick" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+              <input type="text" value={form.badge} onChange={e => setForm({ ...form, badge: e.target.value })} placeholder="e.g. Editor's Pick" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium">Background Image URL</label>
-              <input type="text" value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+              <input type="text" value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
             </div>
           </div>
           <div className="flex gap-3">
             <button onClick={handleAdd} className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90">Save</button>
-            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-full border border-subtle dark:border-gray-700 text-sm hover:bg-brand-muted dark:hover:bg-gray-800">Cancel</button>
+            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-full border border-border text-sm hover:bg-bg-soft">Cancel</button>
           </div>
         </div>
       )}
@@ -176,9 +176,9 @@ export default function AdminSliderPage() {
       <div className="space-y-2">
         <h3 className="font-semibold text-sm">{sliderMode === 'custom' ? 'Custom Slides' : 'Generated Slides'} ({slides.length})</h3>
         {slides.map((slide, i) => (
-          <div key={slide.id} className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${slide.active ? 'border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800' : 'border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60'}`}>
+          <div key={slide.id} className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${slide.active ? 'border-border bg-bg-card' : 'border-dashed border-gray-300 dark:border-gray-700 bg-bg-soft/50 opacity-60'}`}>
             <GripVertical className="h-4 w-4 text-gray-400 shrink-0" />
-            <div className="w-16 h-10 rounded bg-brand-muted dark:bg-gray-700 shrink-0 overflow-hidden">
+            <div className="w-16 h-10 rounded bg-bg-input shrink-0 overflow-hidden">
               {slide.image_url && !slide.image_url.startsWith('gradient:') && <img src={slide.image_url} alt="" className="w-full h-full object-cover" />}
             </div>
             <div className="flex-1 min-w-0">
@@ -186,8 +186,8 @@ export default function AdminSliderPage() {
               <p className="text-xs text-gray-500 truncate">{slide.subtitle || 'No subtitle'} | {slide.badge}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <input type="number" value={slide.sort_order} onChange={e => updateOrder(slide.id, parseInt(e.target.value) || 0)} className="w-12 px-2 py-1 text-xs rounded bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 text-center" />
-              <button onClick={() => toggleActive(slide.id, slide.active)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title={slide.active ? 'Hide' : 'Show'}>
+              <input type="number" value={slide.sort_order} onChange={e => updateOrder(slide.id, parseInt(e.target.value) || 0)} className="w-12 px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-900 border border-border text-center" />
+              <button onClick={() => toggleActive(slide.id, slide.active)} className="p-2 rounded-lg hover:bg-bg-soft transition-colors" title={slide.active ? 'Hide' : 'Show'}>
                 {slide.active ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4" />}
               </button>
               <button onClick={() => handleDelete(slide.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">

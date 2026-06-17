@@ -57,20 +57,20 @@ export default function AdminCategoriesPage() {
       </div>
 
       {showAdd && (
-        <div className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 space-y-4">
+        <div className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
           <h3 className="font-semibold">New Category</h3>
-          <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Category name" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
-          <input type="text" value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Description (optional)" className="w-full px-3 py-2 text-sm rounded-lg bg-brand-muted dark:bg-gray-900 border border-subtle dark:border-gray-700 focus:outline-none focus:border-accent" />
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Category name" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
+          <input type="text" value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Description (optional)" className="w-full px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
           <div className="flex gap-3">
             <button onClick={handleAdd} className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90">Save</button>
-            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-full border border-subtle dark:border-gray-700 text-sm hover:bg-brand-muted dark:hover:bg-gray-800">Cancel</button>
+            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-full border border-border text-sm hover:bg-bg-soft">Cancel</button>
           </div>
         </div>
       )}
 
       <div className="space-y-2">
         {categories.map(c => (
-          <div key={c.id} className={`flex items-center justify-between p-4 rounded-xl border ${c.active ? 'border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800' : 'border-dashed border-gray-300 dark:border-gray-700 opacity-60'}`}>
+          <div key={c.id} className={`flex items-center justify-between p-4 rounded-xl border ${c.active ? 'border-border bg-bg-card' : 'border-dashed border-gray-300 dark:border-gray-700 opacity-60'}`}>
             <div className="flex items-center gap-3">
               <Tag className="h-4 w-4 text-accent" />
               <div>
@@ -79,7 +79,7 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => toggleActive(c.id, c.active)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={() => toggleActive(c.id, c.active)} className="p-2 rounded-lg hover:bg-bg-soft transition-colors">
                 {c.active ? <Eye className="h-4 w-4 text-green-600" /> : <EyeOff className="h-4 w-4" />}
               </button>
               <button onClick={() => handleDelete(c.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">

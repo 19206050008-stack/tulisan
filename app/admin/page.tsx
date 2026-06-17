@@ -35,7 +35,7 @@ export default function AdminDashboard() {
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   return (
-    <div className="p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+    <div className="p-5 rounded-xl border border-border bg-bg-card">
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>{icon}</div>
       <p className="text-2xl font-bold mt-3">{value.toLocaleString()}</p>
       <p className="text-sm text-gray-500 mt-1">{label}</p>

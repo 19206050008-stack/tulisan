@@ -76,7 +76,7 @@ export default function PublicProfilePage() {
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt={profile.username} className="w-28 h-28 rounded-full object-cover" />
           ) : (
-            <div className="w-28 h-28 rounded-full bg-brand-muted dark:bg-gray-700 flex items-center justify-center text-4xl font-bold text-gray-400">
+            <div className="w-28 h-28 rounded-full bg-bg-input flex items-center justify-center text-4xl font-bold text-gray-400">
               {(profile.full_name || profile.username)?.[0]?.toUpperCase()}
             </div>
           )}
@@ -87,17 +87,17 @@ export default function PublicProfilePage() {
             <h1 className="text-2xl font-bold">{profile.full_name || profile.username}</h1>
             <span className="text-gray-500">@{profile.username}</span>
             {isOwn ? (
-              <Link href="/profile/edit" className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full border border-subtle dark:border-gray-700 hover:bg-brand-muted dark:hover:bg-gray-800 transition-colors">
+              <Link href="/profile/edit" className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full border border-border hover:bg-bg-soft transition-colors">
                 <Edit className="h-3.5 w-3.5" /> Edit Profile
               </Link>
             ) : role !== 'guest' && (
-              <button onClick={handleFollow} className={`flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full transition-colors ${isFollowed ? 'border border-subtle dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200' : 'bg-accent text-white hover:opacity-90'}`}>
+              <button onClick={handleFollow} className={`flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full transition-colors ${isFollowed ? 'border border-border hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-200' : 'bg-accent text-white hover:opacity-90'}`}>
                 {isFollowed ? <><UserMinus className="h-3.5 w-3.5" /> Unfollow</> : <><UserPlus className="h-3.5 w-3.5" /> Follow</>}
               </button>
             )}
           </div>
 
-          {profile.bio && <p className="text-gray-600 dark:text-gray-400">{profile.bio}</p>}
+          {profile.bio && <p className="text-tx-soft">{profile.bio}</p>}
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
             {profile.location && (
@@ -126,7 +126,7 @@ export default function PublicProfilePage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {stories.slice((currentPage - 1) * perPage, currentPage * perPage).map(story => (
                 <Link href={`/story/${story.id}`} key={story.id} className="group space-y-2">
-                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-brand-muted dark:bg-gray-800">
+                  <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-bg-input">
                     <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
                   </div>
                   <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>

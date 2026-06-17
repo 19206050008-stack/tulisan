@@ -76,7 +76,7 @@ export function HeroSlider() {
       <div className="relative z-10 h-full flex flex-col justify-center pl-6 pr-16 md:pl-10 md:pr-24 max-w-xl">
         <div className="flex items-center gap-2 mb-1.5">
           {slide.badge && (
-            <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-semibold uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-bg-card/20 backdrop-blur-sm rounded text-[10px] font-semibold uppercase tracking-wider">
               {slide.badge}
             </span>
           )}
@@ -93,7 +93,7 @@ export function HeroSlider() {
         <div className="mt-3">
           <Link
             href={slide.story_id ? `/story/${slide.story_id}` : '/browse'}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 md:px-5 md:py-2 bg-white text-gray-900 text-xs md:text-sm font-semibold rounded-full hover:bg-gray-100 transition"
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 md:px-5 md:py-2 bg-bg-card text-tx text-xs md:text-sm font-semibold rounded-full hover:bg-bg-soft transition"
           >
             <BookOpen className="h-3.5 w-3.5" />
             Baca
@@ -111,7 +111,7 @@ export function HeroSlider() {
           </button>
           <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex gap-1">
             {slides.map((_, i) => (
-              <button key={i} onClick={() => setCurrent(i)} className={`rounded-full transition-all ${i === current ? 'bg-white w-4 h-1.5' : 'bg-white/40 w-1.5 h-1.5 hover:bg-white/70'}`} />
+              <button key={i} onClick={() => setCurrent(i)} className={`rounded-full transition-all ${i === current ? 'bg-bg-card w-4 h-1.5' : 'bg-bg-card/40 w-1.5 h-1.5 hover:bg-bg-card/70'}`} />
             ))}
           </div>
         </>

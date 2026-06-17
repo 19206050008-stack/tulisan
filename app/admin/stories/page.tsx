@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Trash2, Eye, EyeOff, Search } from 'lucide-react';
+import { Trash2, Eye, EyeOff, Search, ExternalLink, Heart, BookOpen, Filter } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 
 const GRADIENT_MAP: Record<string, string> = {
@@ -24,20 +25,30 @@ function getGradient(category: string) {
   return GRADIENT_MAP[category] || 'linear-gradient(135deg, #667eea, #764ba2)';
 }
 
+type StatusFilter = 'all' | 'published' | 'draft' | 'archived';
+type SortOption = 'newest' | 'oldest' | 'most_reads' | 'most_likes' | 'az';
+
 export default function AdminStoriesPage() {
   const [stories, setStories] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
   const perPage = 10;
 
   useEffect(() => { loadStories(); }, []);
-  useEffect(() => { setCurrentPage(1); }, [search]);
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, sortBy, categoryFilter]);
 
   const loadStories = async () => {
     if (!supabase) return;
     setLoading(true);
-    const { data } = await supabase.from('stories').select('*, profiles!stories_author_id_fkey(username, full_name)').order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('stories')
+      .select('*, profiles!stories_author_id_fkey(username, full_name)')
+      .order('created_at', { ascending: false });
     setStories(data || []);
     setLoading(false);
   };
@@ -51,19 +62,55 @@ export default function AdminStoriesPage() {
 
   const deleteStory = async (id: string) => {
     if (!supabase) return;
-    if (!confirm('Delete this story?')) return;
+    if (!confirm('Delete this story? This action cannot be undone.')) return;
     await supabase.from('stories').delete().eq('id', id);
     setStories(stories.filter(s => s.id !== id));
   };
 
-  const filtered = stories.filter(s =>
-    s.title.toLowerCase().includes(search.toLowerCase()) ||
-    (s.profiles?.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (s.profiles?.username || '').toLowerCase().includes(search.toLowerCase())
-  );
+  // Get unique categories
+  const categories = [...new Set(stories.map(s => s.category).filter(Boolean))].sort();
+
+  // Status counts
+  const statusCounts = {
+    all: stories.length,
+    published: stories.filter(s => s.status === 'published').length,
+    draft: stories.filter(s => s.status === 'draft').length,
+    archived: stories.filter(s => s.status === 'archived').length,
+  };
+
+  // Filter + Sort
+  const filtered = stories
+    .filter(s => {
+      if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+      if (categoryFilter !== 'all' && s.category !== categoryFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return s.title.toLowerCase().includes(q) ||
+          (s.profiles?.full_name || '').toLowerCase().includes(q) ||
+          (s.profiles?.username || '').toLowerCase().includes(q) ||
+          (s.category || '').toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'most_reads': return (b.reads_count || 0) - (a.reads_count || 0);
+        case 'most_likes': return (b.likes_count || 0) - (a.likes_count || 0);
+        case 'az': return (a.title || '').localeCompare(b.title || '');
+        default: return 0;
+      }
+    });
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+
+  const formatNum = (n: number) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+  };
 
   if (loading) return <div className="text-center py-16 text-gray-500">Loading...</div>;
 
@@ -74,27 +121,119 @@ export default function AdminStoriesPage() {
         <span className="text-sm text-gray-500">{filtered.length} stories</span>
       </div>
 
-      <div className="relative">
-        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="Search stories..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-brand-muted dark:bg-gray-800 rounded-lg text-sm focus:outline-none border border-subtle dark:border-gray-700 focus:border-accent" />
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Total', value: stories.length, color: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30' },
+          { label: 'Published', value: statusCounts.published, color: 'text-green-500 bg-green-100 dark:bg-green-900/30' },
+          { label: 'Drafts', value: statusCounts.draft, color: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' },
+          { label: 'Archived', value: statusCounts.archived, color: 'text-red-500 bg-red-100 dark:bg-red-900/30' },
+        ].map(s => (
+          <div key={s.label} className="p-3 rounded-xl border border-border bg-bg-card">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold mb-2 ${s.color}`}>{s.value}</div>
+            <p className="text-xs text-tx-muted">{s.label}</p>
+          </div>
+        ))}
       </div>
 
+      {/* Search + Filters */}
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" placeholder="Search by title, author, or category..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-bg-input rounded-lg text-sm focus:outline-none border border-border focus:border-accent" />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'border-accent text-accent bg-accent/5' : 'border-border text-tx-soft hover:bg-bg-soft'}`}
+          >
+            <Filter className="h-4 w-4" />
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="flex flex-wrap gap-3 p-4 rounded-xl border border-border bg-bg-card">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-tx-muted">Sort by</label>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as SortOption)}
+                className="block px-3 py-2 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="most_reads">Most Reads</option>
+                <option value="most_likes">Most Likes</option>
+                <option value="az">Title A-Z</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-tx-muted">Category</label>
+              <select
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="block px-3 py-2 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Status tabs */}
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
+        {(['all', 'published', 'draft', 'archived'] as StatusFilter[]).map(status => {
+          const count = statusCounts[status];
+          if (status === 'archived' && count === 0) return null;
+          return (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors capitalize whitespace-nowrap ${statusFilter === status ? 'border-accent text-accent' : 'border-transparent text-tx-soft hover:text-accent'}`}
+            >
+              {status === 'published' && <Eye className="h-3 w-3" />}
+              {status === 'draft' && <EyeOff className="h-3 w-3" />}
+              {status}
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === status ? 'bg-accent/10' : 'bg-bg-input'}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Story list */}
       <div className="space-y-2">
         {paginated.map(s => (
-          <div key={s.id} className="flex items-center justify-between p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
-            <div className="flex items-center gap-3 min-w-0">
+          <div key={s.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               {s.cover_url && !s.cover_url.startsWith('gradient:') ? (
                 <img src={s.cover_url} alt="" className="w-10 h-14 rounded object-cover shrink-0" />
               ) : (
                 <div className="w-10 h-14 rounded shrink-0" style={{ background: getGradient(s.category) }} />
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{s.title}</p>
-                <p className="text-xs text-gray-500">by {s.profiles?.full_name || s.profiles?.username} &middot; <span className={s.status === 'published' ? 'text-green-600' : s.status === 'archived' ? 'text-red-500' : 'text-yellow-600'}>{s.status}</span> &middot; {s.category || 'No category'}</p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                  <span className="text-xs text-gray-500">by {s.profiles?.full_name || s.profiles?.username || 'Unknown'}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${s.status === 'published' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : s.status === 'archived' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'}`}>
+                    {s.status}
+                  </span>
+                  {s.category && <span className="text-[10px] px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{s.category}</span>}
+                  {s.status === 'published' && (
+                    <>
+                      <span className="text-[10px] text-tx-muted flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatNum(s.reads_count || 0)}</span>
+                      <span className="text-[10px] text-tx-muted flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatNum(s.likes_count || 0)}</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => toggleStatus(s.id, s.status)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title={s.status === 'published' ? 'Archive' : 'Publish'}>
+              <Link href={`/story/${s.id}`} className="p-2 rounded-lg hover:bg-bg-soft transition-colors text-tx-muted hover:text-tx" title="View story" target="_blank">
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+              <button onClick={() => toggleStatus(s.id, s.status)} className="p-2 rounded-lg hover:bg-bg-soft transition-colors" title={s.status === 'published' ? 'Archive' : 'Publish'}>
                 {s.status === 'published' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
               <button onClick={() => deleteStory(s.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors">
@@ -106,7 +245,7 @@ export default function AdminStoriesPage() {
         {paginated.length === 0 && <p className="text-center text-gray-500 py-8">No stories found.</p>}
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
     </div>
   );
 }

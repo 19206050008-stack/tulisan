@@ -49,12 +49,12 @@ export default function AdminCommentsPage() {
 
       <div className="relative">
         <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input type="text" placeholder="Search comments..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-brand-muted dark:bg-gray-800 rounded-lg text-sm focus:outline-none border border-subtle dark:border-gray-700 focus:border-accent" />
+        <input type="text" placeholder="Search comments..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 bg-bg-input rounded-lg text-sm focus:outline-none border border-border focus:border-accent" />
       </div>
 
       <div className="space-y-2">
         {paginated.map(c => (
-          <div key={c.id} className="flex items-center justify-between p-4 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800">
+          <div key={c.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-bg-card">
             <div className="flex-1 min-w-0">
               <p className="text-sm truncate">{c.content}</p>
               <p className="text-xs text-gray-500 mt-1">by {c.profiles?.full_name || c.profiles?.username} on &ldquo;{c.stories?.title}&rdquo; &middot; {new Date(c.created_at).toLocaleDateString()}</p>

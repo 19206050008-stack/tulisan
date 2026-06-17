@@ -61,6 +61,33 @@ export const translations = {
       deleteConfirm: "Yakin ingin menghapus cerita ini?",
       deleteChapterConfirm: "Yakin ingin menghapus bab ini?",
     },
+    // Rich Editor toolbar
+    editor: {
+      paragraph: "Paragraf",
+      heading1: "Judul 1",
+      heading2: "Judul 2",
+      heading3: "Judul 3",
+      bold: "Tebal",
+      italic: "Miring",
+      underline: "Garis bawah",
+      strike: "Coret",
+      alignLeft: "Rata kiri",
+      alignCenter: "Rata tengah",
+      alignRight: "Rata kanan",
+      alignJustify: "Rata penuh",
+      bulletList: "Daftar poin",
+      orderedList: "Daftar nomor",
+      blockquote: "Kutipan",
+      horizontalRule: "Garis pemisah",
+      link: "Tautan",
+      undo: "Batalkan",
+      redo: "Ulangi",
+      preview: "Pratinjau",
+      htmlSource: "Sumber HTML",
+      words: "kata",
+      characters: "karakter",
+      linkPrompt: "URL:",
+    },
     // Reader
     reader: {
       part: "Bagian",
@@ -106,6 +133,42 @@ export const translations = {
       terms: "Syarat",
       privacy: "Privasi",
       help: "Bantuan",
+    },
+    // CMS Pages (static labels - dynamic content from DB)
+    pages: {
+      // About
+      ourMission: "Misi Kami",
+      ourCommunity: "Komunitas Kami",
+      globalReach: "Jangkauan Global",
+      ourValues: "Nilai Kami",
+      ourStory: "Cerita Kami",
+      // Community
+      activeWriters: "Penulis Aktif",
+      publishedStories: "Cerita Diterbitkan",
+      commentsLabel: "Komentar",
+      communityGuidelines: "Pedoman Komunitas",
+      discussionTopics: "Topik Diskusi",
+      // Careers
+      openPositions: "Posisi Terbuka",
+      noOpenings: "Belum Ada Lowongan",
+      interestedJoin: "Tertarik Bergabung?",
+      sendCv: "Kirim CV Anda ke careers@ditulis.tech dan kami akan menghubungi Anda ketika ada posisi yang sesuai.",
+      // Help
+      searchHelp: "Cari bantuan...",
+      faq: "Pertanyaan Umum",
+      noResults: "Tidak ada hasil. Coba kata kunci lain.",
+      emailSupport: "Email Support",
+      communityForum: "Forum Komunitas",
+      communityForumDesc: "Tanyakan dan dapatkan bantuan dari pengguna Di.tulis lainnya di halaman Community.",
+      // Terms/Privacy/Accessibility
+      lastUpdated: "Terakhir diperbarui",
+      // Press
+      latestNews: "Berita Terbaru",
+      mediaKit: "Media Kit",
+      mediaInquiries: "Media Inquiries",
+      // Generic
+      pageNotConfigured: "Halaman belum dikonfigurasi.",
+      loading: "Memuat...",
     }
   },
   en: {
@@ -170,6 +233,33 @@ export const translations = {
       deleteConfirm: "Are you sure you want to delete this story?",
       deleteChapterConfirm: "Are you sure you want to delete this chapter?",
     },
+    // Rich Editor toolbar
+    editor: {
+      paragraph: "Paragraph",
+      heading1: "Heading 1",
+      heading2: "Heading 2",
+      heading3: "Heading 3",
+      bold: "Bold",
+      italic: "Italic",
+      underline: "Underline",
+      strike: "Strikethrough",
+      alignLeft: "Align left",
+      alignCenter: "Align center",
+      alignRight: "Align right",
+      alignJustify: "Justify",
+      bulletList: "Bullet list",
+      orderedList: "Ordered list",
+      blockquote: "Blockquote",
+      horizontalRule: "Horizontal rule",
+      link: "Link",
+      undo: "Undo",
+      redo: "Redo",
+      preview: "Preview",
+      htmlSource: "HTML source",
+      words: "words",
+      characters: "characters",
+      linkPrompt: "URL:",
+    },
     // Reader
     reader: {
       part: "Part",
@@ -215,6 +305,42 @@ export const translations = {
       terms: "Terms",
       privacy: "Privacy",
       help: "Help",
+    },
+    // CMS Pages (static labels - dynamic content from DB)
+    pages: {
+      // About
+      ourMission: "Our Mission",
+      ourCommunity: "Our Community",
+      globalReach: "Global Reach",
+      ourValues: "Our Values",
+      ourStory: "Our Story",
+      // Community
+      activeWriters: "Active Writers",
+      publishedStories: "Published Stories",
+      commentsLabel: "Comments",
+      communityGuidelines: "Community Guidelines",
+      discussionTopics: "Discussion Topics",
+      // Careers
+      openPositions: "Open Positions",
+      noOpenings: "No Openings",
+      interestedJoin: "Interested in Joining?",
+      sendCv: "Send your CV to careers@ditulis.tech and we will contact you when a suitable position becomes available.",
+      // Help
+      searchHelp: "Search help...",
+      faq: "Frequently Asked Questions",
+      noResults: "No results found. Try different keywords.",
+      emailSupport: "Email Support",
+      communityForum: "Community Forum",
+      communityForumDesc: "Ask questions and get help from other Di.tulis users on the Community page.",
+      // Terms/Privacy/Accessibility
+      lastUpdated: "Last updated",
+      // Press
+      latestNews: "Latest News",
+      mediaKit: "Media Kit",
+      mediaInquiries: "Media Inquiries",
+      // Generic
+      pageNotConfigured: "Page not configured.",
+      loading: "Loading...",
     }
   }
 };

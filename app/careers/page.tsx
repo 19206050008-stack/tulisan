@@ -1,33 +1,38 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSiteConfig } from '@/lib/supabase';
+import { getSiteConfigLocalized } from '@/lib/supabase';
+import { useStore } from '@/lib/store';
+import { translations } from '@/lib/i18n';
 import { Briefcase, MapPin, Clock, Inbox } from 'lucide-react';
 
 export default function CareersPage() {
+  const { lang } = useStore();
+  const t = translations[lang].pages;
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSiteConfig('page_careers').then(data => { setConfig(data); setLoading(false); });
-  }, []);
+    setLoading(true);
+    getSiteConfigLocalized('page_careers', lang).then(data => { setConfig(data); setLoading(false); });
+  }, [lang]);
 
-  if (loading) return <div className="text-center py-16 text-gray-500">Loading...</div>;
-  if (!config) return <div className="text-center py-16 text-gray-500">Page not configured.</div>;
+  if (loading) return <div className="text-center py-16 text-gray-500">{t.loading}</div>;
+  if (!config) return <div className="text-center py-16 text-gray-500">{t.pageNotConfigured}</div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-10">
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold font-serif">{config.title}</h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">{config.subtitle}</p>
+        <p className="text-lg text-tx-soft">{config.subtitle}</p>
       </div>
 
       {config.openings && config.openings.length > 0 ? (
         <section className="space-y-4">
-          <h2 className="text-xl font-bold font-serif">Posisi Terbuka</h2>
+          <h2 className="text-xl font-bold font-serif">{t.openPositions}</h2>
           <div className="space-y-3">
             {config.openings.map((job: any, i: number) => (
-              <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-5 rounded-xl border border-subtle dark:border-gray-700 bg-brand-bg dark:bg-gray-800 gap-3">
+              <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-5 rounded-xl border border-border bg-bg-card gap-3">
                 <div>
                   <h3 className="font-semibold text-lg">{job.title}</h3>
                   <p className="text-sm text-gray-500">{job.team}</p>
@@ -42,16 +47,16 @@ export default function CareersPage() {
         </section>
       ) : (
         <div className="text-center py-12 space-y-4">
-          <Inbox className="h-12 w-12 mx-auto text-gray-300 dark:text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Belum Ada Lowongan</h3>
+          <Inbox className="h-12 w-12 mx-auto text-tx-muted" />
+          <h3 className="text-lg font-semibold text-tx-soft">{t.noOpenings}</h3>
           <p className="text-sm text-gray-500 max-w-md mx-auto">{config.note}</p>
         </div>
       )}
 
-      <section className="text-center p-8 rounded-xl bg-brand-muted dark:bg-gray-800 space-y-3">
+      <section className="text-center p-8 rounded-xl bg-bg-input space-y-3">
         <Briefcase className="h-10 w-10 mx-auto text-accent" />
-        <h3 className="text-lg font-bold">Tertarik Bergabung?</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Kirim CV Anda ke careers@ditulis.tech dan kami akan menghubungi Anda ketika ada posisi yang sesuai.</p>
+        <h3 className="text-lg font-bold">{t.interestedJoin}</h3>
+        <p className="text-sm text-tx-soft">{t.sendCv}</p>
       </section>
     </div>
   );
