@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { supabase, signOut, getSiteConfig, getConversations, getUnreadMessageCount } from '@/lib/supabase';
+import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
@@ -26,18 +26,6 @@ export function Navbar() {
 
   useEffect(() => {
     setMounted(true);
-
-    // Dynamic favicon
-    getSiteConfig('favicon_url').then((url) => {
-      const href = url || '/favicon.png';
-      let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = href;
-    }).catch(() => {});
   }, []);
 
   // Load frame SVG whenever user's frame_id changes

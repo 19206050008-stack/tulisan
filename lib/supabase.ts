@@ -107,6 +107,19 @@ export async function getStories(status?: string) {
   return data || [];
 }
 
+/** Lightweight query for homepage — only columns needed for story cards */
+export async function getHomepageStories(limit = 20) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, description, cover_url, category, tags, reads_count, likes_count, status, created_at, profiles!stories_author_id_fkey(username, full_name, avatar_url)')
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
 export async function getMyStories(authorId: string) {
   if (!supabase) return [];
   const { data, error } = await supabase.from('stories').select('*').eq('author_id', authorId).order('created_at', { ascending: false });
@@ -439,11 +452,11 @@ export async function getAllSiteConfig() {
 // Featured Slides
 export async function getFeaturedSlides() {
   if (!supabase) return [];
-  // First try admin-configured slides
+  // Try admin-configured slides first
   const { data } = await supabase.from('featured_slides').select('*, stories(title, profiles!stories_author_id_fkey(username, full_name))').eq('active', true).order('sort_order', { ascending: true });
   if (data && data.length > 0) return data;
-  // Fallback: auto-pick top stories by reads
-  const { data: topStories } = await supabase.from('stories').select('id, title, description, cover_url, category, reads_count, profiles!stories_author_id_fkey(username, full_name)').eq('status', 'published').order('reads_count', { ascending: false }).limit(5);
+  // Fallback: top stories by reads (single lightweight query)
+  const { data: topStories } = await supabase.from('stories').select('id, title, description, cover_url, category, profiles!stories_author_id_fkey(username, full_name)').eq('status', 'published').order('reads_count', { ascending: false }).limit(5);
   if (!topStories) return [];
   return topStories.map((s, i) => ({
     id: s.id,

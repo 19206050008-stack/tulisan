@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { LayoutGrid, List, Eye, Heart, ChevronRight, ChevronLeft } from 'lucide-react';
-import { getStories, getCategories } from '@/lib/supabase';
+import { LayoutGrid, List, Eye, Heart, ChevronRight } from 'lucide-react';
+import { getHomepageStories, getCategories } from '@/lib/supabase';
 import { HeroSlider } from '@/components/HeroSlider';
-import { RecentComments } from '@/components/RecentComments';
 import { StoryCover } from '@/components/StoryCover';
 import { GenreFilter } from '@/components/GenreFilter';
 
 import { translations } from '@/lib/i18n';
+
+// Lazy load below-fold components
+const RecentComments = lazy(() => import('@/components/RecentComments').then(m => ({ default: m.RecentComments })));
 
 export default function Home() {
   const { viewMode, setViewMode, lang } = useStore();
@@ -25,8 +27,9 @@ export default function Home() {
 
   const loadData = async () => {
     setLoading(true);
+    // Single parallel batch — all queries at once
     const [storiesData, catsData] = await Promise.all([
-      getStories('published'),
+      getHomepageStories(30),
       getCategories()
     ]);
     setStories(storiesData);
@@ -127,7 +130,9 @@ export default function Home() {
         </section>
       )}
 
-      <RecentComments />
+      <Suspense fallback={<div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-bg-input rounded-xl" />)}</div>}>
+        <RecentComments />
+      </Suspense>
     </div>
   );
 }
