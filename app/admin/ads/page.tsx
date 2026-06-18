@@ -238,8 +238,8 @@ export default function AdminAdsPage() {
                     </span>
                   </div>
                   <p className="text-xs text-tx-soft mt-0.5">
-                    by {req.profiles?.full_name || req.profiles?.username || 'Unknown'} (@{req.profiles?.username})
-                    {req.stories && <span> — promoting: <strong>{req.stories.title}</strong></span>}
+                    User ID: {req.user_id.substring(0, 8)}...
+                    {req.story_id && <span> — Story ID: {req.story_id.substring(0, 8)}...</span>}
                   </p>
                   {req.description && <p className="text-xs text-tx-muted mt-1">{req.description}</p>}
                 </div>
@@ -272,7 +272,7 @@ export default function AdminAdsPage() {
                 ) : (
                   <div className="space-y-2">
                     <button
-                      onClick={() => generateBannerPreview(req.title, req.description, req.profiles?.username || undefined)}
+                      onClick={() => generateBannerPreview(req.title, req.description, undefined)}
                       disabled={generatingBanner}
                       className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent text-accent text-xs font-medium hover:bg-accent/10 transition-colors disabled:opacity-50"
                     >

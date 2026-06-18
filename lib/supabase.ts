@@ -956,9 +956,13 @@ export async function getUnreadMessageCount(userId: string) {
 // Ad Requests
 export async function getAdRequests(userId?: string) {
   if (!supabase) return [];
-  let query = supabase.from('ad_requests').select('*, profiles!ad_requests_user_id_fkey(username, full_name)').order('created_at', { ascending: false });
+  let query = supabase.from('ad_requests').select('*').order('created_at', { ascending: false });
   if (userId) query = query.eq('user_id', userId);
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching ad requests:', error);
+    return [];
+  }
   return data || [];
 }
 
