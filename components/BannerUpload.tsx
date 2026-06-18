@@ -345,12 +345,17 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
           value={selectedSize.id}
           onChange={(e) => {
             const size = BANNER_SIZES.find(s => s.id === e.target.value);
-            if (size) setSelectedSize(size);
+            if (size) {
+              setSelectedSize(size);
+              if (preview) {
+                setInfo('Ukuran berubah. Silakan generate ulang atau upload banner baru untuk ukuran ini.');
+              }
+            }
           }}
-          className="w-full px-3 py-2 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent"
+          className="w-full px-3 py-2 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent dark:text-gray-900 [&>option]:bg-white [&>option]:text-gray-900"
         >
           {BANNER_SIZES.map(size => (
-            <option key={size.id} value={size.id}>
+            <option key={size.id} value={size.id} className="bg-white text-gray-900">
               {size.name} ({size.width}x{size.height})
             </option>
           ))}
