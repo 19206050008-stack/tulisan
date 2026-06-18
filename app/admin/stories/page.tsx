@@ -67,6 +67,28 @@ export default function AdminStoriesPage() {
     setStories(stories.filter(s => s.id !== id));
   };
 
+  const scanStoryContent = async (storyId: string, title: string, description: string, status: string) => {
+    // For published stories, scan full content via chapters endpoint
+    if (status === 'published') {
+      alert('📖 For published stories, use Moderation page to scan all chapters.\n\nThis feature is for draft/archived stories only.');
+      return;
+    }
+    
+    try {
+      alert('🔍 Scanning story...');
+      const result = await moderateText(`${title}\n${description}`, 'id');
+      
+      if (!result.is_safe) {
+        alert(`⚠️ Content flagged!\n\nScore: ${Math.round(result.confidence_score * 100)}%\nFlags: ${result.flagged_categories.join(', ')}`);
+      } else {
+        alert(`✅ Content SAFE! Score: ${Math.round(result.confidence_score * 100)}%`);
+      }
+    } catch (error) {
+      console.error('Scan failed:', error);
+      alert('❌ Scan failed - check console logs');
+    }
+  };
+
   const toggleEditorialPick = async (id: string, current: boolean) => {
     if (!supabase) return;
     await supabase.from('stories').update({ is_editorial_pick: !current }).eq('id', id);
@@ -244,6 +266,9 @@ export default function AdminStoriesPage() {
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => scanStoryContent(s.id, s.title, s.description || '', s.status)} className={`p-2 rounded-lg transition-colors text-blue-600 hover:bg-bg-soft`} title="Scan Content">
+                <Eye className="h-4 w-4" />
+              </button>
               <button onClick={() => toggleEditorialPick(s.id, !!s.is_editorial_pick)} className={`p-2 rounded-lg transition-colors ${s.is_editorial_pick ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft text-tx-muted hover:text-tx'}`} title={s.is_editorial_pick ? 'Remove from Editorial Picks' : 'Add to Editorial Picks'}>
                 <Star className="h-4 w-4" />
               </button>

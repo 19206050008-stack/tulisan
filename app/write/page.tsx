@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { createStory, uploadCover } from '@/lib/supabase';
+import { createStory, uploadCover, moderateText } from '@/lib/supabase';
 import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { RichEditor } from '@/components/RichEditor';
@@ -43,6 +43,28 @@ export default function WritePage() {
       alert('Please enter a story title');
       return;
     }
+    
+    // Scan content before save
+    const combinedContent = `${title}\n${description}\n${content}`;
+    try {
+      const moderationResult = await moderateText(combinedContent, 'id');
+      
+      if (!moderationResult.is_safe && publish) {
+        const shouldContinue = confirm(
+          `⚠️ KONTEN DIPERHATIKAN!\n\n` +
+          `Safety Score: ${Math.round(moderationResult.confidence_score * 100)}%\n` +
+          `Flagged: ${moderationResult.flagged_categories.join(', ')}\n\n` +
+          `Are you sure you want to publish this? If yes, it will be marked for manual review.\n\n` +
+          'Click Cancel to edit your content first.'
+        );
+        
+        if (!shouldContinue) return;
+      }
+    } catch (error) {
+      console.log('Moderation scan skipped:', error);
+      // Continue with save even if moderation fails (fallback behavior)
+    }
+    
     setSaving(true);
     try {
       // Prepare tags array and add tier if exists
