@@ -270,6 +270,12 @@ export default function NanaChatPage() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Set timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.warn('Nana AI timeout - generating fallback response');
+      controller.abort();
+    }, 60000); // 60 second timeout
+
     try {
       const contextMessages = newMessages.slice(-MAX_CONTEXT).map(m => ({
         role: m.role as 'user' | 'assistant',
@@ -286,42 +292,126 @@ export default function NanaChatPage() {
             ...contextMessages,
           ],
           stream: true,
-          max_tokens: 1024,
+          max_tokens: 1500,
           temperature: 0.7,
         }),
         signal: controller.signal,
       });
 
-      if (!res.ok) throw new Error('API error: ' + res.status);
+      if (!res.ok) throw new Error(`API error ${res.status}: ${res.statusText}`);
+      if (!res.body) throw new Error('No response body');
 
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
       let fullText = '';
+      let hasReceivedData = false;
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
+          
           if (done) break;
+          
+          hasReceivedData = true;
           const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+          const lines = chunk.split('\n').filter(l => l.trim().startsWith('data:'));
+          
           for (const line of lines) {
-            const data = line.slice(6);
+            const data = line.slice(6).trim();
             if (data === '[DONE]') break;
+            if (!data) continue;
+            
             try {
               const parsed = JSON.parse(data);
               const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) { fullText += delta; setStreamText(fullText); }
-            } catch {}
+              if (delta && typeof delta === 'string') {
+                fullText += delta;
+                setStreamText(fullText);
+              }
+            } catch (e) {
+              console.log('Parse error but continuing:', e);
+            }
           }
         }
+      } else {
+        throw new Error('ReadableStream not available');
       }
+
+      clearTimeout(timeoutId);
+
+      // If we got some text, use it. If empty, provide fallback
+      const finalText = fullText.trim() || generateFallbackResponse(msgText);
 
       const aiMsg: Message = {
         id: 'ai-' + Date.now(),
         role: 'assistant',
-        content: fullText.trim() || '...',
+        content: finalText,
         timestamp: Date.now(),
       };
+
+      const finalMessages = [...newMessages, aiMsg];
+      updateChat(chatId, { messages: finalMessages, updatedAt: Date.now() });
+      
+      // Sync to DB for admin logs
+      syncNanaChat(
+        finalMessages[0]?.content?.slice(0, 40) || 'Chat',
+        finalMessages.map(m => ({ role: m.role, content: m.content }))
+      ).catch((err) => console.warn('DB sync failed:', err.message));
+      
+      setStreamText('');
+      setStatus('ready');
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      
+      if (err.name === 'AbortError') {
+        const partial: Message = {
+          id: 'ai-' + Date.now(),
+          role: 'assistant',
+          content: streamText || labels.generating,
+          timestamp: Date.now(),
+        };
+        updateChat(chatId, { messages: [...newMessages, partial], updatedAt: Date.now() });
+        setStreamText('');
+        setStatus('ready');
+        return;
+      }
+      
+      console.error('Nana error:', err);
+      const errorMsg = lang === 'en' 
+        ? `I apologize, but I encountered an error. Please try again in a moment. Details: ${err.message || 'Unknown error'}`
+        : `Maaf, saya mengalami kesalahan. Silakan coba lagi sebentar. Detail: ${err.message || 'Kesalahan tidak diketahui'}`;
+        
+      const errMsg: Message = {
+        id: 'err-' + Date.now(),
+        role: 'assistant',
+        content: errorMsg,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errMsg]);
+      setStreamText('');
+      setInput(msgText); // Allow user to retry
+      setStatus('ready');
+    }
+
+    abortRef.current = null;
+  };
+
+  // Fallback responses when AI fails
+  const generateFallbackResponse = (userMessage: string): string => {
+    const responsesEn = [
+      "Thank you for your message! I'm currently experiencing technical difficulties with my connection to the AI service. However, I can still help with writing tips and suggestions based on my training.\n\nWhat type of story are you interested in writing? Some ideas I can help with:\n• Character development\n• Plot outlines\n• World-building\n• Dialogue improvement\n• Genre conventions",
+      
+      "Hello! I'm Nana, your writing assistant. I notice there might be a temporary issue with my connection to the advanced AI features right now.\n\nBut I'm still here to help! Here are some quick writing prompts to inspire you:\n1. A letter you'll never send\n2. The most unexpected gift received\n3. A conversation overheard in public\n\nLet me know what genre or theme you're exploring!",
+    ];
+    
+    const responsesId = [
+      "Halo! Terima kasih sudah bertanya. Saat ini saya mengalami sedikit kendala teknis dengan koneksi ke layanan AI canggih saya.\n\nNamun saya masih bisa membantu dengan tips dan saran penulisan berdasarkan pelatihan saya sebelumnya.\n\nGenre cerita apa yang ingin kamu tulis?\n• Pengembangan karakter\n• Outline plot\n• World-building\n• Perbaikan dialog\n• Konvensi genre",
+      
+      "Hai! Saya Nana, asisten menulismu. Sepertinya ada masalah sementara dengan koneksi ke fitur AI canggihku saat ini.\n\nTapi aku tetap siap membantu! Berikut beberapa prompt cepat untuk menginspirasimu:\n1. Surat yang tak pernah terkirim\n2. Hadiah paling mengejutkan\n3. Percakapan yang kedengar secara tak sengaja di tempat umum\n\nBeri tahu aku genre atau tema mana yang sedang kamu eksplorasi!",
+    ];
+    
+    return lang === 'en' ? responsesEn[0] : responsesId[0];
+  };
 
       const finalMessages = [...newMessages, aiMsg];
       updateChat(chatId, { messages: finalMessages, updatedAt: Date.now() });
