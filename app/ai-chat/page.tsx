@@ -77,34 +77,38 @@ function renderMarkdown(md: string): string {
   const flushTable = () => {
     if (tableRows.length === 0) return;
     
-    // Filter OUT ONLY the header separator line (| --- | or |-------|)
-    // Keep header row and data rows
+    // Filter OUT header separator lines completely
     const rows = tableRows.filter(r => {
       const trimmed = r.trim();
-      // Separator line pattern: | + spaces/dashes/colons + |
-      // But NOT: | text | more text |
-      const sepPattern = /^\s*\|\s*[ :\-\.\*]+\s*\|$/;
-      return !sepPattern.test(trimmed);
+      // Very strict pattern - only match pure separators
+      return !/^\s*\|\s*[-:=\.]+\s*\|/.test(trimmed);
     });
     
     if (rows.length < 2) { 
-      // If we filtered out too much (only separator), just return empty
       tableRows = []; 
       return; 
     }
     
-    let out = '<table class="nana-table my-2"><thead><tr>';
+    // Instead of <table>, use div-based layout to avoid ALL borders
+    let htmlOut = '<div class="nana-tiny-table my-2"><div class="nana-tt-head">';
     const headerCells = rows[0].split('|').filter(c => c.trim() !== '');
-    headerCells.forEach(c => { out += '<th>' + renderInline(c.trim()) + '</th>'; });
-    out += '</tr></thead><tbody>';
+    headerCells.forEach(c => { 
+      htmlOut += `<span class="nana-tt-cell">${renderInline(c.trim())}</span>`; 
+    });
+    htmlOut += '</div>';
+    
+    // Data rows
     for (let r = 1; r < rows.length; r++) {
-      out += '<tr>';
+      htmlOut += '<div class="nana-tt-row">';
       const cells = rows[r].split('|').filter(c => c.trim() !== '');
-      cells.forEach(c => { out += '<td>' + renderInline(c.trim()) + '</td>'; });
-      out += '</tr>';
+      cells.forEach(c => { 
+        htmlOut += `<span class="nana-tt-cell">${renderInline(c.trim())}</span>`; 
+      });
+      htmlOut += '</div>';
     }
-    out += '</tbody></table>';
-    html.push(out);
+    
+    htmlOut += '</div>';
+    html.push(htmlOut);
     tableRows = [];
   };
 
