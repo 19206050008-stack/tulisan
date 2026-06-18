@@ -218,11 +218,19 @@ textarea::placeholder {
   overflow-x: auto;
   display: block;
   max-width: calc(100% - 2rem);
+  border: none !important;
+}
+
+.nana-table thead,
+.nana-table tbody,
+.nana-table tr {
+  border: none !important;
+  background: transparent !important;
 }
 
 .nana-table th,
 .nana-table td {
-  border: none;
+  border: none !important;
   padding: 0.625rem 0.875rem;
   text-align: left;
   vertical-align: top;
@@ -235,26 +243,14 @@ textarea::placeholder {
   color: var(--tx);
 }
 
-/* Subtle vertical divider between columns - barely visible */
-.nana-table td:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 20%;
-  bottom: 20%;
-  width: 1px;
-  background-color: rgba(148, 163, 184, 0.2); /* Very light gray - barely visible */
-  opacity: 0.5;
-  pointer-events: none;
+/* Remove ALL dividers from nana tables */
+.nana-table td:not(:last-child)::after,
+.nana-table th:not(:last-child)::after {
+  display: none !important;
 }
 
-/* Subtle horizontal divider between rows - barely visible */
-.nana-table tr:not(:last-child) {
-  border-bottom: 1px solid transparent;
-}
-
-.nana-table tr:nth-child(even):not(:last-child) {
-  border-bottom-color: rgba(255, 255, 255, 0.02);
+.nana-table tr {
+  border-bottom: none !important;
 }
 
 .nana-table th {
@@ -321,13 +317,21 @@ textarea::placeholder {
 .ai-markdown table,
 .ai-markdown th,
 .ai-markdown td,
-.ai-markdown tr {
+.ai-markdown tr,
+.nana-table,
+.nana-table th,
+.nana-table td,
+.nana-table tr,
+.nana-table thead,
+.nana-table tbody {
   border: none !important;
+  background: transparent !important;
   padding: 6px 12px;
   margin: 0;
 }
 
-.ai-markdown table tr {
+.ai-markdown table tr,
+.nana-table tr {
   border-bottom: none !important;
 }
 
