@@ -76,16 +76,29 @@ function renderMarkdown(md: string): string {
 
   const flushTable = () => {
     if (tableRows.length === 0) return;
-    const rows = tableRows.filter(r => !/^\|[\s:-]+\|$/.test(r));
+    
+    // Filter OUT separator lines like | --- | or |---|-----|
+    const separatorRegex = /^\|\s*[-:]+\s*\|/i;
+    
+    const rows = tableRows.filter(r => {
+      const trimmed = r.trim();
+      // Skip if it looks like a separator line
+      if (/^\|[\s]*-+[\s]*\|$/.test(trimmed)) return false;
+      if (/^\|[\s]*:+[\s]*\|$/.test(trimmed)) return false;
+      if (/^\|[\s]*-+:+[\s]*\|$/.test(trimmed)) return false;
+      return true;
+    });
+    
     if (rows.length === 0) { tableRows = []; return; }
-    let out = '<table class="nana-table my-2"><thead><tr>';
+    
+    let out = '<table class="nana-table my-2" style="border:none !important; border-collapse:collapse !important;"><thead><tr>';
     const headerCells = rows[0].split('|').filter(c => c.trim() !== '');
-    headerCells.forEach(c => { out += '<th>' + renderInline(c.trim()) + '</th>'; });
+    headerCells.forEach(c => { out += '<th style="border:none !important;">' + renderInline(c.trim()) + '</th>'; });
     out += '</tr></thead><tbody>';
     for (let r = 1; r < rows.length; r++) {
-      out += '<tr>';
+      out += '<tr style="border:none !important;">';
       const cells = rows[r].split('|').filter(c => c.trim() !== '');
-      cells.forEach(c => { out += '<td>' + renderInline(c.trim()) + '</td>'; });
+      cells.forEach(c => { out += '<td style="border:none !important;padding:6px 12px !important;">' + renderInline(c.trim()) + '</td>'; });
       out += '</tr>';
     }
     out += '</tbody></table>';
