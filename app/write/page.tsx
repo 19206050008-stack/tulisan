@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { createStory, uploadCover, moderateText } from '@/lib/supabase';
-import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft, LayoutTemplate } from 'lucide-react';
+import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
-import { BannerUpload } from '@/components/BannerUpload';
 import { RichEditor } from '@/components/RichEditor';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
@@ -24,10 +23,6 @@ export default function WritePage() {
   const [chapterTitle, setChapterTitle] = useState('Chapter 1');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState('');
-  
-  // Ad Banner
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -41,11 +36,6 @@ export default function WritePage() {
   const handleCoverReady = (file: File) => {
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
-  };
-
-  const handleBannerReady = (file: File) => {
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
   };
 
   const handleSave = async (publish: boolean) => {
@@ -115,18 +105,6 @@ export default function WritePage() {
         console.log('✓ Database updated with new cover URL');
       } else {
         console.log('⚠️ No cover file - keeping existing one');
-      }
-
-      // Upload banner if available
-      if (bannerFile) {
-        console.log(`📁 Uploading banner: ${bannerFile.name}`);
-        const newBannerUrl = await supabaseModule.uploadCover(bannerFile, `${story.id}-banner`);
-        console.log(`✅ Banner uploaded: ${newBannerUrl}`);
-        
-        await updateStory(story.id, { 
-          banner_url: newBannerUrl
-        });
-        console.log('✓ Database updated with new banner URL');
       }
 
       if (content.trim()) {
@@ -214,21 +192,6 @@ export default function WritePage() {
           <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <CoverUpload preview={coverPreview} onFileReady={handleCoverReady} title={title} category={category} description={description} tags={tags.split(',').map(t => t.trim()).filter(Boolean)} />
               </div>
-
-          {/* Ad Banner Section */}
-          <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-              <LayoutTemplate className="h-4 w-4 text-accent" />
-              Iklan Banner
-            </h3>
-            <BannerUpload 
-              preview={bannerPreview || undefined}
-              onFileReady={handleBannerReady}
-              title={title}
-              category={category}
-              description={description}
-            />
-          </div>
 
           <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <h3 className="font-semibold text-sm">Details</h3>
