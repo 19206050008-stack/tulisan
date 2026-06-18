@@ -192,3 +192,19 @@ textarea::placeholder {
 .ai-markdown em             { font-style: italic; }
 .ai-markdown a              { color: #E65A28; text-decoration: underline; }
 .ai-markdown hr             { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
+
+/* -- Nana Avatar ----------------------------------------------------------- */
+.nana-avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E65A28 0%, #ff8a5c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nana-avatar-lg {
+  width: 4rem;
+  height: 4rem;
+}

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot } from 'lucide-react';
+import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { translations } from '@/lib/i18n';
 import { AdPopup } from '@/components/AdPopup';
@@ -253,6 +253,16 @@ export function Navbar() {
 
               <Link href="/notifications" className="p-2 rounded-full hover:bg-bg-soft transition-colors">
                 <Bell className="h-5 w-5" />
+              </Link>
+
+              {/* Nana AI button */}
+              <Link
+                href="/ai-chat"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
+                title="Nana AI"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">Nana</span>
               </Link>
             </>
           )}
