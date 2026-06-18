@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: session.user.id,
               username: profile?.username,
               avatar_url: profile?.avatar_url,
+              frame_id: profile?.frame_id,
             },
             role
           );
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: session.user.id,
             username: profile?.username,
             avatar_url: profile?.avatar_url,
+            frame_id: profile?.frame_id,
           },
           role
         );

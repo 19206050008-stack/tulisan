@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getRecentComments } from '@/lib/supabase';
+import { getRecentComments, getProfileFrames } from '@/lib/supabase';
 import { MessageSquare } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
@@ -13,9 +13,15 @@ export function RecentComments() {
   
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadComments();
+    getProfileFrames().then((frames: any[]) => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
   }, []);
 
   const loadComments = async () => {
@@ -63,13 +69,18 @@ export function RecentComments() {
       <div className="space-y-3">
         {comments.map(c => (
           <Link href={`/story/${c.stories?.id || c.story_id}`} key={c.id} className="flex gap-3 p-3 rounded-xl border border-border bg-bg-card hover:border-accent/30 transition-colors group">
-            {c.profiles?.avatar_url ? (
-              <img src={c.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-bg-input flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">
-                {(c.profiles?.full_name || c.profiles?.username || 'U')[0].toUpperCase()}
-              </div>
-            )}
+            <div className="relative w-8 h-8 shrink-0">
+              {c.profiles?.frame_id && frameMap[c.profiles.frame_id] && (
+                <div className="absolute inset-[-3px] w-[38px] h-[38px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[c.profiles.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+              )}
+              {c.profiles?.avatar_url ? (
+                <img src={c.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-bg-input flex items-center justify-center text-xs font-bold text-gray-400">
+                  {(c.profiles?.full_name || c.profiles?.username || 'U')[0].toUpperCase()}
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm line-clamp-1 text-tx">{c.content}</p>
               <p className="text-xs text-gray-500 mt-1">

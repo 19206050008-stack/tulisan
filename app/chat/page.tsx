@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { getConversations, getMessages, sendMessage, getOrCreateConversation, supabase } from '@/lib/supabase';
+import { getConversations, getMessages, sendMessage, getOrCreateConversation, getProfileFrames, supabase } from '@/lib/supabase';
 import { translations } from '@/lib/i18n';
 import { Send, ArrowLeft, MessageCircle, Search, Users } from 'lucide-react';
 
@@ -25,6 +25,15 @@ export default function ChatPage() {
   const [showSearch, setShowSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getProfileFrames().then((frames: any[]) => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
+  }, []);
 
   const labels = lang === 'en' ? {
     title: 'Messages',
@@ -154,7 +163,7 @@ export default function ChatPage() {
     const q = query.trim();
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, avatar_type, selected_avatar')
+      .select('id, username, full_name, avatar_url, avatar_type, selected_avatar, frame_id')
       .neq('id', user.id)
       .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
       .limit(10);
@@ -221,13 +230,18 @@ export default function ChatPage() {
                       onClick={() => startNewChat(u.id, u)}
                       className="w-full flex items-center gap-2.5 p-2.5 hover:bg-bg-soft transition-colors text-left"
                     >
-                      {u.avatar_url || u.selected_avatar ? (
-                        <img src={u.avatar_url || u.selected_avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
-                          {(u.full_name || u.username || 'U')[0].toUpperCase()}
-                        </div>
-                      )}
+                      <div className="relative w-8 h-8 shrink-0">
+                        {u.frame_id && frameMap[u.frame_id] && (
+                          <div className="absolute inset-[-3px] w-[38px] h-[38px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[u.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                        )}
+                        {u.avatar_url || u.selected_avatar ? (
+                          <img src={u.avatar_url || u.selected_avatar} className="w-8 h-8 rounded-full object-cover" alt="" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
+                            {(u.full_name || u.username || 'U')[0].toUpperCase()}
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{u.full_name || u.username}</p>
                         <p className="text-[10px] text-tx-muted">@{u.username}</p>
@@ -255,13 +269,18 @@ export default function ChatPage() {
                 onClick={() => openConversation(convo.conversation_id, convo.other_user)}
                 className={`w-full flex items-center gap-3 p-3 hover:bg-bg-soft transition-colors text-left border-b border-border/50 ${activeConvo === convo.conversation_id ? 'bg-accent/5' : ''}`}
               >
-                {convo.other_user?.avatar_url || convo.other_user?.selected_avatar ? (
-                  <img src={convo.other_user.avatar_url || convo.other_user.selected_avatar} className="w-10 h-10 rounded-full object-cover shrink-0" alt="" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-sm font-bold text-accent shrink-0">
-                    {(convo.other_user?.full_name || convo.other_user?.username || 'U')[0].toUpperCase()}
-                  </div>
-                )}
+                <div className="relative w-10 h-10 shrink-0">
+                  {convo.other_user?.frame_id && frameMap[convo.other_user.frame_id] && (
+                    <div className="absolute inset-[-3px] w-[46px] h-[46px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[convo.other_user.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                  )}
+                  {convo.other_user?.avatar_url || convo.other_user?.selected_avatar ? (
+                    <img src={convo.other_user.avatar_url || convo.other_user.selected_avatar} className="w-10 h-10 rounded-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-sm font-bold text-accent">
+                      {(convo.other_user?.full_name || convo.other_user?.username || 'U')[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium truncate">{convo.other_user?.full_name || convo.other_user?.username}</p>
@@ -293,13 +312,18 @@ export default function ChatPage() {
               <button onClick={() => setActiveConvo(null)} className="md:hidden p-1 rounded hover:bg-bg-soft">
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              {activeOther.avatar_url || activeOther.selected_avatar ? (
-                <img src={activeOther.avatar_url || activeOther.selected_avatar} className="w-9 h-9 rounded-full object-cover" alt="" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-sm font-bold text-accent">
-                  {(activeOther.full_name || activeOther.username || 'U')[0].toUpperCase()}
-                </div>
-              )}
+              <div className="relative w-9 h-9">
+                {activeOther.frame_id && frameMap[activeOther.frame_id] && (
+                  <div className="absolute inset-[-3px] w-[42px] h-[42px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[activeOther.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                )}
+                {activeOther.avatar_url || activeOther.selected_avatar ? (
+                  <img src={activeOther.avatar_url || activeOther.selected_avatar} className="w-9 h-9 rounded-full object-cover" alt="" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-sm font-bold text-accent">
+                    {(activeOther.full_name || activeOther.username || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
               <div>
                 <Link href={`/profile/${activeOther.username}`} className="text-sm font-medium hover:text-accent transition-colors">{activeOther.full_name || activeOther.username}</Link>
                 <p className="text-[10px] text-tx-muted">@{activeOther.username}</p>

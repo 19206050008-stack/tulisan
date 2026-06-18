@@ -193,14 +193,14 @@ export async function createComment(userId: string, storyId: string, chapterId: 
 
 export async function getComments(storyId: string) {
   if (!supabase) return [];
-  const { data, error } = await supabase.from('comments').select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url)').eq('story_id', storyId).order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('comments').select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url, frame_id)').eq('story_id', storyId).order('created_at', { ascending: true });
   if (error) return [];
   return data || [];
 }
 
 export async function updateComment(commentId: string, content: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data, error } = await supabase.from('comments').update({ content }).eq('id', commentId).select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url)').single();
+  const { data, error } = await supabase.from('comments').update({ content }).eq('id', commentId).select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url, frame_id)').single();
   if (error) throw error;
   return data;
 }
@@ -233,7 +233,7 @@ export async function getCommentLikes(userId: string, commentIds: string[]) {
 
 export async function getRecentComments(limit = 5) {
   if (!supabase) return [];
-  const { data } = await supabase.from('comments').select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url), stories!comments_story_id_fkey(id, title)').order('created_at', { ascending: false }).limit(limit);
+  const { data } = await supabase.from('comments').select('*, profiles!comments_user_id_fkey(username, full_name, avatar_url, frame_id), stories!comments_story_id_fkey(id, title)').order('created_at', { ascending: false }).limit(limit);
   return data || [];
 }
 
@@ -629,7 +629,7 @@ export async function getConversations(userId: string) {
   if (otherUserIds.size > 0) {
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url')
+      .select('id, username, full_name, avatar_url, selected_avatar, frame_id')
       .in('id', [...otherUserIds]);
     for (const p of (profiles || [])) {
       profilesMap[p.id] = p;

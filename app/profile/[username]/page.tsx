@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { getProfileByUsername, getUserStories, getFollowerCount, getFollowingCount, isFollowing, followUser, unfollowUser } from '@/lib/supabase';
+import { getProfileByUsername, getUserStories, getFollowerCount, getFollowingCount, isFollowing, followUser, unfollowUser, getProfileFrames } from '@/lib/supabase';
 import { MapPin, Globe, Calendar, UserPlus, UserMinus, Edit, Eye, Heart, BookOpen } from 'lucide-react';
 import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
@@ -19,6 +19,7 @@ export default function PublicProfilePage() {
   const [isFollowed, setIsFollowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [frameSvg, setFrameSvg] = useState<string | null>(null);
   const perPage = 10;
 
   useEffect(() => {
@@ -41,6 +42,14 @@ export default function PublicProfilePage() {
       if (user?.id && user.id !== p.id) {
         const f = await isFollowing(user.id, p.id);
         setIsFollowed(f);
+      }
+      // Load profile frame
+      if (p.frame_id) {
+        const frames = await getProfileFrames();
+        const frame = frames.find((f: any) => f.id === p.frame_id);
+        setFrameSvg(frame?.svg_data || null);
+      } else {
+        setFrameSvg(null);
       }
     }
     setLoading(false);
@@ -72,7 +81,10 @@ export default function PublicProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row items-start gap-6">
-        <div className="shrink-0">
+        <div className="shrink-0 relative w-28 h-28">
+          {frameSvg && (
+            <div className="absolute inset-[-6px] w-[124px] h-[124px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameSvg.replace('<svg', '<svg width="100%" height="100%"') }} />
+          )}
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt={profile.username} className="w-28 h-28 rounded-full object-cover" />
           ) : (

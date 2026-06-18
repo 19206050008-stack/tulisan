@@ -55,7 +55,7 @@ export default function LoginPage() {
         const profile = await getProfile(data.user.id);
         const userRole = profile?.role || 'user';
         login(
-          { name: profile?.full_name || data.user.email, id: data.user.id, username: profile?.username, avatar_url: profile?.avatar_url },
+          { name: profile?.full_name || data.user.email, id: data.user.id, username: profile?.username, avatar_url: profile?.avatar_url, frame_id: profile?.frame_id },
           userRole
         );
         router.push('/');

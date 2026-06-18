@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { createComment, updateComment, deleteComment, toggleCommentLike, createReport, createNotification } from '@/lib/supabase';
+import { createComment, updateComment, deleteComment, toggleCommentLike, createReport, createNotification, getProfileFrames } from '@/lib/supabase';
 import { Heart, Reply, Edit, Trash2, Flag, Send, X, MoreHorizontal } from 'lucide-react';
 import { RichEditor, RichContent } from '@/components/RichEditor';
 import { ConfirmDialog, PromptDialog } from '@/components/ConfirmDialog';
@@ -18,7 +18,7 @@ interface Comment {
   content: string;
   likes_count: number;
   created_at: string;
-  profiles: { username: string; full_name: string; avatar_url: string | null };
+  profiles: { username: string; full_name: string; avatar_url: string | null; frame_id?: string | null };
 }
 
 interface CommentSectionProps {
@@ -38,6 +38,15 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getProfileFrames().then((frames: any[]) => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
+  }, []);
   const [editText, setEditText] = useState('');
   const [likedIds, setLikedIds] = useState<string[]>(likedCommentIds);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -157,7 +166,10 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
     return (
       <div key={comment.id} className={`${isReply ? 'ml-10 mt-3' : 'mt-4'}`}>
         <div className="flex gap-3">
-          <Link href={`/profile/${comment.profiles?.username}`} className="shrink-0">
+          <Link href={`/profile/${comment.profiles?.username}`} className="shrink-0 relative w-8 h-8">
+            {comment.profiles?.frame_id && frameMap[comment.profiles.frame_id] && (
+              <div className="absolute inset-[-3px] w-[38px] h-[38px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[comment.profiles.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+            )}
             {comment.profiles?.avatar_url ? (
               <img src={comment.profiles.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
             ) : (
