@@ -3,8 +3,15 @@
 import { useState, useRef } from 'react';
 import { Upload, AlertTriangle, Check, Info, Wand2 } from 'lucide-react';
 
-const BANNER_WIDTH = 728;
-const BANNER_HEIGHT = 90;
+// Standard banner sizes based on Google Ad Manager
+const BANNER_SIZES = [
+  { id: 'leaderboard', name: 'Leaderboard', width: 728, height: 90, description: 'Paling populer, cocok untuk atas konten' },
+  { id: 'medium-rectangle', name: 'Medium Rectangle', width: 300, height: 250, description: 'Ideal untuk dalam artikel' },
+  { id: 'large-rectangle', name: 'Large Rectangle', width: 336, height: 280, description: 'Lebih besar dari medium' },
+  { id: 'half-page', name: 'Half Page', width: 300, height: 600, description: 'Format vertikal, high impact' },
+  { id: 'banner', name: 'Banner', width: 468, height: 60, description: 'Format klasik, compact' },
+  { id: 'mobile-banner', name: 'Mobile Banner', width: 320, height: 50, description: 'Khusus mobile' },
+];
 
 interface BannerUploadProps {
   preview?: string;
@@ -18,28 +25,30 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(BANNER_SIZES[0]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ── Crop & resize canvas ────────────────────────────────────────
   const cropAndResize = (img: HTMLImageElement): Promise<File> => {
     return new Promise((resolve) => {
       const canvas = canvasRef.current || document.createElement('canvas');
-      canvas.width = BANNER_WIDTH;
-      canvas.height = BANNER_HEIGHT;
+      canvas.width = selectedSize.width;
+      canvas.height = selectedSize.height;
       const ctx = canvas.getContext('2d')!;
 
       const imgRatio = img.width / img.height;
+      const bannerRatio = selectedSize.width / selectedSize.height;
       let sx = 0, sy = 0, sw = img.width, sh = img.height;
 
-      if (imgRatio > BANNER_WIDTH / BANNER_HEIGHT) {
-        sw = img.height * (BANNER_WIDTH / BANNER_HEIGHT);
+      if (imgRatio > bannerRatio) {
+        sw = img.height * bannerRatio;
         sx = (img.width - sw) / 2;
-      } else if (imgRatio < BANNER_WIDTH / BANNER_HEIGHT) {
-        sh = img.width / (BANNER_WIDTH / BANNER_HEIGHT);
+      } else if (imgRatio < bannerRatio) {
+        sh = img.width / bannerRatio;
         sy = (img.height - sh) / 2;
       }
 
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, BANNER_WIDTH, BANNER_HEIGHT);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, selectedSize.width, selectedSize.height);
       canvas.toBlob((blob) => {
         if (blob) resolve(new File([blob], 'banner.jpg', { type: 'image/jpeg' }));
       }, 'image/jpeg', 0.9);
@@ -58,13 +67,14 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
     setProcessing(true);
     const img = new Image();
     img.onload = async () => {
-      if (img.width < 400 || img.height < 60) {
-        setError(`Gambar terlalu kecil. Minimal 400x60px untuk banner.`);
+      const minSize = Math.min(selectedSize.width, selectedSize.height) * 0.5;
+      if (img.width < minSize || img.height < minSize) {
+        setError(`Gambar terlalu kecil. Minimal ${Math.round(minSize)}x${Math.round(minSize)}px untuk ukuran ini.`);
         setProcessing(false); 
         return;
       }
-      const ratioDiff = Math.abs((img.width / img.height) - (BANNER_WIDTH / BANNER_HEIGHT));
-      setInfo(ratioDiff < 0.1 ? 'Rasio sudah sesuai.' : `Auto-crop ke ${BANNER_WIDTH}x${BANNER_HEIGHT}px.`);
+      const ratioDiff = Math.abs((img.width / img.height) - (selectedSize.width / selectedSize.height));
+      setInfo(ratioDiff < 0.1 ? 'Rasio sudah sesuai.' : `Auto-crop ke ${selectedSize.width}x${selectedSize.height}px.`);
       const croppedFile = await cropAndResize(img);
       onFileReady(croppedFile);
       setProcessing(false);
@@ -86,8 +96,8 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
 
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = BANNER_WIDTH;
-      canvas.height = BANNER_HEIGHT;
+      canvas.width = selectedSize.width;
+      canvas.height = selectedSize.height;
       const ctx = canvas.getContext('2d')!;
 
       // Random layout selection
@@ -109,7 +119,7 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
       // Draw decorative elements
       drawDecorations(ctx, canvas, colorScheme);
 
-      // Draw text with proper contrast
+      // Draw text with proper contrast and CENTERED alignment
       drawText(ctx, canvas, usedTitle, description || category || '', colorScheme);
 
       // Convert to file
@@ -229,24 +239,25 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
     const w = canvas.width;
     const h = canvas.height;
     
-    // Calculate text positioning
-    const padding = 30;
+    // Calculate text positioning - CENTERED
+    const padding = Math.max(20, w * 0.05);
     const maxWidth = w - (padding * 2);
     
-    // Title styling
-    let titleSize = 28;
-    if (title.length > 40) titleSize = 24;
-    if (title.length > 50) titleSize = 20;
+    // Title styling - adaptive based on banner size
+    let titleSize = Math.max(16, Math.min(32, h * 0.4));
+    if (title.length > 40) titleSize = Math.max(14, titleSize * 0.85);
+    if (title.length > 50) titleSize = Math.max(12, titleSize * 0.7);
     
     ctx.font = `bold ${titleSize}px 'Inter', 'Segoe UI', sans-serif`;
     ctx.fillStyle = colors.text;
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
     // Text shadow for better contrast
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
     
     // Word wrap title
     const words = title.split(' ');
@@ -264,26 +275,27 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
     }
     if (currentLine) lines.push(currentLine);
     
-    // Limit to 2 lines max
-    const displayLines = lines.slice(0, 2);
+    // Limit to 3 lines max for better centering
+    const displayLines = lines.slice(0, 3);
     
-    // Calculate vertical position
-    const lineHeight = titleSize * 1.2;
-    const totalHeight = displayLines.length * lineHeight + (subtitle ? 20 : 0);
+    // Calculate vertical position for CENTERED text
+    const lineHeight = titleSize * 1.3;
+    const subtitleHeight = subtitle ? 20 : 0;
+    const totalHeight = displayLines.length * lineHeight + subtitleHeight;
     const startY = (h - totalHeight) / 2;
     
-    // Draw title
+    // Draw title - CENTERED
     displayLines.forEach((line, i) => {
-      ctx.fillText(line, padding, startY + (i * lineHeight));
+      ctx.fillText(line, w / 2, startY + (i * lineHeight) + (lineHeight / 2));
     });
     
-    // Draw subtitle if provided
+    // Draw subtitle if provided - CENTERED
     if (subtitle && subtitle.trim()) {
-      ctx.shadowBlur = 2;
+      ctx.shadowBlur = 3;
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
       
-      const subtitleSize = 14;
+      const subtitleSize = Math.max(11, Math.min(16, h * 0.2));
       ctx.font = `500 ${subtitleSize}px 'Inter', 'Segoe UI', sans-serif`;
       ctx.globalAlpha = 0.9;
       
@@ -296,7 +308,9 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
         displaySubtitle += '...';
       }
       
-      ctx.fillText(displaySubtitle, padding, startY + (displayLines.length * lineHeight) + 10);
+      // Draw subtitle CENTERED below title
+      const subtitleY = startY + (displayLines.length * lineHeight) + 10;
+      ctx.fillText(displaySubtitle, w / 2, subtitleY);
       ctx.globalAlpha = 1;
     }
     
@@ -313,24 +327,46 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
         <div className="group relative">
           <Info className="h-4 w-4 text-gray-400 cursor-help" />
           <div className="absolute right-0 top-6 w-52 p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl text-xs text-gray-600 dark:text-gray-400 invisible group-hover:visible z-10 space-y-1">
-            <p className="font-medium text-gray-900 dark:text-gray-100">Ukuran:</p>
-            <p>{BANNER_WIDTH} x {BANNER_HEIGHT} px (rasio 8:1)</p>
-            <p>Min: 400x60 px</p>
-            <p>Max file: 5MB</p>
-            <p>Format: JPG, PNG, WebP</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">Ukuran Standar:</p>
+            <p>Leaderboard: 728x90</p>
+            <p>Medium Rectangle: 300x250</p>
+            <p>Large Rectangle: 336x280</p>
+            <p>Half Page: 300x600</p>
+            <p>Banner: 468x60</p>
+            <p>Mobile: 320x50</p>
           </div>
         </div>
       </div>
 
+      {/* Size Selector */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Pilih Ukuran Banner</label>
+        <select
+          value={selectedSize.id}
+          onChange={(e) => {
+            const size = BANNER_SIZES.find(s => s.id === e.target.value);
+            if (size) setSelectedSize(size);
+          }}
+          className="w-full px-3 py-2 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent"
+        >
+          {BANNER_SIZES.map(size => (
+            <option key={size.id} value={size.id}>
+              {size.name} ({size.width}x{size.height})
+            </option>
+          ))}
+        </select>
+        <p className="text-[11px] text-tx-muted">{selectedSize.description}</p>
+      </div>
+
       <p className="text-[11px] text-gray-500 dark:text-gray-400">
-        Upload banner dari Canva atau generate otomatis menggunakan judul + deskripsi. Ukuran: {BANNER_WIDTH}x{BANNER_HEIGHT}px
+        Upload banner dari Canva atau generate otomatis menggunakan judul + deskripsi. Ukuran: {selectedSize.width}x{selectedSize.height}px
       </p>
 
       {preview ? (
         <div className="space-y-2">
           {/* Preview gambar dengan hover buttons */}
           <div className="relative">
-            <img src={preview} alt="Banner" className="w-full aspect-[8/1] object-cover rounded-lg" style={{ maxWidth: '728px', margin: '0 auto', display: 'block' }} />
+            <img src={preview} alt="Banner" className="w-full rounded-lg" style={{ maxWidth: `${selectedSize.width}px`, aspectRatio: `${selectedSize.width}/${selectedSize.height}`, objectFit: 'cover', margin: '0 auto', display: 'block' }} />
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 hover:opacity-100 transition-opacity rounded-lg flex-wrap p-4">
               <label className="px-3 py-1.5 bg-white text-gray-900 text-xs font-medium rounded-full cursor-pointer hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
                 Upload Baru
@@ -348,14 +384,14 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
       ) : (
         <div className="space-y-2">
           {/* Upload area */}
-          <label className={`flex flex-col items-center justify-center aspect-[8/1] min-h-[60px] max-h-[120px] border-2 border-dashed rounded-lg cursor-pointer transition-colors ${processing ? 'border-accent bg-accent/5' : 'border-gray-300 dark:border-gray-600 hover:border-accent'}`}>
+          <label className={`flex flex-col items-center justify-center rounded-lg cursor-pointer transition-colors ${processing ? 'border-accent bg-accent/5' : 'border-gray-300 dark:border-gray-600 hover:border-accent'}`} style={{ minHeight: `${Math.min(120, selectedSize.height * 0.5)}px`, maxHeight: '200px', border: '2px dashed' }}>
             {processing ? (
               <div className="animate-pulse text-accent text-sm">Processing...</div>
             ) : (
               <>
                 <Upload className="h-7 w-7 text-gray-400" />
-                <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">Upload Banner dari Canva</span>
-                <span className="text-[10px] text-gray-400">{BANNER_WIDTH}x{BANNER_HEIGHT}px (8:1)</span>
+                <span className="text-xs text-gray-600 dark:text-gray-400 mt-2">Upload Banner</span>
+                <span className="text-[10px] text-gray-400">{selectedSize.width}x{selectedSize.height}px</span>
               </>
             )}
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
@@ -371,7 +407,7 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
           </button>
 
           <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
-            Buat banner di Canva lalu upload, atau generate otomatis menggunakan judul + deskripsi cerita Anda
+            Generate banner menggunakan Canvas dengan judul + deskripsi cerita Anda
           </p>
         </div>
       )}

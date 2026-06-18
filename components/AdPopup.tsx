@@ -1,106 +1,96 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { getActiveAds, supabase } from '@/lib/supabase';
-import { X, ExternalLink } from 'lucide-react';
-
-const AD_DISMISS_KEY = 'sv_ad_dismissed';
+import { useEffect, useState } from 'react';
+import { X, Eye, Heart } from 'lucide-react';
+import { getPublishedAds } from '@/lib/supabase';
 
 export function AdPopup() {
   const [ad, setAd] = useState<any>(null);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Check if user already dismissed an ad this session
-    const dismissed = sessionStorage.getItem(AD_DISMISS_KEY);
-    if (dismissed) return;
+    // Check if user has seen an ad in this session
+    const hasSeenAd = sessionStorage.getItem('hasSeenAd');
+    if (hasSeenAd) return;
 
-    getActiveAds().then(ads => {
-      if (ads.length > 0) {
+    // Fetch published ads
+    getPublishedAds().then(ads => {
+      if (ads && ads.length > 0) {
         // Pick a random ad
         const randomAd = ads[Math.floor(Math.random() * ads.length)];
         setAd(randomAd);
-        // Small delay so page loads first
-        setTimeout(() => setShow(true), 1500);
+        setShow(true);
+        sessionStorage.setItem('hasSeenAd', 'true');
       }
     });
   }, []);
 
-  const dismiss = () => {
+  const handleClose = () => {
     setShow(false);
-    sessionStorage.setItem(AD_DISMISS_KEY, ad?.id || 'true');
   };
-
-  const handleClick = async () => {
-    // Track click
-    if (supabase && ad) {
-      await supabase.from('ad_requests').update({ clicks_count: (ad.clicks_count || 0) + 1 }).eq('id', ad.id);
-    }
-    dismiss();
-  };
-
-  // Track view
-  useEffect(() => {
-    if (show && ad && supabase) {
-      supabase.from('ad_requests').update({ views_count: (ad.views_count || 0) + 1 }).eq('id', ad.id).then(() => {});
-    }
-  }, [show, ad]);
 
   if (!show || !ad) return null;
 
-  const linkHref = ad.stories ? `/story/${ad.story_id}` : (ad.image_url ? '#' : undefined);
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={dismiss}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-      {/* Modal */}
-      <div
-        className="relative max-w-lg w-full bg-bg-card rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-        onClick={e => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="relative bg-bg-card rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
         {/* Close button */}
         <button
-          onClick={dismiss}
-          className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors"
+          onClick={handleClose}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-bg-card/80 backdrop-blur-sm hover:bg-bg-soft transition-colors"
+          aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
 
         {/* Banner image */}
-        {ad.image_url ? (
-          linkHref && linkHref !== '#' ? (
-            <Link href={linkHref} onClick={handleClick}>
-              <img src={ad.image_url} alt={ad.title} className="w-full object-contain max-h-64 bg-bg-input" />
-            </Link>
-          ) : (
-            <img src={ad.image_url} alt={ad.title} className="w-full object-contain max-h-64 bg-bg-input" />
-          )
-        ) : (
-          <div className="w-full h-48 bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center p-8">
-            <p className="text-2xl font-bold font-serif text-center text-accent">{ad.title}</p>
+        {ad.image_url && (
+          <div className="w-full bg-bg-input flex items-center justify-center" style={{ maxHeight: '400px', overflow: 'hidden' }}>
+            <img
+              src={ad.image_url}
+              alt={ad.title}
+              className="w-full h-auto object-contain"
+              style={{ maxHeight: '400px' }}
+            />
           </div>
         )}
 
-        {/* Content */}
-        <div className="p-5 space-y-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-tx-muted font-bold mb-1">Sponsored</p>
-            <h3 className="text-lg font-bold font-serif">{ad.title}</h3>
-            {ad.description && <p className="text-sm text-tx-soft mt-1">{ad.description}</p>}
+        {/* Ad content */}
+        <div className="p-6 space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold font-serif">{ad.title}</h3>
+            {ad.description && (
+              <p className="text-sm text-tx-soft line-clamp-3">{ad.description}</p>
+            )}
           </div>
 
+          {/* Story info if linked */}
           {ad.stories && (
-            <Link
-              href={`/story/${ad.story_id}`}
-              onClick={handleClick}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity w-fit"
-            >
-              Read Now <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+            <div className="flex items-center gap-4 text-xs text-tx-muted pt-2 border-t border-border">
+              <div className="flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
+                <span>{ad.stories.reads_count || 0} views</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Heart className="h-3.5 w-3.5" />
+                <span>{ad.stories.likes_count || 0} likes</span>
+              </div>
+              <div className="text-tx-soft">
+                Story: <span className="font-medium text-tx">{ad.stories.title}</span>
+              </div>
+            </div>
           )}
+
+          {/* CTA */}
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-[11px] text-tx-muted">Iklan dipromosikan</span>
+            <button
+              onClick={handleClose}
+              className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>

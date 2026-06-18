@@ -987,6 +987,19 @@ export async function updateAdRequestStatus(id: string, status: string, reason?:
   if (error) throw error;
 }
 
+export async function getPublishedAds() {
+  if (!supabase) return [];
+  const now = new Date().toISOString();
+  const { data } = await supabase
+    .from('ad_requests')
+    .select('*, stories(title, reads_count, likes_count)')
+    .eq('status', 'published')
+    .lte('start_date', now)
+    .gte('end_date', now)
+    .order('created_at', { ascending: false });
+  return data || [];
+}
+
 export async function getActiveAds() {
   if (!supabase) return [];
   const now = new Date().toISOString().split('T')[0];
