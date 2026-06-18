@@ -113,7 +113,8 @@ function renderMarkdown(md: string): string {
     const h1 = t.match(/^#\s+(.+)/);
     if (h1) { closeList(); html.push('<h1 class="font-bold text-xl mt-3 mb-1">' + renderInline(h1[1]) + '</h1>'); continue; }
     if (t.startsWith('> ')) { closeList(); html.push('<blockquote class="border-l-3 border-accent pl-3 my-2 text-tx-soft italic">' + renderInline(t.slice(2)) + '</blockquote>'); continue; }
-    if (/^[-*_]{3,}$/.test(t)) { closeList(); html.push('<hr class="border-border my-3" />'); continue; }
+    // SKIP horizontal rules when collecting table rows
+    if (!/^\|[\s:-]+\|$/.test(t) && /^[-*_]{3,}$/.test(t)) { closeList(); html.push('<hr class="border-border my-3" />'); continue; }
 
     const ul = t.match(/^[-*+]\s+(.+)/);
     if (ul) {
