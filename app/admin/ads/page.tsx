@@ -141,9 +141,9 @@ export default function AdminAdsPage() {
   };
 
   const handleApprove = async (id: string) => {
-    if (!confirm('Approve this ad request?')) return;
-    await updateAdRequestStatus(id, 'approved', undefined, adminNotes || undefined);
-    setRequests(requests.map(r => r.id === id ? { ...r, status: 'approved' } : r));
+    if (!confirm('Approve and publish this ad? It will be shown to all visitors within the date range.')) return;
+    await updateAdRequestStatus(id, 'published');
+    setRequests(requests.map(r => r.id === id ? { ...r, status: 'published' } : r));
     setActionId(null);
     setAdminNotes('');
   };
