@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Trash2, Eye, EyeOff, Search, ExternalLink, Heart, BookOpen, Filter } from 'lucide-react';
+import { Trash2, Eye, EyeOff, Search, ExternalLink, Heart, BookOpen, Filter, Star, CheckCircle } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 
 const GRADIENT_MAP: Record<string, string> = {
@@ -65,6 +65,18 @@ export default function AdminStoriesPage() {
     if (!confirm('Delete this story? This action cannot be undone.')) return;
     await supabase.from('stories').delete().eq('id', id);
     setStories(stories.filter(s => s.id !== id));
+  };
+
+  const toggleEditorialPick = async (id: string, current: boolean) => {
+    if (!supabase) return;
+    await supabase.from('stories').update({ is_editorial_pick: !current }).eq('id', id);
+    setStories(stories.map(s => s.id === id ? { ...s, is_editorial_pick: !current } : s));
+  };
+
+  const toggleCompleted = async (id: string, current: boolean) => {
+    if (!supabase) return;
+    await supabase.from('stories').update({ is_completed: !current }).eq('id', id);
+    setStories(stories.map(s => s.id === id ? { ...s, is_completed: !current } : s));
   };
 
   // Get unique categories
@@ -220,6 +232,8 @@ export default function AdminStoriesPage() {
                     {s.status}
                   </span>
                   {s.category && <span className="text-[10px] px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{s.category}</span>}
+                  {s.is_editorial_pick && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium flex items-center gap-0.5"><Star className="h-2.5 w-2.5" /> Editorial</span>}
+                  {s.is_completed && <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium flex items-center gap-0.5"><CheckCircle className="h-2.5 w-2.5" /> Tamat</span>}
                   {s.status === 'published' && (
                     <>
                       <span className="text-[10px] text-tx-muted flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatNum(s.reads_count || 0)}</span>
@@ -230,6 +244,12 @@ export default function AdminStoriesPage() {
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => toggleEditorialPick(s.id, !!s.is_editorial_pick)} className={`p-2 rounded-lg transition-colors ${s.is_editorial_pick ? 'bg-accent/10 text-accent' : 'hover:bg-bg-soft text-tx-muted hover:text-tx'}`} title={s.is_editorial_pick ? 'Remove from Editorial Picks' : 'Add to Editorial Picks'}>
+                <Star className="h-4 w-4" />
+              </button>
+              <button onClick={() => toggleCompleted(s.id, !!s.is_completed)} className={`p-2 rounded-lg transition-colors ${s.is_completed ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'hover:bg-bg-soft text-tx-muted hover:text-tx'}`} title={s.is_completed ? 'Mark as Ongoing' : 'Mark as Completed'}>
+                <CheckCircle className="h-4 w-4" />
+              </button>
               <Link href={`/story/${s.id}`} className="p-2 rounded-lg hover:bg-bg-soft transition-colors text-tx-muted hover:text-tx" title="View story" target="_blank">
                 <ExternalLink className="h-4 w-4" />
               </Link>

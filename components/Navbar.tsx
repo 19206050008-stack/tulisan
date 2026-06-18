@@ -23,23 +23,29 @@ export function Navbar() {
   const [chatUnread, setChatUnread] = useState(0);
   const chatRef = useRef<HTMLDivElement>(null);
   const [frameSvg, setFrameSvg] = useState<string | null>(null);
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load frame SVG whenever user's frame_id changes
+  // Load all frames once and build a map
   useEffect(() => {
-    if (user?.frame_id) {
-      getProfileFrames().then(frames => {
-        const frame = frames.find(f => f.id === user.frame_id);
-        if (frame) setFrameSvg(frame.svg_data);
-        else setFrameSvg(null);
-      });
+    getProfileFrames().then(frames => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
+  }, []);
+
+  // Set own frame SVG from the map whenever user's frame_id changes
+  useEffect(() => {
+    if (user?.frame_id && frameMap[user.frame_id]) {
+      setFrameSvg(frameMap[user.frame_id]);
     } else {
       setFrameSvg(null);
     }
-  }, [user?.frame_id]);
+  }, [user?.frame_id, frameMap]);
 
   // Load chat data for logged-in users
   useEffect(() => {
@@ -208,13 +214,18 @@ export function Navbar() {
                             onClick={() => { setShowChat(false); loadChatPreview(); }}
                             className={`flex items-center gap-3 px-4 py-3 hover:bg-bg-soft transition-colors border-b border-border/50 ${convo.unread_count > 0 ? 'bg-accent/5' : ''}`}
                           >
-                            {convo.other_user?.avatar_url || convo.other_user?.selected_avatar ? (
-                              <img src={convo.other_user.avatar_url || convo.other_user.selected_avatar} className="w-9 h-9 rounded-full object-cover shrink-0" alt="" />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent shrink-0">
-                                {(convo.other_user?.full_name || convo.other_user?.username || 'U')[0].toUpperCase()}
-                              </div>
-                            )}
+                            <div className="relative w-9 h-9 shrink-0">
+                              {convo.other_user?.frame_id && frameMap[convo.other_user.frame_id] && (
+                                <div className="absolute inset-[-3px] w-[42px] h-[42px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[convo.other_user.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                              )}
+                              {convo.other_user?.avatar_url || convo.other_user?.selected_avatar ? (
+                                <img src={convo.other_user.avatar_url || convo.other_user.selected_avatar} className="w-9 h-9 rounded-full object-cover" alt="" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
+                                  {(convo.other_user?.full_name || convo.other_user?.username || 'U')[0].toUpperCase()}
+                                </div>
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <p className={`text-sm truncate ${convo.unread_count > 0 ? 'font-semibold' : 'font-medium'}`}>

@@ -7,7 +7,7 @@ import {
   getForumCategories, getForumThreads, getForumThread, getForumPosts,
   getForumReplies, createForumThread, createForumPost, deleteForumThread,
   deleteForumPost, voteForumThread, getUserForumVoteThreads, supabase,
-  getSiteConfigLocalized
+  getSiteConfigLocalized, getProfileFrames
 } from '@/lib/supabase';
 import {
   MessageCircle, PenTool, Star, BookOpen, Trophy, Lightbulb,
@@ -35,6 +35,15 @@ export default function CommunityPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [userVotes, setUserVotes] = useState<Record<string, number>>({});
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    getProfileFrames().then((frames: any[]) => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
+  }, []);
 
   // Thread detail state
   const [activeThread, setActiveThread] = useState<any>(null);
@@ -338,7 +347,10 @@ export default function CommunityPage() {
               {/* Main post */}
               <div className="p-4 rounded-xl border border-border bg-bg-card">
                 <div className="flex items-start gap-3">
-                  <div className="shrink-0 pt-0.5">
+                  <div className="shrink-0 pt-0.5 relative w-8 h-8">
+                    {post.author?.frame_id && frameMap[post.author.frame_id] && (
+                      <div className="absolute inset-[-3px] w-[38px] h-[38px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[post.author.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                    )}
                     {post.author?.avatar_url ? (
                       <img src={post.author.avatar_url} className="w-8 h-8 rounded-full" alt="" />
                     ) : (
@@ -389,11 +401,16 @@ export default function CommunityPage() {
               {replies[post.id]?.map((r: any) => (
                 <div key={r.id} className="ml-11 p-3 rounded-lg border border-border/50 bg-bg-soft/50">
                   <div className="flex items-start gap-2.5">
-                    {r.author?.avatar_url ? (
-                      <img src={r.author.avatar_url} className="w-6 h-6 rounded-full shrink-0 mt-0.5" alt="" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-bg-input shrink-0 mt-0.5" />
-                    )}
+                    <div className="relative w-6 h-6 shrink-0 mt-0.5">
+                      {r.author?.frame_id && frameMap[r.author.frame_id] && (
+                        <div className="absolute inset-[-2px] w-[28px] h-[28px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[r.author.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                      )}
+                      {r.author?.avatar_url ? (
+                        <img src={r.author.avatar_url} className="w-6 h-6 rounded-full" alt="" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-bg-input" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-xs font-medium">{r.author?.full_name || r.author?.username || 'Anonymous'}</span>

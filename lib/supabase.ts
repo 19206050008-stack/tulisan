@@ -1013,7 +1013,7 @@ export async function getForumCategories() {
 
 export async function getForumThreads(categorySlug?: string, page = 1, perPage = 20) {
   if (!supabase) return { threads: [], count: 0 };
-  let query = supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url), forum_categories(name, name_en, slug)', { count: 'exact' });
+  let query = supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url, frame_id), forum_categories(name, name_en, slug)', { count: 'exact' });
   if (categorySlug) query = query.eq('forum_categories.slug', categorySlug);
   const from = (page - 1) * perPage;
   query = query.order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).range(from, from + perPage - 1);
@@ -1024,7 +1024,7 @@ export async function getForumThreads(categorySlug?: string, page = 1, perPage =
 
 export async function getForumThread(threadId: string) {
   if (!supabase) return null;
-  const { data } = await supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url), forum_categories(name, name_en, slug)').eq('id', threadId).single();
+  const { data } = await supabase.from('forum_threads').select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url, frame_id), forum_categories(name, name_en, slug)').eq('id', threadId).single();
   if (data) {
     supabase.from('forum_threads').update({ views_count: (data.views_count || 0) + 1 }).eq('id', threadId).then(() => {});
   }
@@ -1040,7 +1040,7 @@ export async function createForumThread(categoryId: string, title: string, conte
     author_id: user.id,
     title,
     content
-  }).select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url)').single();
+  }).select('*, author:profiles!forum_threads_author_id_fkey(username, full_name, avatar_url, frame_id)').single();
   if (error) throw error;
   return data;
 }
@@ -1056,7 +1056,7 @@ export async function getForumPosts(threadId: string, page = 1, perPage = 20) {
   const from = (page - 1) * perPage;
   const { data, error, count } = await supabase
     .from('forum_posts')
-    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)', { count: 'exact' })
+    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url, frame_id)', { count: 'exact' })
     .eq('thread_id', threadId)
     .is('parent_id', null)
     .order('created_at', { ascending: true })
@@ -1069,7 +1069,7 @@ export async function getForumReplies(postId: string) {
   if (!supabase) return [];
   const { data } = await supabase
     .from('forum_posts')
-    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)')
+    .select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url, frame_id)')
     .eq('parent_id', postId)
     .order('created_at', { ascending: true });
   return data || [];
@@ -1084,7 +1084,7 @@ export async function createForumPost(threadId: string, content: string, parentI
     author_id: user.id,
     content,
     parent_id: parentId || null
-  }).select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url)').single();
+  }).select('*, author:profiles!forum_posts_author_id_fkey(username, full_name, avatar_url, frame_id)').single();
   if (error) throw error;
   // Update thread replies count and last_reply_at
   await supabase.from('forum_threads').update({ replies_count: supabase.rpc ? undefined : 0, last_reply_at: new Date().toISOString() }).eq('id', threadId);

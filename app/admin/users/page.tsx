@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, getProfileFrames } from '@/lib/supabase';
 import { Trash2, Shield, ShieldOff, Search, ExternalLink, Filter, Users as UsersIcon, Crown } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 
@@ -17,10 +17,18 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [frameMap, setFrameMap] = useState<Record<string, string>>({});
   const perPage = 10;
 
   useEffect(() => { loadUsers(); }, []);
   useEffect(() => { setCurrentPage(1); }, [search, roleFilter, sortBy]);
+  useEffect(() => {
+    getProfileFrames().then((frames: any[]) => {
+      const map: Record<string, string> = {};
+      frames.forEach((f: any) => { if (f.id && f.svg_data) map[f.id] = f.svg_data; });
+      setFrameMap(map);
+    });
+  }, []);
 
   const loadUsers = async () => {
     if (!supabase) return;
@@ -168,13 +176,18 @@ export default function AdminUsersPage() {
         {paginated.map(u => (
           <div key={u.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors">
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              {u.avatar_url ? (
-                <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center text-sm font-bold text-accent shrink-0">
-                  {(u.full_name || u.username || 'U')[0].toUpperCase()}
-                </div>
-              )}
+              <div className="relative w-10 h-10 shrink-0">
+                {u.frame_id && frameMap[u.frame_id] && (
+                  <div className="absolute inset-[-3px] w-[46px] h-[46px] z-10 pointer-events-none" dangerouslySetInnerHTML={{ __html: frameMap[u.frame_id].replace('<svg', '<svg width="100%" height="100%"') }} />
+                )}
+                {u.avatar_url ? (
+                  <img src={u.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center text-sm font-bold text-accent">
+                    {(u.full_name || u.username || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{u.full_name || u.username}</p>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
