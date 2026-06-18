@@ -46,7 +46,7 @@ export default function Home() {
     setCategoryNames(['All', ...catNames]);
     const genresWithStories = catNames.filter((g: string) => storiesData.some((s: any) => s.category === g));
     const shuffled = [...genresWithStories].sort(() => Math.random() - 0.5);
-    setRandomGenres(shuffled.slice(0, 2));
+    setRandomGenres(shuffled.slice(0, 1));
     setLoading(false);
   };
 
