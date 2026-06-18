@@ -232,46 +232,55 @@ textarea::placeholder {
   overflow-wrap: break-word;
   hyphens: auto;
   min-width: 0;
+  color: var(--tx);
 }
 
-/* Vertical separator between columns instead of full borders */
+/* Subtle vertical divider between columns - barely visible */
 .nana-table td:not(:last-child)::after {
   content: '';
   position: absolute;
   right: 0;
-  top: 10%;
-  bottom: 10%;
+  top: 20%;
+  bottom: 20%;
   width: 1px;
-  background-color: var(--border);
-  opacity: 0.3;
+  background-color: rgba(148, 163, 184, 0.2); /* Very light gray - barely visible */
+  opacity: 0.5;
+  pointer-events: none;
 }
 
-/* Horizontal separators between rows */
+/* Subtle horizontal divider between rows - barely visible */
 .nana-table tr:not(:last-child) {
   border-bottom: 1px solid transparent;
 }
 
 .nana-table tr:nth-child(even):not(:last-child) {
-  border-bottom-color: rgba(255, 255, 255, 0.05);
+  border-bottom-color: rgba(255, 255, 255, 0.02);
 }
 
 .nana-table th {
   font-weight: 600;
-  color: var(--tx-soft);
-  padding-bottom: 0.875rem;
-  border-bottom: 2px solid var(--border);
+  color: var(--tx-soft); /* Ensure headers are visible */
+  padding-bottom: 0.75rem;
+  /* NO border-bottom - make headers stand out more clearly */
   white-space: nowrap;
-  min-width: 0;
+  border-bottom: 2px solid var(--border); /* Clear header separator */
 }
 
-/* Row backgrounds */
+/* Row backgrounds - alternating colors */
 .nana-table tr {
   background-color: transparent;
   transition: background-color 0.2s ease;
 }
 
 .nana-table tr:hover {
-  background-color: var(--accent/5);
+  background-color: var(--accent/8); /* Even lighter hover effect */
+}
+
+/* Ensure all table content is visible */
+.nana-table p {
+  margin: 0;
+  padding: 0;
+  color: var(--tx);
 }
 
 /* Table responsiveness */
@@ -287,8 +296,8 @@ textarea::placeholder {
   }
   
   .nana-table td:not(:last-child)::after {
-    top: 5%;
-    bottom: 5%;
+    top: 10%;
+    bottom: 10%;
   }
 }
 
@@ -306,6 +315,26 @@ textarea::placeholder {
   overflow-x: auto;
   width: fit-content;
   max-width: 100%;
+}
+
+/* Ensure all text elements are visible */
+.ai-markdown th,
+.ai-markdown td,
+.ai-markdown strong,
+.ai-markdown em,
+.ai-markdown code,
+.ai-markdown p,
+.ai-markdown span {
+  color: inherit !important;
+}
+
+.ai-markdown th {
+  color: var(--tx-soft);
+  font-weight: 600;
+}
+
+.ai-markdown td {
+  color: var(--tx);
 }
 
 /* Hide scrollbar for horizontal carousels */
