@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['@wllama/wllama'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
@@ -19,6 +20,18 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'api.dicebear.com' },
     ],
+  },
+  // COOP/COEP headers for SharedArrayBuffer (required by wllama multi-thread)
+  async headers() {
+    return [
+      {
+        source: '/ai-chat',
+        headers: [
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+        ],
+      },
+    ];
   },
 };
 

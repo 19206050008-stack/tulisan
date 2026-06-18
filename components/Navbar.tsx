@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone } from 'lucide-react';
+import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { translations } from '@/lib/i18n';
 import { AdPopup } from '@/components/AdPopup';
@@ -308,6 +308,9 @@ export function Navbar() {
                   </Link>
                   <Link href="/chat" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
                     <MessageCircle className="h-4 w-4" /> Chat
+                  </Link>
+                  <Link href="/ai-chat" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
+                    <Bot className="h-4 w-4" /> AI Chat
                   </Link>
                   <Link href="/ads" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
                     <Megaphone className="h-4 w-4" /> {lang === 'en' ? 'My Ads' : 'Iklan Saya'}
