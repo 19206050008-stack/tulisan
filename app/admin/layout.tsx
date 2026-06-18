@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { LayoutDashboard, Users, BookOpen, MessageSquare, Sliders, Image, Tag, Flag, Settings, Globe, FileText, Megaphone, Newspaper } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, MessageSquare, Sliders, Image, Tag, Flag, Settings, Globe, FileText, Megaphone, Newspaper, Sparkles } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: '/admin/ads', label: 'Advertisements', icon: Megaphone },
   { href: '/admin/press', label: 'Press Articles', icon: Newspaper },
   { href: '/admin/reports', label: 'Reports', icon: Flag },
+  { href: '/admin/nana', label: 'Nana AI', icon: Sparkles },
   { href: '/admin/api', label: 'Public API', icon: Globe },
   { href: '/admin/settings', label: 'Site Settings', icon: Settings },
 ];

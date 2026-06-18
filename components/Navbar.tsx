@@ -269,11 +269,13 @@ export function Navbar() {
               {/* Nana AI button */}
               <Link
                 href="/ai-chat"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
-                title="Nana AI"
+                className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
               >
                 <img src="/nana-avatar.gif" alt="" className="w-5 h-5 rounded-full object-cover" />
-                <span className="hidden sm:inline">Nana</span>
+                <span className="hidden sm:inline">Nana AI</span>
+                <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1 rounded-lg bg-bg-card border border-border shadow-lg text-[10px] text-tx-soft whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  Asisten menulis AI kamu
+                </span>
               </Link>
             </>
           )}
@@ -331,7 +333,7 @@ export function Navbar() {
                     <MessageCircle className="h-4 w-4" /> Chat
                   </Link>
                   <Link href="/ai-chat" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
-                    <Bot className="h-4 w-4" /> AI Chat
+                    <Sparkles className="h-4 w-4" /> Nana AI
                   </Link>
                   <Link href="/ads" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
                     <Megaphone className="h-4 w-4" /> {lang === 'en' ? 'My Ads' : 'Iklan Saya'}

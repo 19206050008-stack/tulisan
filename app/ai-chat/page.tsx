@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { Bot, Send, Square, Sparkles, Trash2, Plus, MessageSquare, Menu, X } from 'lucide-react';
+import { syncNanaChat } from '@/lib/supabase';
 
 // ─── Types ───────────────────────────────────────────────────────
 interface Message {
@@ -295,6 +296,11 @@ export default function NanaChatPage() {
 
       const finalMessages = [...newMessages, aiMsg];
       updateChat(chatId, { messages: finalMessages, updatedAt: Date.now() });
+      // Sync to DB for admin logs
+      syncNanaChat(
+        finalMessages[0]?.content?.slice(0, 40) || 'Chat',
+        finalMessages.map(m => ({ role: m.role, content: m.content }))
+      ).catch(() => {});
       setStreamText('');
       setStatus('ready');
     } catch (err: any) {
