@@ -209,6 +209,35 @@ textarea::placeholder {
   height: 4rem;
 }
 
+/* AI Chat Tables */
+.nana-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.875rem;
+  margin: 1em 0;
+}
+
+.nana-table th,
+.nana-table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.nana-table th {
+  background-color: var(--bg-card);
+  font-weight: 600;
+  color: var(--tx-soft);
+}
+
+.nana-table tr:nth-child(even) {
+  background-color: var(--bg-input);
+}
+
+.nana-table tr:hover {
+  background-color: var(--accent/10);
+}
+
 /* Hide scrollbar for horizontal carousels */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

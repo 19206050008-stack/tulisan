@@ -68,9 +68,29 @@ function renderMarkdown(md: string): string {
   let inCode = false;
   let codeLines: string[] = [];
   let listType: 'ul' | 'ol' | null = null;
+  let tableRows: string[] = [];
 
   const closeList = () => {
     if (listType) { html.push(listType === 'ul' ? '</ul>' : '</ol>'); listType = null; }
+  };
+
+  const flushTable = () => {
+    if (tableRows.length === 0) return;
+    const rows = tableRows.filter(r => !/^\|[\s:-]+\|$/.test(r));
+    if (rows.length === 0) { tableRows = []; return; }
+    let out = '<table class="nana-table my-2"><thead><tr>';
+    const headerCells = rows[0].split('|').filter(c => c.trim() !== '');
+    headerCells.forEach(c => { out += '<th>' + renderInline(c.trim()) + '</th>'; });
+    out += '</tr></thead><tbody>';
+    for (let r = 1; r < rows.length; r++) {
+      out += '<tr>';
+      const cells = rows[r].split('|').filter(c => c.trim() !== '');
+      cells.forEach(c => { out += '<td>' + renderInline(c.trim()) + '</td>'; });
+      out += '</tr>';
+    }
+    out += '</tbody></table>';
+    html.push(out);
+    tableRows = [];
   };
 
   for (let i = 0; i < lines.length; i++) {
@@ -106,10 +126,19 @@ function renderMarkdown(md: string): string {
       html.push('<li>' + renderInline(ol[1]) + '</li>'); continue;
     }
 
+    // Table rows
+    if (t.startsWith('|') && t.endsWith('|')) {
+      closeList();
+      tableRows.push(t);
+      continue;
+    }
+    flushTable();
+
     closeList();
     html.push('<p class="my-1.5 leading-relaxed">' + renderInline(t) + '</p>');
   }
   closeList();
+  flushTable();
   if (inCode) html.push('<pre class="bg-bg-input rounded-lg p-3 my-2 overflow-x-auto"><code class="text-xs font-mono">' + escapeHtml(codeLines.join('\n')) + '</code></pre>');
   return html.join('');
 }
