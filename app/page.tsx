@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { LayoutGrid, List, Eye, Heart, ChevronRight, ChevronLeft, Award, TrendingUp, CheckCircle, Star } from 'lucide-react';
-import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories } from '@/lib/supabase';
+import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories, getStoriesByCategory } from '@/lib/supabase';
 import { HeroSlider } from '@/components/HeroSlider';
 import { StoryCover } from '@/components/StoryCover';
 import { GenreFilter } from '@/components/GenreFilter';
@@ -177,7 +177,7 @@ export default function Home() {
           </section>
 
           {randomGenres.map(genre => (
-            <GenreSection key={genre} genre={genre} stories={stories.filter(s => s.category === genre)} formatCount={formatCount} />
+            <GenreCarousel key={genre} genre={genre} formatCount={formatCount} seeAll={t.seeAll} />
           ))}
         </>
       ) : (
@@ -267,21 +267,98 @@ function StoryCard({ story, viewMode, formatCount }: { story: any; viewMode: str
   );
 }
 
-function GenreSection({ genre, stories, formatCount }: { genre: string; stories: any[]; formatCount: (n: number) => string }) {
-  const { lang } = useStore();
-  const t = translations[lang].home;
+function GenreCarousel({ genre, formatCount, seeAll }: { genre: string; formatCount: (n: number) => string; seeAll: string }) {
+  const [stories, setStories] = useState<any[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    getStoriesByCategory(genre, 15).then(setStories);
+  }, [genre]);
+
+  // Auto-scroll: scroll right smoothly, reset to start when reaching end
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || stories.length < 4) return;
+
+    autoScrollRef.current = setInterval(() => {
+      if (!el) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 10) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: 210, behavior: 'smooth' });
+      }
+    }, 3000);
+
+    return () => { if (autoScrollRef.current) clearInterval(autoScrollRef.current); };
+  }, [stories.length]);
+
+  // Pause auto-scroll on hover
+  const pauseAutoScroll = () => { if (autoScrollRef.current) clearInterval(autoScrollRef.current); };
+  const resumeAutoScroll = () => {
+    if (autoScrollRef.current) clearInterval(autoScrollRef.current);
+    const el = scrollRef.current;
+    if (!el || stories.length < 4) return;
+    autoScrollRef.current = setInterval(() => {
+      if (!el) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 10) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: 210, behavior: 'smooth' });
+      }
+    }, 3000);
+  };
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -210 : 210, behavior: 'smooth' });
+  };
 
   if (stories.length === 0) return null;
+
   return (
-    <section className="space-y-4 pt-4 border-t border-border">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-bold font-serif">{genre}</h2>
-        <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-xs font-medium text-gray-500 hover:text-accent flex items-center">{t.seeAll} <ChevronRight className="h-3 w-3" /></Link>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-        {stories.slice(0, 5).map(story => (
-          <StoryCard key={story.id} story={story} viewMode="grid" formatCount={formatCount} />
-        ))}
+    <section className="pt-4 border-t border-border">
+      <div className="rounded-2xl border border-border bg-bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-bold">{genre}</span>
+            <h2 className="text-base font-bold font-serif">{genre}</h2>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => scroll('left')} onMouseEnter={pauseAutoScroll} onMouseLeave={resumeAutoScroll} className="p-1 rounded-full border border-border hover:bg-bg-soft transition-colors">
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => scroll('right')} onMouseEnter={pauseAutoScroll} onMouseLeave={resumeAutoScroll} className="p-1 rounded-full border border-border hover:bg-bg-soft transition-colors">
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+            <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-[10px] font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          onMouseEnter={pauseAutoScroll}
+          onMouseLeave={resumeAutoScroll}
+          className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory"
+        >
+          {stories.map(story => (
+            <Link key={story.id} href={`/story/${story.id}`} className="group flex gap-2.5 min-w-[190px] max-w-[190px] p-2 rounded-xl border border-border/50 bg-bg hover:border-accent/30 hover:shadow-sm transition-all snap-start">
+              <div className="w-12 h-16 rounded-md overflow-hidden shrink-0">
+                <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <h3 className="text-[11px] font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>
+                <p className="text-[9px] text-tx-soft truncate mt-0.5">{story.profiles?.full_name || 'Anonymous'}</p>
+                <div className="flex items-center gap-1.5 mt-1 text-[9px] text-tx-muted">
+                  <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" /> {formatCount(story.reads_count || 0)}</span>
+                  <span className="flex items-center gap-0.5"><Heart className="h-2.5 w-2.5" /> {formatCount(story.likes_count || 0)}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );

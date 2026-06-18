@@ -164,6 +164,20 @@ export async function getCompletedStories(limit = 10) {
   return data || [];
 }
 
+/** Stories by category — for genre sections on homepage */
+export async function getStoriesByCategory(category: string, limit = 15) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, description, cover_url, category, tags, reads_count, likes_count, status, profiles!stories_author_id_fkey(username, full_name, avatar_url)')
+    .eq('status', 'published')
+    .eq('category', category)
+    .order('reads_count', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
 export async function getMyStories(authorId: string) {
   if (!supabase) return [];
   const { data, error } = await supabase.from('stories').select('*').eq('author_id', authorId).order('created_at', { ascending: false });
