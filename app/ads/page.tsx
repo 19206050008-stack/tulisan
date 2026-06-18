@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store';
 import { getAdRequests, createAdRequest, supabase } from '@/lib/supabase';
 import { translations } from '@/lib/i18n';
 import { Plus, Image as ImageIcon, Calendar, Clock, CheckCircle, XCircle, AlertCircle, FileText, Eye, Send, RefreshCw } from 'lucide-react';
+import { BannerUpload } from '@/components/BannerUpload';
 
 export default function AdsPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function AdsPage() {
   const [description, setDescription] = useState('');
   const [storyId, setStoryId] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -134,29 +137,69 @@ export default function AdsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) { setError(lang === 'en' ? 'Please enter an ad title.' : 'Mohon masukkan judul iklan.'); return; }
-    if (!startDate || !endDate) { setError(lang === 'en' ? 'Please select date range.' : 'Mohon pilih rentang tanggal.'); return; }
-    if (new Date(endDate) <= new Date(startDate)) { setError(lang === 'en' ? 'End date must be after start date.' : 'Tanggal selesai harus setelah tanggal mulai.'); return; }
+    if (!title.trim() || !startDate || !endDate) {
+      setError('Judul, tanggal mulai, dan tanggal selesai wajib diisi.');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
+
     try {
+      // Upload banner first if file exists
+      let finalImageUrl = imageUrl;
+      if (bannerFile) {
+        const formData = new FormData();
+        formData.append('file', bannerFile);
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('banners')
+          .upload(`banner-${Date.now()}-${bannerFile.name}`, bannerFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('banners')
+          .getPublicUrl(uploadData.path);
+        
+        finalImageUrl = publicUrl;
+      }
+
       await createAdRequest({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        story_id: storyId || undefined,
-        image_url: imageUrl.trim() || undefined,
+        title,
+        description: description || null,
+        story_id: storyId || null,
+        image_url: finalImageUrl || null,
         start_date: startDate,
         end_date: endDate,
       });
+
       setSuccess(labels.success);
       setShowForm(false);
-      setTitle(''); setDescription(''); setStoryId(''); setImageUrl(''); setStartDate(''); setEndDate('');
-      loadRequests();
-    } catch (e: any) {
-      setError(e.message);
+      setTitle('');
+      setDescription('');
+      setStoryId('');
+      setImageUrl('');
+      setBannerFile(null);
+      setBannerPreview('');
+      setStartDate('');
+      setEndDate('');
+      
+      // Reload requests
+      const data = await getAdRequests();
+      setRequests(data);
+    } catch (err: any) {
+      setError(err.message || 'Gagal mengirim request iklan.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
+  };
+
+  const handleBannerReady = (file: File) => {
+    setBannerFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setBannerPreview(previewUrl);
+    setImageUrl(previewUrl);
   };
 
   const resubmitRejected = (req: any) => {
@@ -218,9 +261,15 @@ export default function AdsPage() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{labels.imageUrl}</label>
-              <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder={labels.imageUrlPh} className="w-full px-3 py-2.5 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent" />
+              <BannerUpload
+                preview={bannerPreview}
+                onFileReady={handleBannerReady}
+                title={title}
+                description={description}
+              />
+              <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder={labels.imageUrlPh} className="w-full px-3 py-2.5 text-sm rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent mt-2" />
               <p className="text-[11px] text-tx-muted">{labels.imageHint}</p>
-              {imageUrl && (
+              {imageUrl && !bannerPreview && (
                 <div className="mt-2 p-2 rounded-lg bg-bg-input border border-border">
                   <img src={imageUrl} alt="Preview" className="max-w-full max-h-24 rounded object-contain mx-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
