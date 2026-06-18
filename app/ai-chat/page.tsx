@@ -77,18 +77,21 @@ function renderMarkdown(md: string): string {
   const flushTable = () => {
     if (tableRows.length === 0) return;
     
-    // Filter OUT header separator like | --- | or |---|-----| but keep data rows
+    // Filter OUT ONLY the header separator line (| --- | or |-------|)
+    // Keep header row and data rows
     const rows = tableRows.filter(r => {
       const trimmed = r.trim();
-      // Only skip if it's a pure separator line (all dashes/colons)
-      // But keep regular content lines that happen to have | at start/end
-      if (/^[\s]*\|[\s]*-+:[\s]*-+:?[\s]*\|$/.test(trimmed)) return false; // Separator line
-      if (/^[\s]*\|[\s]*-:[\s]*-+:?[\s]*\|$/.test(trimmed)) return false; // Another separator pattern
-      // Otherwise keep the row (could be header or data)
-      return true;
+      // Separator line pattern: | + spaces/dashes/colons + |
+      // But NOT: | text | more text |
+      const sepPattern = /^\s*\|\s*[ :\-\.\*]+\s*\|$/;
+      return !sepPattern.test(trimmed);
     });
     
-    if (rows.length === 0) { tableRows = []; return; }
+    if (rows.length < 2) { 
+      // If we filtered out too much (only separator), just return empty
+      tableRows = []; 
+      return; 
+    }
     
     let out = '<table class="nana-table my-2"><thead><tr>';
     const headerCells = rows[0].split('|').filter(c => c.trim() !== '');
