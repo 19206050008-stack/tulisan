@@ -219,6 +219,60 @@ textarea::placeholder {
   display: block;
   max-width: calc(100% - 2rem);
   border: none !important;
+  background: transparent !important;
+}
+
+.nana-table thead,
+.nana-table tbody,
+.nana-table tr {
+  border: none !important;
+  background: transparent !important;
+}
+
+.nana-table th,
+.nana-table td {
+  border: none !important;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  vertical-align: top;
+  position: relative;
+  max-width: 300px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  min-width: 0;
+  color: var(--tx);
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Remove ALL dividers from nana tables */
+.nana-table td:not(:last-child)::after,
+.nana-table th:not(:last-child)::after,
+.nana-table *::before,
+.nana-table *::after {
+  display: none !important;
+  content: none !important;
+}
+
+.nana-table tr,
+.nana-table td,
+.nana-table th {
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+}
+
+.nana-table tr:hover {
+  background-color: transparent !important;
+}
+
+.nana-table p {
+  margin: 0;
+  padding: 0;
+  color: var(--tx);
 }
 
 .nana-table thead,
