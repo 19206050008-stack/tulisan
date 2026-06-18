@@ -189,13 +189,7 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     
     ctx.restore();
 
-    // Minimal brand watermark at bottom left
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = 'italic 10px Georgia, serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Di.tulis', 50, COVER_HEIGHT - 35);
-
-    // IMPORTANT: NO BORDERS, NO LINES - Clean modern design!
+    // IMPORTANT: NO WATERMARK, NO LINES - Clean design with only title + background + icon!
 
     canvas.toBlob((blob) => {
       if (blob) { onFileReady(new File([blob], 'generated-cover.png', { type: 'image/png' })); setInfo('Cover berhasil di-generate!'); }
