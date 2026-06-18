@@ -1224,20 +1224,27 @@ export async function syncNanaChat(title: string, messages: { role: string; cont
 
 export async function getNanaChatStats() {
   if (!supabase) return { totalChats: 0, totalMessages: 0, totalUsers: 0, users: [] };
-  const { data: chats } = await supabase
-    .from('nana_chats')
-    .select('id, user_id, title, created_at, updated_at, profiles!nana_chats_user_id_fkey(username, full_name, avatar_url)')
-    .order('updated_at', { ascending: false });
+  const { data: chats } = await supabase.from('nana_chats').select('id, user_id, title, created_at, updated_at').order('updated_at', { ascending: false });
   if (!chats || chats.length === 0) return { totalChats: 0, totalMessages: 0, totalUsers: 0, users: [] };
+  
+  // Fetch unique user IDs
+  const userIds = [...new Set(chats.map(c => c.user_id))];
+  
+  // Get user profiles by ID (using auth.users is better, but use profiles for consistency)
+  const { data: profilesData } = await supabase.from('profiles').select('id, username, full_name, avatar_url').in('id', userIds);
+  const profileMap: Record<string, any> = {};
+  (profilesData || []).forEach((p: any) => { profileMap[p.id] = p; });
+  
   const userMap: Record<string, any> = {};
   for (const chat of chats) {
     const uid = chat.user_id;
+    const profile = profileMap[uid] || {};
     if (!userMap[uid]) {
       userMap[uid] = {
         user_id: uid,
-        username: chat.profiles?.username || 'Unknown',
-        full_name: chat.profiles?.full_name || 'Unknown',
-        avatar_url: chat.profiles?.avatar_url,
+        username: profile.username || 'Unknown',
+        full_name: profile.full_name || 'Unknown',
+        avatar_url: profile.avatar_url,
         chat_count: 0,
         last_active: chat.updated_at,
         chats: [],
@@ -1258,6 +1265,57 @@ export async function getNanaChatMessages(chatId: string) {
   if (!supabase) return [];
   const { data } = await supabase.from('nana_messages').select('id, role, content, created_at').eq('chat_id', chatId).order('created_at', { ascending: true });
   return data || [];
+}
+
+// ─── Admin Dashboard Stats ──────────────────────────────────────
+export async function getFrontendStats() {
+  if (!supabase) return {
+    users: 0, stories: 0, comments: 0, reads: 0,
+    totalReads: 0, publishedStories: 0, draftStories: 0, archivedStories: 0,
+    storyCategories: 0, featuredSlides: 0, forumThreads: 0, pressArticles: 0, ads: 0
+  };
+  
+  // Basic counts
+  const [usersCount, storiesCount, commentsCount] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('stories').select('*', { count: 'exact', head: true }),
+    supabase.from('comments').select('*', { count: 'exact', head: true }),
+  ]);
+  
+  // Reads by category and status
+  const [totalReads, published, drafts, archived] = await Promise.all([
+    supabase.from('stories').select('reads_count'),
+    supabase.from('stories').select('*', { count: 'exact' }).eq('status', 'published'),
+    supabase.from('stories').select('*', { count: 'exact' }).eq('status', 'draft'),
+    supabase.from('stories').select('*', { count: 'exact' }).eq('status', 'archived'),
+  ]);
+  
+  const totalReadsValue = (totalReads.data?.reduce((sum: number, s: any) => sum + (s.reads_count || 0), 0) || 0);
+  
+  // Other frontend features
+  const [categories, slides, threads, press, ads] = await Promise.all([
+    supabase.from('categories').select('*', { count: 'exact', head: true }),
+    supabase.from('featured_slides').select('*', { count: 'exact', head: true }),
+    supabase.from('forum_threads').select('*', { count: 'exact', head: true }),
+    supabase.from('press_articles').select('*', { count: 'exact', head: true }),
+    supabase.from('ads').select('*', { count: 'exact', head: true }),
+  ]);
+  
+  return {
+    users: usersCount.count || 0,
+    stories: storiesCount.count || 0,
+    comments: commentsCount.count || 0,
+    reads: totalReadsValue,
+    totalReads: totalReadsValue,
+    publishedStories: published.count || 0,
+    draftStories: drafts.count || 0,
+    archivedStories: archived.count || 0,
+    storyCategories: categories.count || 0,
+    featuredSlides: slides.count || 0,
+    forumThreads: threads.count || 0,
+    pressArticles: press.count || 0,
+    ads: ads.count || 0,
+  };
 }
 
 export async function deleteNanaChat(chatId: string) {
