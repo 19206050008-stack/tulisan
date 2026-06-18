@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useStore } from '@/lib/store';
 import { getModerationStats, moderateText, updateStoryModeration } from '@/lib/supabase';
 import { AlertTriangle, CheckCircle, XCircle, RefreshCw, Shield, Eye, FileText } from 'lucide-react';
 
@@ -15,6 +18,16 @@ interface ModeratedStory {
 }
 
 export default function AdminModerationPage() {
+  const router = useRouter();
+  const { role, user, _hasHydrated } = useStore();
+  
+  // Redirect non-admin users
+  useEffect(() => {
+    if (_hasHydrated && role !== 'admin') {
+      router.push('/');
+    }
+  }, [role, _hasHydrated, router]);
+
   const [stats, setStats] = useState<any>(null);
   const [stories, setStories] = useState<ModeratedStory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,21 +38,30 @@ export default function AdminModerationPage() {
 
   const loadModerationData = async () => {
     setLoading(true);
-    const [modStats, storiesData] = await Promise.all([
-      getModerationStats(),
-      fetchFlaggedStories(),
-    ]);
-    setStats(modStats);
-    setStories(storiesData || []);
-    setLoading(false);
+    try {
+      const [modStats, storiesData] = await Promise.all([
+        getModerationStats(),
+        fetchFlaggedStories(),
+      ]);
+      setStats(modStats);
+      setStories(storiesData || []);
+    } catch (error) {
+      console.error('Error loading moderation data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchFlaggedStories = async (): Promise<ModeratedStory[]> => {
     if (!supabase) return [];
+    
     let query = supabase.from('stories').select(`
       id, title, author_id, profiles!stories_author_id_fkey(full_name), 
       moderation_status, moderation_score, moderation_flags, updated_at
-    `).eq('author_id', user?.id).neq('moderation_status', 'approved').order('updated_at', { ascending: false });
+    `).order('updated_at', { ascending: false });
+    
+    // Filter by moderation status - filter out approved
+    query = query.neq('moderation_status', 'approved');
     
     if (filter === 'pending') {
       query = query.eq('moderation_status', 'pending');
@@ -47,6 +69,12 @@ export default function AdminModerationPage() {
       query = query.eq('moderation_status', 'flagged');
     } else if (filter === 'rejected') {
       query = query.eq('moderation_status', 'rejected');
+    }
+    
+    const { data, error } = await query;
+    if (error) {
+      console.error('Error fetching stories:', error);
+      return [];
     }
     
     const { data, error } = await query;
@@ -61,37 +89,6 @@ export default function AdminModerationPage() {
       flags: s.moderation_flags || [],
       updated_at: s.updated_at,
     }));
-  };
-
-  const handleScanContent = async (storyId: string, content: string) => {
-    try {
-      const result = await moderateText(content, 'id');
-      console.log('Scan result:', result);
-      
-      // Auto-approve safe content
-      if (result.is_safe) {
-        await updateStoryModeration(storyId, 'approved', undefined, result.confidence_score);
-        alert('✅ Konten AMAN - auto-approved');
-      } else {
-        await updateStoryModeration(storyId, 'flagged', result.flagged_categories, result.confidence_score);
-        alert(`⚠️ KONTEN BERMASALAH: ${result.flagged_categories.join(', ')}`);
-      }
-      
-      loadModerationData();
-    } catch (error) {
-      console.error('Scan failed:', error);
-      alert('❌ Gagal scan - coba lagi');
-    }
-  };
-
-  const manualApprove = async (storyId: string) => {
-    await updateStoryModeration(storyId, 'approved');
-    loadModerationData();
-  };
-
-  const manualReject = async (storyId: string, reason: string) => {
-    await updateStoryModeration(storyId, 'rejected', [reason]);
-    loadModerationData();
   };
 
   const refreshStats = () => {

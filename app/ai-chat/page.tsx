@@ -413,45 +413,22 @@ export default function NanaChatPage() {
     return lang === 'en' ? responsesEn[0] : responsesId[0];
   };
 
-      const finalMessages = [...newMessages, aiMsg];
-      updateChat(chatId, { messages: finalMessages, updatedAt: Date.now() });
-      // Sync to DB for admin logs
-      syncNanaChat(
-        finalMessages[0]?.content?.slice(0, 40) || 'Chat',
-        finalMessages.map(m => ({ role: m.role, content: m.content }))
-      ).catch(() => {});
-      setStreamText('');
-      setStatus('ready');
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        const partial: Message = {
-          id: 'ai-' + Date.now(),
-          role: 'assistant',
-          content: streamText || '...',
-          timestamp: Date.now(),
-        };
-        updateChat(chatId, { messages: [...newMessages, partial], updatedAt: Date.now() });
-        setStreamText('');
-        setStatus('ready');
-        return;
-      }
-      console.error('Nana error:', err);
-      const errMsg: Message = {
-        id: 'err-' + Date.now(),
-        role: 'assistant',
-        content: labels.error,
-        timestamp: Date.now(),
-      };
-      updateChat(chatId, { messages: [...newMessages, errMsg], updatedAt: Date.now() });
-      setStreamText('');
-      setStatus('ready');
-    }
-    abortRef.current = null;
-  };
-
   const stopGeneration = () => { abortRef.current?.abort(); };
 
-  const formatDate = (ts: number) => {
+  const clearChat = () => {
+    abortRef.current?.abort();
+    setMessages([{
+      id: 'welcome-' + Date.now(),
+      role: 'assistant',
+      content: labels.welcome,
+      timestamp: Date.now(),
+    }]);
+    setStreamText('');
+    setStatus('ready');
+  };
+
+  // Format time helper
+  const formatDate = (ts: string) => {
     const d = new Date(ts);
     const now = new Date();
     if (d.toDateString() === now.toDateString()) {
