@@ -144,7 +144,11 @@ function renderMarkdown(md: string): string {
 }
 
 function MarkdownBubble({ content }: { content: string }) {
-  return <div className="ai-markdown leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
+  return (
+    <div className="ai-markdown leading-relaxed break-words max-w-full">
+      <div dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />
+    </div>
+  );
 }
 
 // ─── Main Component ──────────────────────────────────────────────
@@ -568,23 +572,23 @@ export default function NanaChatPage() {
             {status === 'generating' && (
               <div className="flex justify-start">
                 <img src="/nana-avatar.gif" alt="Nana" className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-0.5" />
-                <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-bl-sm bg-bg-card border border-border text-sm">
-                  {streamText ? (
-                    <>
-                      <MarkdownBubble content={streamText} />
-                      <span className="inline-block w-1.5 h-4 bg-accent ml-0.5 animate-pulse align-middle" />
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2 text-tx-muted">
-                      <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      <span className="text-xs">{labels.generating}</span>
+                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-bl-sm bg-bg-card border border-border text-sm relative">
+                      {streamText ? (
+                        <>
+                          <MarkdownBubble content={streamText} />
+                          <span className="inline-block w-1.5 h-4 bg-accent ml-0.5 animate-pulse align-middle" />
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2 text-tx-muted">
+                          <div className="flex gap-1">
+                            <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-tx-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                          <span className="text-xs">{labels.generating}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
               </div>
             )}
 

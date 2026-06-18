@@ -215,27 +215,97 @@ textarea::placeholder {
   width: 100%;
   font-size: 0.875rem;
   margin: 1em 0;
+  overflow-x: auto;
+  display: block;
+  max-width: calc(100% - 2rem);
 }
 
 .nana-table th,
 .nana-table td {
-  border: 1px solid var(--border);
-  padding: 0.5rem 0.75rem;
+  border: none;
+  padding: 0.625rem 0.875rem;
   text-align: left;
+  vertical-align: top;
+  position: relative;
+  max-width: 300px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  min-width: 0;
+}
+
+/* Vertical separator between columns instead of full borders */
+.nana-table td:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 10%;
+  bottom: 10%;
+  width: 1px;
+  background-color: var(--border);
+  opacity: 0.3;
+}
+
+/* Horizontal separators between rows */
+.nana-table tr:not(:last-child) {
+  border-bottom: 1px solid transparent;
+}
+
+.nana-table tr:nth-child(even):not(:last-child) {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 
 .nana-table th {
-  background-color: var(--bg-card);
   font-weight: 600;
   color: var(--tx-soft);
+  padding-bottom: 0.875rem;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  min-width: 0;
 }
 
-.nana-table tr:nth-child(even) {
-  background-color: var(--bg-input);
+/* Row backgrounds */
+.nana-table tr {
+  background-color: transparent;
+  transition: background-color 0.2s ease;
 }
 
 .nana-table tr:hover {
-  background-color: var(--accent/10);
+  background-color: var(--accent/5);
+}
+
+/* Table responsiveness */
+@media (max-width: 640px) {
+  .nana-table {
+    max-width: 100%;
+    font-size: 0.8125rem;
+  }
+  
+  .nana-table th,
+  .nana-table td {
+    padding: 0.5rem 0.625rem;
+  }
+  
+  .nana-table td:not(:last-child)::after {
+    top: 5%;
+    bottom: 5%;
+  }
+}
+
+/* AI Markdown Container */
+.ai-markdown {
+  overflow-x: hidden;
+  overflow-y: visible;
+  word-break: break-word;
+  line-height: 1.7;
+  max-width: 100%;
+}
+
+.ai-markdown table {
+  display: block;
+  overflow-x: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 /* Hide scrollbar for horizontal carousels */
