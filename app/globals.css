@@ -208,3 +208,7 @@ textarea::placeholder {
   width: 4rem;
   height: 4rem;
 }
+
+/* Hide scrollbar for horizontal carousels */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

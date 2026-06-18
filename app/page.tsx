@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { LayoutGrid, List, Eye, Heart, ChevronRight, Award, TrendingUp, CheckCircle, Star } from 'lucide-react';
+import { LayoutGrid, List, Eye, Heart, ChevronRight, ChevronLeft, Award, TrendingUp, CheckCircle, Star } from 'lucide-react';
 import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories } from '@/lib/supabase';
 import { HeroSlider } from '@/components/HeroSlider';
 import { StoryCover } from '@/components/StoryCover';
@@ -208,39 +208,9 @@ export default function Home() {
         </section>
       )}
 
-      {/* Completed Series — Grid with badge like Webnovel */}
+      {/* Completed Series — Horizontal carousel */}
       {completedStories.length > 0 && (
-        <section className="space-y-4 pt-4 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <h2 className="text-xl md:text-2xl font-bold font-serif">{t.completedSeries}</h2>
-                <p className="text-xs text-tx-muted">{t.completedDesc}</p>
-              </div>
-            </div>
-            <Link href="/browse?completed=true" className="text-xs font-medium text-gray-500 hover:text-accent flex items-center">{t.seeAll} <ChevronRight className="h-3 w-3" /></Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {completedStories.slice(0, 10).map(story => (
-              <Link key={story.id} href={`/story/${story.id}`} className="group flex flex-col gap-2">
-                <div className="aspect-[2/3] rounded-lg overflow-hidden bg-bg-input relative">
-                  <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
-                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-green-500 text-white text-[9px] font-bold flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" /> {t.completedBadge}
-                  </div>
-                </div>
-                <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>
-                <p className="text-xs text-tx-soft truncate">{story.profiles?.full_name || 'Anonymous'}</p>
-                <div className="flex items-center gap-2 text-[10px] text-tx-muted font-medium">
-                  <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
-                  <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <CompletedCarousel stories={completedStories} formatCount={formatCount} completedBadge={t.completedBadge} completedTitle={t.completedSeries} completedDesc={t.completedDesc} seeAll={t.seeAll} />
       )}
 
       <Suspense fallback={<div className="animate-pulse space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-bg-input rounded-xl" />)}</div>}>
@@ -312,6 +282,62 @@ function GenreSection({ genre, stories, formatCount }: { genre: string; stories:
         {stories.slice(0, 5).map(story => (
           <StoryCard key={story.id} story={story} viewMode="grid" formatCount={formatCount} />
         ))}
+      </div>
+    </section>
+  );
+}
+
+function CompletedCarousel({ stories, formatCount, completedBadge, completedTitle, completedDesc, seeAll }: { stories: any[]; formatCount: (n: number) => string; completedBadge: string; completedTitle: string; completedDesc: string; seeAll: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return;
+    const amount = dir === 'left' ? -240 : 240;
+    scrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  return (
+    <section className="pt-4 border-t border-border">
+      <div className="rounded-2xl border border-border bg-bg-card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <div>
+              <h2 className="text-lg md:text-xl font-bold font-serif">{completedTitle}</h2>
+              <p className="text-[10px] text-tx-muted">{completedDesc}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => scroll('left')} className="p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll left">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={() => scroll('right')} className="p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll right">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <Link href="/browse?completed=true" className="text-xs font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
+          </div>
+        </div>
+
+        <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {stories.slice(0, 15).map(story => (
+            <Link key={story.id} href={`/story/${story.id}`} className="group flex gap-3 min-w-[200px] max-w-[200px] p-2.5 rounded-xl border border-border/50 bg-bg hover:border-accent/30 hover:shadow-sm transition-all snap-start">
+              <div className="w-14 h-20 rounded-lg overflow-hidden shrink-0 relative">
+                <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
+                <div className="absolute bottom-1 right-1 px-1 py-px rounded bg-green-500 text-white text-[7px] font-bold flex items-center gap-0.5">
+                  <CheckCircle className="h-2 w-2" /> {completedBadge}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <h3 className="text-xs font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>
+                <p className="text-[10px] text-tx-soft truncate mt-0.5">{story.profiles?.full_name || 'Anonymous'}</p>
+                <div className="flex items-center gap-1.5 mt-1 text-[9px] text-tx-muted">
+                  <span className="flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" /> {formatCount(story.reads_count || 0)}</span>
+                  <span className="flex items-center gap-0.5"><Heart className="h-2.5 w-2.5" /> {formatCount(story.likes_count || 0)}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );
