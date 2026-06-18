@@ -94,17 +94,30 @@ export default function WritePage() {
 
       // Upload NEW cover if available
       if (coverFile) {
-        console.log(`📁 Uploading cover: ${coverFile.name} (${(coverFile.size / 1024).toFixed(2)} KB)`);
-        const newCoverUrl = await uploadCover(coverFile, story.id);
-        console.log(`✅ Cover uploaded: ${newCoverUrl}`);
-        
-        // Update story with new cover URL
-        await updateStory(story.id, { 
-          cover_url: newCoverUrl 
-        });
-        console.log('✓ Database updated with new cover URL');
+        console.log(`📁 Uploading new cover: ${coverFile.name}`);
+        try {
+          const newCoverUrl = await uploadCover(coverFile, story.id);
+          console.log('✅ Cover uploaded:', newCoverUrl);
+          
+          // Update database with new cover URL using direct supabase call
+          const { error } = await supabaseModule.supabase
+            .from('stories')
+            .update({ 
+              cover_url: newCoverUrl,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', story.id);
+            
+          if (error) throw error;
+          
+          console.log('✓ Database UPDATED with new cover URL!');
+        } catch (uploadError: any) {
+          console.error('❌ Cover upload/update failed:', uploadError);
+          alert(`Upload error: ${uploadError.message}`);
+          return; // Don't continue without cover
+        }
       } else {
-        console.log('⚠️ No cover file - keeping existing one');
+        console.log('⚠️ No cover file to upload - keeping existing one');
       }
 
       if (content.trim()) {

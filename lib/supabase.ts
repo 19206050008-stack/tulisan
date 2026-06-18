@@ -347,12 +347,17 @@ export async function getSavedStories(userId: string) {
 // Upload cover image
 export async function uploadCover(file: File, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const ext = file.name.split('.').pop();
-  const path = `${storyId}.${ext}`;
+  const ext = file.name.split('.').pop() || 'png';
+  // Add timestamp to path to ensure unique upload and prevent caching
+  const timestamp = Date.now();
+  const path = `${storyId}-${timestamp}.${ext}`;
   const { data, error } = await supabase.storage.from('covers').upload(path, file, { upsert: true });
   if (error) throw error;
+  
+  // Get public URL with cache-busting parameter
   const { data: urlData } = supabase.storage.from('covers').getPublicUrl(path);
-  return urlData.publicUrl;
+  // Add query parameter to force reload
+  return `${urlData.publicUrl}?t=${timestamp}`;
 }
 
 // Upload avatar
