@@ -191,7 +191,7 @@ textarea::placeholder {
 .ai-markdown strong         { font-weight: 700 !important; }
 .ai-markdown em             { font-style: italic !important; }
 .ai-markdown a              { color: #E65A28 !important; text-decoration: underline !important; }
-.ai-markdown hr             { display: none !important; border: none !important; height: 0 !important; margin: 0 !important; visibility: hidden !important; opacity: 0 !important; content: none !important; width: 0 !important; }
+.ai-markdown hr             { display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; margin: 0 !important; content: none !important; }
 
 /* -- Nana Avatar ----------------------------------------------------------- */
 .nana-avatar {
@@ -360,28 +360,6 @@ textarea::placeholder {
   max-width: 100% !important;
 }
 
-/* REMOVE ALL TABLE STYLING INCLUDING BORDERS, LINES, SEPARATORS */
-.ai-markdown table,
-.ai-markdown table *,
-.ai-markdown th,
-.ai-markdown td,
-.ai-markdown tr,
-.ai-markday thead,
-.ai-markdown tbody,
-.ai-markdown caption {
-  border: none !important;
-  border-bottom: none !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  margin: 0 !important;
-  padding: 6px 12px !important;
-  display: block !important;
-}
-
 .ai-markdown table {
   display: block !important;
   overflow-x: auto !important;
@@ -390,7 +368,10 @@ textarea::placeholder {
   border-collapse: collapse !important;
 }
 
-.ai-markdown hr {
+/* Remove horizontal lines but keep table structure */
+.ai-markdown hr,
+.ai-markdown hr::before,
+.ai-markdown hr::after {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -400,18 +381,42 @@ textarea::placeholder {
   padding: 0 !important;
   content: none !important;
   clear: both !important;
-  float: none !important;
 }
 
-/* Remove any potential ::before or ::after from tables */
-.ai-markdown table::before,
-.ai-markdown table::after,
-.ai-markdown th::before,
-.ai-markdown th::after,
-.ai-markdown td::before,
-.ai-markdown td::after {
-  display: none !important;
-  content: none !important;
+.ai-markdown th {
+  font-weight: 600 !important;
+  color: var(--tx-soft) !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  border-bottom: none !important;
+  padding-bottom: 0.5em !important;
+}
+
+.ai-markdown td {
+  color: var(--tx) !important;
+  text-align: left !important;
+  vertical-align: top !important;
+  padding: 0.25em 0.5em !important;
+  border: none !important;
+}
+
+.ai-markdown tr {
+  border: none !important;
+}
+
+/* Ensure all text elements are visible */
+.ai-markdown strong,
+.ai-markdown em,
+.ai-markdown code,
+.ai-markdown p,
+.ai-markdown span {
+  color: inherit !important;
+}
+
+.ai-markdown code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 
 .ai-markdown table {
