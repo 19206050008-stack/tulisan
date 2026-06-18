@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAdRequests, updateAdRequestStatus, supabase, generateBanner } from '@/lib/supabase';
-import { CheckCircle, XCircle, Eye, Clock, FileText, Calendar, Filter, MessageSquare, Send, ExternalLink, Play, Wand2 } from 'lucide-react';
+import { getAdRequests, updateAdRequestStatus, supabase } from '@/lib/supabase';
+import { CheckCircle, XCircle, Eye, Clock, FileText, Calendar, Filter, MessageSquare, Send, ExternalLink, Play, Wand2, Upload } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 import { BannerUpload } from '@/components/BannerUpload';
 
@@ -10,6 +10,24 @@ type StatusFilter = 'all' | 'pending' | 'approved' | 'published' | 'rejected';
 
 const BANNER_WIDTH = 728;
 const BANNER_HEIGHT = 90;
+
+// Helper function untuk generate banner menggunakan Canvas
+const getGradientColors = (cat?: string): [string, string] => {
+  const colorMap: Record<string, [string, string]> = {
+    'Romance': ['#ff6b9d', '#ee5a6f'],
+    'Fantasy': ['#a78bfa', '#8b5cf6'],
+    'Sci-Fi': ['#3b82f6', '#2563eb'],
+    'Mystery': ['#64748b', '#475569'],
+    'Horror': ['#991b1b', '#7f1d1d'],
+    'Adventure': ['#10b981', '#059669'],
+    'Drama': ['#f59e0b', '#d97706'],
+    'Comedy': ['#ec4899', '#db2777'],
+    'Thriller': ['#dc2626', '#b91c1c'],
+    'Historical': ['#92400e', '#78350f'],
+  };
+  if (cat && colorMap[cat]) return colorMap[cat];
+  return ['#6366f1', '#8b5cf6'];
+};
 
 export default function AdminAdsPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -40,16 +58,81 @@ export default function AdminAdsPage() {
     setGeneratingBanner(false);
   };
 
-  const generateBannerPreview = async (title?: string, description?: string, category?: string) => {
+  const generateBannerPreview = (title?: string, description?: string, category?: string) => {
     if (!title) { alert('Judul cerita diperlukan untuk generate banner.'); return; }
     setGeneratingBanner(true);
+    
     try {
-      const imageUrl = await generateBanner(title, description, category);
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const timestampedFilename = `banner-${Date.now()}.jpg`;
-      const generatedFile = new File([blob], timestampedFilename, { type: 'image/jpeg' });
-      handleBannerReady(generatedFile);
+      // Canvas-based generation (like cover)
+      const canvas = document.createElement('canvas');
+      canvas.width = BANNER_WIDTH;
+      canvas.height = BANNER_HEIGHT;
+      const ctx = canvas.getContext('2d')!;
+
+      // Gradient background
+      const [color1, color2] = getGradientColors(category);
+      const gradient = ctx.createLinearGradient(0, 0, BANNER_WIDTH, 0);
+      gradient.addColorStop(0, color1);
+      gradient.addColorStop(1, color2);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, BANNER_WIDTH, BANNER_HEIGHT);
+
+      // Diagonal effect
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(BANNER_WIDTH * 0.7, 0);
+      ctx.lineTo(BANNER_WIDTH, 0);
+      ctx.lineTo(BANNER_WIDTH, BANNER_HEIGHT * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Accent bar
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(0, BANNER_HEIGHT - 4, BANNER_WIDTH, 4);
+
+      // Title
+      ctx.fillStyle = '#ffffff';
+      ctx.textBaseline = 'middle';
+      const titleSize = title.length > 40 ? 24 : title.length > 30 ? 28 : 32;
+      ctx.font = `bold ${titleSize}px "Segoe UI", Arial, sans-serif`;
+      
+      // Word wrap
+      const maxWidth = BANNER_WIDTH * 0.6;
+      let displayTitle = title;
+      while (ctx.measureText(displayTitle).width > maxWidth && displayTitle.length > 20) {
+        displayTitle = displayTitle.substring(0, displayTitle.length - 1);
+      }
+      if (displayTitle.length < title.length) displayTitle += '...';
+      ctx.fillText(displayTitle, 20, BANNER_HEIGHT / 2);
+
+      // Subtitle
+      if (description || category) {
+        ctx.font = '14px "Segoe UI", Arial, sans-serif';
+        ctx.globalAlpha = 0.8;
+        ctx.textAlign = 'right';
+        const subtitle = (description || category || '').substring(0, 50);
+        ctx.fillText(subtitle, BANNER_WIDTH - 20, BANNER_HEIGHT - 20);
+        ctx.globalAlpha = 1;
+      }
+
+      // Logo
+      ctx.font = 'bold 16px "Segoe UI", Arial, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.textAlign = 'right';
+      ctx.fillText('Di.tulis', BANNER_WIDTH - 15, 20);
+
+      // Convert to file
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const timestampedFilename = `banner-${Date.now()}.jpg`;
+          const generatedFile = new File([blob], timestampedFilename, { type: 'image/jpeg' });
+          handleBannerReady(generatedFile);
+        }
+        setGeneratingBanner(false);
+      }, 'image/jpeg', 0.9);
     } catch (err: any) {
       console.error('Banner generation error:', err);
       alert('Gagal generate banner. Silakan upload manual atau coba lagi.');
