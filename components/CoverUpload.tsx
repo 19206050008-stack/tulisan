@@ -146,6 +146,7 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
 
     // Use selected font with dynamic sizing
     const fontValue = selectedFont.value.replace(/\d+\s*/, ''); // Remove pre-set sizes from font value
+    
     let fontSize = usedTitle.length > 40 ? 32 : usedTitle.length > 30 ? 36 : usedTitle.length > 20 ? 42 : 48;
     
     // Check if font has weight/italic already
@@ -169,15 +170,32 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
       ctx.fillText(line, 50, startY + i * (fontSize + 14));
     });
 
-    const lineY = startY + Math.min(lines.length, 5) * (fontSize + 14) + 10;
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.fillRect(50, lineY, 50, 2);
+    // Large decorative element in bottom right corner only
+    ctx.save();
+    ctx.translate(COVER_WIDTH - 70, COVER_HEIGHT - 70);
+    
+    // Simple geometric shape (circle segment)
+    ctx.beginPath();
+    ctx.arc(35, 35, 40, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fill();
+    
+    // Pen/pencil icon
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = `bold 36px Georgia`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✎', 35, 35);
+    
+    ctx.restore();
 
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.font = 'italic 11px Georgia, serif';
-    ctx.fillText('Di.tulis', 50, COVER_HEIGHT - 40);
+    // Minimal brand watermark at bottom left
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = 'italic 10px Georgia, serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Di.tulis', 50, COVER_HEIGHT - 35);
 
-    // Removed stroke border - no more white lines around cover
+    // IMPORTANT: NO BORDERS, NO LINES - Clean modern design!
 
     canvas.toBlob((blob) => {
       if (blob) { onFileReady(new File([blob], 'generated-cover.png', { type: 'image/png' })); setInfo('Cover berhasil di-generate!'); }
