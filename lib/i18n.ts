@@ -27,6 +27,14 @@ export const translations = {
       noStories: "Belum ada cerita di kategori ini.",
       reads: "dibaca",
       chapters: "bab",
+      editorialPicks: "Pilihan Editorial",
+      editorialDesc: "Cerita terbaik yang dipilih oleh tim editor kami",
+      topMonthly: "Top Series Bulan Ini!",
+      topMonthlyDesc: "Cerita paling banyak dibaca bulan ini",
+      completedSeries: "Kumpulan Series Yang Sudah Tamat",
+      completedDesc: "Cerita lengkap yang bisa kamu baca dari awal sampai akhir",
+      completedBadge: "Tamat",
+      editorialBadge: "Pilihan Editor",
     },
     // Browse & Filter
     browse: {
@@ -199,6 +207,14 @@ export const translations = {
       noStories: "No stories in this category yet.",
       reads: "reads",
       chapters: "chapters",
+      editorialPicks: "Editorial Picks",
+      editorialDesc: "Best stories handpicked by our editorial team",
+      topMonthly: "Top Series This Month!",
+      topMonthlyDesc: "Most read stories this month",
+      completedSeries: "Completed Series Collection",
+      completedDesc: "Full stories you can read from start to finish",
+      completedBadge: "Completed",
+      editorialBadge: "Editor's Pick",
     },
     // Browse & Filter
     browse: {

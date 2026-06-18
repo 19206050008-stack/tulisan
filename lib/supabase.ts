@@ -120,6 +120,50 @@ export async function getHomepageStories(limit = 20) {
   return data || [];
 }
 
+/** Editorial picks — handpicked by editors, shown with special badge */
+export async function getEditorialPicks(limit = 6) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, description, cover_url, category, tags, reads_count, likes_count, status, profiles!stories_author_id_fkey(username, full_name, avatar_url)')
+    .eq('status', 'published')
+    .eq('is_editorial_pick', true)
+    .order('reads_count', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
+/** Top series this month — stories updated this month, sorted by reads */
+export async function getTopMonthly(limit = 10) {
+  if (!supabase) return [];
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, description, cover_url, category, tags, reads_count, likes_count, status, profiles!stories_author_id_fkey(username, full_name, avatar_url)')
+    .eq('status', 'published')
+    .gte('updated_at', firstDay)
+    .order('reads_count', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
+/** Completed series — stories marked as finished */
+export async function getCompletedStories(limit = 10) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, description, cover_url, category, tags, reads_count, likes_count, status, profiles!stories_author_id_fkey(username, full_name, avatar_url)')
+    .eq('status', 'published')
+    .eq('is_completed', true)
+    .order('reads_count', { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
 export async function getMyStories(authorId: string) {
   if (!supabase) return [];
   const { data, error } = await supabase.from('stories').select('*').eq('author_id', authorId).order('created_at', { ascending: false });

@@ -3,8 +3,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { LayoutGrid, List, Eye, Heart, ChevronRight } from 'lucide-react';
-import { getHomepageStories, getCategories } from '@/lib/supabase';
+import { LayoutGrid, List, Eye, Heart, ChevronRight, Award, TrendingUp, CheckCircle, Star } from 'lucide-react';
+import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories } from '@/lib/supabase';
 import { HeroSlider } from '@/components/HeroSlider';
 import { StoryCover } from '@/components/StoryCover';
 import { GenreFilter } from '@/components/GenreFilter';
@@ -22,17 +22,26 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
   const [randomGenres, setRandomGenres] = useState<string[]>([]);
+  const [editorialPicks, setEditorialPicks] = useState<any[]>([]);
+  const [topMonthly, setTopMonthly] = useState<any[]>([]);
+  const [completedStories, setCompletedStories] = useState<any[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setLoading(true);
     // Single parallel batch — all queries at once
-    const [storiesData, catsData] = await Promise.all([
+    const [storiesData, catsData, editorial, monthly, completed] = await Promise.all([
       getHomepageStories(30),
-      getCategories()
+      getCategories(),
+      getEditorialPicks(6),
+      getTopMonthly(10),
+      getCompletedStories(10),
     ]);
     setStories(storiesData);
+    setEditorialPicks(editorial);
+    setTopMonthly(monthly);
+    setCompletedStories(completed);
     const catNames = catsData.map((c: any) => c.name);
     setCategoryNames(['All', ...catNames]);
     const genresWithStories = catNames.filter((g: string) => storiesData.some((s: any) => s.category === g));
@@ -70,10 +79,79 @@ export default function Home() {
     <div className="space-y-8">
       <HeroSlider />
 
+      {/* Editorial Picks — Featured cards like Webnovel Weekly Book */}
+      {editorialPicks.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-accent" />
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold font-serif">{t.editorialPicks}</h2>
+              <p className="text-xs text-tx-muted">{t.editorialDesc}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {editorialPicks.map(story => (
+              <Link key={story.id} href={`/story/${story.id}`} className="group flex gap-4 p-4 rounded-xl border border-border bg-bg-card hover:border-accent/40 hover:shadow-md transition-all">
+                <div className="w-20 h-28 md:w-24 md:h-32 rounded-lg overflow-hidden shrink-0 relative">
+                  <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-accent text-white text-[8px] font-bold flex items-center gap-0.5">
+                    <Star className="h-2.5 w-2.5" /> {t.editorialBadge}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h3 className="font-bold text-sm md:text-base group-hover:text-accent transition-colors line-clamp-2">{story.title}</h3>
+                  <p className="text-xs text-tx-soft mt-1">{story.profiles?.full_name || 'Anonymous'}</p>
+                  <p className="text-xs text-tx-muted mt-1.5 line-clamp-2 hidden sm:block">{story.description}</p>
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-tx-muted font-medium">
+                    <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
+                    <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <GenreFilter categories={categoryNames} active={activeCategory} onChange={setActiveCategory} visibleCount={5} />
 
       {activeCategory === t.all || activeCategory === 'All' ? (
         <>
+          {/* Top Monthly — Numbered ranking list like Royal Road */}
+          {topMonthly.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-accent" />
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold font-serif">{t.topMonthly}</h2>
+                  <p className="text-xs text-tx-muted">{t.topMonthlyDesc}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {topMonthly.slice(0, 10).map((story, i) => (
+                  <Link key={story.id} href={`/story/${story.id}`} className="group flex items-center gap-3 p-3 rounded-xl border border-border bg-bg-card hover:border-accent/30 transition-colors">
+                    <span className={`text-lg font-black w-7 text-center shrink-0 ${i < 3 ? 'text-accent' : 'text-tx-muted'}`}>{String(i + 1).padStart(2, '0')}</span>
+                    <div className="w-10 h-14 rounded-md overflow-hidden shrink-0">
+                      <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold truncate group-hover:text-accent transition-colors">{story.title}</h3>
+                      <p className="text-[10px] text-tx-soft">{story.profiles?.full_name || 'Anonymous'}</p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-tx-muted">
+                        <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-bg-input">{story.category}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="text-center pt-2">
+                <Link href="/browse" className="text-sm text-accent hover:underline">{t.seeAll} →</Link>
+              </div>
+            </section>
+          )}
+
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl md:text-2xl font-bold font-serif">{t.topStories}</h2>
@@ -127,6 +205,41 @@ export default function Home() {
               <Link href={`/browse?genre=${encodeURIComponent(activeCategory)}`} className="text-sm text-accent hover:underline">{t.seeAll} →</Link>
             </div>
           )}
+        </section>
+      )}
+
+      {/* Completed Series — Grid with badge like Webnovel */}
+      {completedStories.length > 0 && (
+        <section className="space-y-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <div>
+                <h2 className="text-xl md:text-2xl font-bold font-serif">{t.completedSeries}</h2>
+                <p className="text-xs text-tx-muted">{t.completedDesc}</p>
+              </div>
+            </div>
+            <Link href="/browse?completed=true" className="text-xs font-medium text-gray-500 hover:text-accent flex items-center">{t.seeAll} <ChevronRight className="h-3 w-3" /></Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {completedStories.slice(0, 10).map(story => (
+              <Link key={story.id} href={`/story/${story.id}`} className="group flex flex-col gap-2">
+                <div className="aspect-[2/3] rounded-lg overflow-hidden bg-bg-input relative">
+                  <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} className="transition-transform group-hover:scale-105" />
+                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-green-500 text-white text-[9px] font-bold flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" /> {t.completedBadge}
+                  </div>
+                </div>
+                <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">{story.title}</h3>
+                <p className="text-xs text-tx-soft truncate">{story.profiles?.full_name || 'Anonymous'}</p>
+                <div className="flex items-center gap-2 text-[10px] text-tx-muted font-medium">
+                  <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
+                  <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
+                  <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 
