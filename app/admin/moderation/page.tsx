@@ -77,9 +77,6 @@ export default function AdminModerationPage() {
       return [];
     }
     
-    const { data, error } = await query;
-    if (error) return [];
-    
     return (data || []).map((s: any) => ({
       id: s.id,
       title: s.title,
