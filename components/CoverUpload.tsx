@@ -25,6 +25,20 @@ const GENRE_COLORS: Record<string, string[][]> = {
   'Inspirational': [['#ffc107','#ff9800'],['#f57c00','#ff6f00']],
 };
 
+// 10 Font options for cover generation
+const FONTS = [
+  { id: 'serif', name: 'Serif', value: 'Georgia, "Times New Roman", serif' },
+  { id: 'sans-serif', name: 'Sans Serif', value: '"Arial Narrow", Arial, sans-serif' },
+  { id: 'monospace', name: 'Monospace', value: '"Courier New", monospace' },
+  { id: 'italic', name: 'Italic Serif', value: 'italic Georgia, "Times New Roman", serif' },
+  { id: 'light', name: 'Light', value: '300 48px Georgia, "Times New Roman", serif' },
+  { id: 'bold-light', name: 'Bold Light', value: 'bold italic 48px Georgia, "Times New Roman", serif' },
+  { id: 'modern', name: 'Modern', value: '"Helvetica Neue", Helvetica, Arial, sans-serif' },
+  { id: 'elegant', name: 'Elegant', value: 'italic 500 Georgia, "Times New Roman", serif' },
+  { id: 'classic', name: 'Classic', value: 'normal normal 48px "Times New Roman", serif' },
+  { id: 'clean', name: 'Clean', value: '500 "Segoe UI", Tahoma, Geneva, Verdana, sans-serif' },
+];
+
 interface CoverUploadProps {
   preview: string;
   onFileReady: (file: File) => void;
@@ -38,6 +52,7 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [selectedFont, setSelectedFont] = useState(FONTS[0]); // Default to Serif
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -129,9 +144,15 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = '#ffffff';
-    const tSize = usedTitle.length > 40 ? 32 : usedTitle.length > 30 ? 36 : usedTitle.length > 20 ? 42 : 48;
-    ctx.font = `bold ${tSize}px Georgia, "Times New Roman", serif`;
+    // Use selected font with dynamic sizing
+    const fontValue = selectedFont.value.replace(/\d+\s*/, ''); // Remove pre-set sizes from font value
+    let fontSize = usedTitle.length > 40 ? 32 : usedTitle.length > 30 ? 36 : usedTitle.length > 20 ? 42 : 48;
+    
+    // Check if font has weight/italic already
+    const hasWeight = /normal|bold|bolder|lighter|[0-9]+/.test(selectedFont.value);
+    const hasStyle = /italic/.test(selectedFont.value);
+    
+    ctx.font = `${hasWeight ? '' : 'bold '}${hasStyle ? 'italic ' : ''}${fontSize}px ${fontValue}`;
 
     const words = usedTitle.split(' ');
     const lines: string[] = [];
@@ -142,13 +163,13 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     }
     if (cur) lines.push(cur);
 
-    const totalH = lines.slice(0, 5).length * (tSize + 14);
+    const totalH = lines.slice(0, 5).length * (fontSize + 14);
     const startY = (COVER_HEIGHT - totalH) / 2;
     lines.slice(0, 5).forEach((line, i) => {
-      ctx.fillText(line, 50, startY + i * (tSize + 14));
+      ctx.fillText(line, 50, startY + i * (fontSize + 14));
     });
 
-    const lineY = startY + Math.min(lines.length, 5) * (tSize + 14) + 10;
+    const lineY = startY + Math.min(lines.length, 5) * (fontSize + 14) + 10;
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.fillRect(50, lineY, 50, 2);
 
@@ -156,9 +177,7 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     ctx.font = 'italic 11px Georgia, serif';
     ctx.fillText('Di.tulis', 50, COVER_HEIGHT - 40);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(24, 24, COVER_WIDTH - 48, COVER_HEIGHT - 48);
+    // Removed stroke border - no more white lines around cover
 
     canvas.toBlob((blob) => {
       if (blob) { onFileReady(new File([blob], 'generated-cover.png', { type: 'image/png' })); setInfo('Cover berhasil di-generate!'); }
@@ -221,18 +240,35 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFile} className="hidden" />
           </label>
 
-          {/* Generate dari judul (canvas gradient) */}
-          <button
-            onClick={generateCover}
-            disabled={processing}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent text-accent text-xs font-medium hover:bg-accent/10 transition-colors disabled:opacity-50"
-          >
-            <Wand2 className="h-3.5 w-3.5" /> Generate Sederhana dari Judul
-          </button>
+      {/* Generate dari judul (canvas gradient) */}
+      <button
+        onClick={generateCover}
+        disabled={processing}
+        className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent text-accent text-xs font-medium hover:bg-accent/10 transition-colors disabled:opacity-50"
+      >
+        <Wand2 className="h-3.5 w-3.5" /> Generate Sederhana dari Judul
+      </button>
 
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
-            Buat cover di Canva lalu upload, atau generate sederhana menggunakan judul + gradient warna
-          </p>
+      {/* Font selector for cover generation */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Font Style</label>
+        <select
+          value={selectedFont.id}
+          onChange={e => {
+            const font = FONTS.find(f => f.id === e.target.value);
+            if (font) setSelectedFont(font);
+          }}
+          className="w-full px-3 py-2 text-xs rounded-lg bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx"
+        >
+          {FONTS.map(font => (
+            <option key={font.id} value={font.id}>{font.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
+        Buat cover di Canva lalu upload, atau generate sederhana menggunakan judul + gradient warna
+      </p>
         </div>
       )}
 
