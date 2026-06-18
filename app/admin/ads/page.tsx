@@ -1,11 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAdRequests, updateAdRequestStatus, supabase } from '@/lib/supabase';
-import { CheckCircle, XCircle, Eye, Clock, FileText, Calendar, Filter, MessageSquare, Send, ExternalLink, Play } from 'lucide-react';
+import { getAdRequests, updateAdRequestStatus, supabase, generateBanner } from '@/lib/supabase';
+import { CheckCircle, XCircle, Eye, Clock, FileText, Calendar, Filter, MessageSquare, Send, ExternalLink, Play, Wand2 } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
+import { BannerUpload } from '@/components/BannerUpload';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'published' | 'rejected';
+
+const BANNER_WIDTH = 728;
+const BANNER_HEIGHT = 90;
 
 export default function AdminAdsPage() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -15,6 +19,9 @@ export default function AdminAdsPage() {
   const [actionId, setActionId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [generatingBanner, setGeneratingBanner] = useState(false);
   const perPage = 10;
 
   useEffect(() => { loadRequests(); }, []);
@@ -25,6 +32,29 @@ export default function AdminAdsPage() {
     const data = await getAdRequests();
     setRequests(data);
     setLoading(false);
+  };
+
+  const handleBannerReady = (file: File) => {
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
+    setGeneratingBanner(false);
+  };
+
+  const generateBannerPreview = async (title?: string, description?: string, category?: string) => {
+    if (!title) { alert('Judul cerita diperlukan untuk generate banner.'); return; }
+    setGeneratingBanner(true);
+    try {
+      const imageUrl = await generateBanner(title, description, category);
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const timestampedFilename = `banner-${Date.now()}.jpg`;
+      const generatedFile = new File([blob], timestampedFilename, { type: 'image/jpeg' });
+      handleBannerReady(generatedFile);
+    } catch (err: any) {
+      console.error('Banner generation error:', err);
+      alert('Gagal generate banner. Silakan upload manual atau coba lagi.');
+      setGeneratingBanner(false);
+    }
   };
 
   const handleApprove = async (id: string) => {
@@ -133,11 +163,46 @@ export default function AdminAdsPage() {
               </div>
 
               {/* Banner preview */}
-              {req.image_url && (
+              {req.image_url && !bannerPreview && (
                 <div className="p-2 rounded-lg bg-bg-input">
                   <img src={req.image_url} alt="Banner" className="max-w-full max-h-20 rounded object-contain mx-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
               )}
+
+              <div className="mt-4 border-t border-border pt-4">
+                <h4 className="text-xs font-bold text-tx-soft mb-2">Generate Banner Iklan</h4>
+                
+                {bannerPreview ? (
+                  <div className="space-y-2">
+                    <img src={bannerPreview} alt="Banner Preview" className="w-full max-w-[728px] h-auto rounded-lg mx-auto bg-bg-input object-contain" style={{ maxHeight: '120px' }} />
+                    <div className="flex gap-2">
+                      <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-bg-soft cursor-pointer">
+                        <Upload className="h-3 w-3" /> Upload Manual
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleBannerReady(file);
+                        }} className="hidden" />
+                      </label>
+                      <button onClick={() => setBannerPreview(null)} className="px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-bg-soft">Hapus Banner</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => generateBannerPreview(req.title, req.description, req.profiles?.username || undefined)}
+                      disabled={generatingBanner}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-accent text-accent text-xs font-medium hover:bg-accent/10 transition-colors disabled:opacity-50"
+                    >
+                      <Wand2 className="h-3.5 w-3.5" /> Generate Banner dari Judul
+                    </button>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 text-center">
+                      Banner akan digenerate otomatis menggunakan judul + deskripsi cerita Anda ({BANNER_WIDTH}x{BANNER_HEIGHT}px)
+                    </p>
+                  </div>
+                )}
+
+                {generatingBanner && <p className="text-xs text-tx-muted animate-pulse">Generating banner...</p>}
+              </div>
 
               <div className="flex flex-wrap items-center gap-3 text-[11px] text-tx-muted">
                 <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {req.start_date} — {req.end_date}</span>

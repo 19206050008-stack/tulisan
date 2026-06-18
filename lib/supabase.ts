@@ -379,6 +379,24 @@ export async function updateProfile(userId: string, updates: Record<string, any>
   return data;
 }
 
+// Generate ad banner from title + description using Pollinations AI
+export async function generateBanner(title: string, description?: string, category?: string): Promise<string> {
+  // Use Pollinations AI API for image generation
+  const prompt = `${title}${description ? ' - ' + description : ''} banner ad style, ${category || 'modern'} design, professional, high quality`;
+  const encodedPrompt = encodeURIComponent(prompt);
+  
+  // Banner dimensions: 728x90 (leaderboard) or 300x250 (medium rectangle)
+  const width = 728;
+  const height = 90;
+  
+  // Add seed for consistency with same prompt
+  const seed = Math.floor(Math.random() * 1000000);
+  
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
+  
+  return imageUrl;
+}
+
 // Get profile by username
 export async function getProfileByUsername(username: string) {
   if (!supabase) return null;
