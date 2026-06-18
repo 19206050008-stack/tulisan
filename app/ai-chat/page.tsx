@@ -406,9 +406,7 @@ export default function NanaChatPage() {
             <button onClick={() => setShowSidebar(true)} className="p-2 rounded-full hover:bg-bg-soft md:hidden">
               <Menu className="h-5 w-5" />
             </button>
-            <div className="nana-avatar">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
+            <img src="/nana-avatar.gif" alt="Nana" className="w-9 h-9 rounded-full object-cover shrink-0" />
             <div>
               <h1 className="text-sm font-bold flex items-center gap-1.5">Nana</h1>
               <p className="text-[10px] text-tx-muted">{lang === 'en' ? 'AI Writing Assistant' : 'Asisten Menulis AI'}</p>
@@ -422,9 +420,7 @@ export default function NanaChatPage() {
             {/* Welcome screen */}
             {messages.length === 0 && status !== 'generating' && (
               <div className="text-center py-12 space-y-5">
-                <div className="nana-avatar nana-avatar-lg mx-auto">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
+                <img src="/nana-avatar.gif" alt="Nana" className="w-16 h-16 rounded-full object-cover mx-auto shrink-0" />
                 <div className="space-y-1">
                   <h2 className="text-xl font-bold font-serif">{labels.welcomeTitle}</h2>
                   <p className="text-sm text-tx-soft">{labels.welcomeDesc}</p>
@@ -447,9 +443,7 @@ export default function NanaChatPage() {
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="nana-avatar mr-2 mt-0.5 !w-7 !h-7">
-                    <Sparkles className="h-3.5 w-3.5 text-white" />
-                  </div>
+                  <img src="/nana-avatar.gif" alt="Nana" className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-0.5" />
                 )}
                 <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
                   msg.role === 'user'
@@ -471,9 +465,7 @@ export default function NanaChatPage() {
             {/* Streaming */}
             {status === 'generating' && (
               <div className="flex justify-start">
-                <div className="nana-avatar mr-2 mt-0.5 !w-7 !h-7">
-                  <Sparkles className="h-3.5 w-3.5 text-white" />
-                </div>
+                <img src="/nana-avatar.gif" alt="Nana" className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-0.5" />
                 <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-bl-sm bg-bg-card border border-border text-sm">
                   {streamText ? (
                     <>

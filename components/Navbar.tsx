@@ -261,7 +261,7 @@ export function Navbar() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
                 title="Nana AI"
               >
-                <Sparkles className="h-4 w-4" />
+                <img src="/nana-avatar.gif" alt="" className="w-5 h-5 rounded-full object-cover" />
                 <span className="hidden sm:inline">Nana</span>
               </Link>
             </>
