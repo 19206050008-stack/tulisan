@@ -173,7 +173,12 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     // IMPORTANT: NO ICONS, NO MARKERS - Just title + gradient background!
 
     canvas.toBlob((blob) => {
-      if (blob) { onFileReady(new File([blob], 'generated-cover.png', { type: 'image/png' })); setInfo('Cover berhasil di-generate!'); }
+      if (blob) { 
+        // Add timestamp to filename to prevent cache issues and ensure new upload
+        const timestampedFilename = `cover-${Date.now()}.png`;
+        onFileReady(new File([blob], timestampedFilename, { type: 'image/png' })); 
+        setInfo('Cover berhasil di-generate!'); 
+      }
       setProcessing(false);
     }, 'image/png');
   };

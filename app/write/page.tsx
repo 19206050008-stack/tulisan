@@ -67,6 +67,10 @@ export default function WritePage() {
     
     setSaving(true);
     try {
+      // Import functions upfront to avoid timing issues
+      const supabaseModule = await import('@/lib/supabase');
+      const { createStory, uploadCover, updateStory } = supabaseModule;
+      
       // Prepare tags array and add tier if exists
       let tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
       
@@ -84,28 +88,42 @@ export default function WritePage() {
         tagsArray.push(finalTier);
       }
       
+      // Create story first
       const story = await createStory(user.id, title, description, category, tagsArray);
+      console.log('✓ Story created:', story.id);
 
+      // Upload NEW cover if available
       if (coverFile) {
-        const coverUrl = await uploadCover(coverFile, story.id);
-        const { updateStory } = await import('@/lib/supabase');
-        await updateStory(story.id, { cover_url: coverUrl });
+        console.log(`📁 Uploading cover: ${coverFile.name} (${(coverFile.size / 1024).toFixed(2)} KB)`);
+        const newCoverUrl = await uploadCover(coverFile, story.id);
+        console.log(`✅ Cover uploaded: ${newCoverUrl}`);
+        
+        // Update story with new cover URL
+        await updateStory(story.id, { 
+          cover_url: newCoverUrl 
+        });
+        console.log('✓ Database updated with new cover URL');
+      } else {
+        console.log('⚠️ No cover file - keeping existing one');
       }
 
       if (content.trim()) {
-        const { createChapter, updateStory } = await import('@/lib/supabase');
+        const { createChapter } = await import('@/lib/supabase');
         await createChapter(story.id, chapterTitle, content, 1);
-        if (publish) {
-          await updateStory(story.id, { status: 'published' });
-        }
-      } else if (publish) {
-        const { updateStory } = await import('@/lib/supabase');
-        await updateStory(story.id, { status: 'published' });
+        await updateStory(story.id, { 
+          status: publish ? 'published' : 'draft' 
+        });
+      } else {
+        await updateStory(story.id, { 
+          status: publish ? 'published' : 'draft' 
+        });
       }
 
-      router.push(`/write/${story.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to save');
+      alert(publish ? 'Cerita berhasil diterbitkan!' : 'Draf berhasil disimpan!');
+      router.push(`/story/${story.id}`);
+    } catch (error: any) {
+      console.error('❌ Save error:', error);
+      alert(`Error: ${error.message || 'Failed to save story'}`);
     } finally {
       setSaving(false);
     }
