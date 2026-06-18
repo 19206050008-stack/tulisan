@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react';
 import { Upload, AlertTriangle, Check, Info, Wand2 } from 'lucide-react';
-import { generateBanner } from '@/lib/supabase';
 
 const BANNER_WIDTH = 728;
 const BANNER_HEIGHT = 90;
@@ -74,7 +73,7 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
     img.src = URL.createObjectURL(file);
   };
 
-  // ── Generate banner dari judul + deskripsi ─────────────────────
+  // ── Generate banner dari judul + deskripsi (Flat Design) ────────
   const generateBannerAd = async () => {
     const usedTitle = title?.trim();
     if (!usedTitle) {
@@ -86,23 +85,225 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
     setInfo('Sedang membuat banner...');
 
     try {
-      // Use Pollinations AI to generate banner
-      const imageUrl = await generateBanner(usedTitle, description, category);
-      
-      // Fetch the image and convert to File
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const timestampedFilename = `banner-${Date.now()}.jpg`;
-      const generatedFile = new File([blob], timestampedFilename, { type: 'image/jpeg' });
-      
-      onFileReady(generatedFile);
-      setInfo('Banner berhasil di-generate!');
+      const canvas = document.createElement('canvas');
+      canvas.width = BANNER_WIDTH;
+      canvas.height = BANNER_HEIGHT;
+      const ctx = canvas.getContext('2d')!;
+
+      // Random layout selection
+      const layouts = [
+        'gradient-right',
+        'gradient-left', 
+        'gradient-diagonal',
+        'solid-accent',
+        'split-horizontal',
+      ];
+      const selectedLayout = layouts[Math.floor(Math.random() * layouts.length)];
+
+      // Get color scheme based on category
+      const colorScheme = getColorScheme(category);
+
+      // Draw background based on layout
+      drawBackground(ctx, canvas, selectedLayout, colorScheme);
+
+      // Draw decorative elements
+      drawDecorations(ctx, canvas, colorScheme);
+
+      // Draw text with proper contrast
+      drawText(ctx, canvas, usedTitle, description || category || '', colorScheme);
+
+      // Convert to file
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const timestampedFilename = `banner-${Date.now()}.jpg`;
+          const generatedFile = new File([blob], timestampedFilename, { type: 'image/jpeg' });
+          onFileReady(generatedFile);
+          setInfo('Banner berhasil di-generate!');
+        }
+        setProcessing(false);
+      }, 'image/jpeg', 0.95);
     } catch (err: any) {
       console.error('Banner generation error:', err);
       setError('Gagal generate banner. Silakan upload manual atau coba lagi.');
-    } finally {
       setProcessing(false);
     }
+  };
+
+  // ── Color Schemes ──────────────────────────────────────────────
+  const getColorScheme = (cat?: string) => {
+    const schemes: Record<string, { primary: string; secondary: string; accent: string; text: string }> = {
+      'Romance': { primary: '#FF6B9D', secondary: '#FF8E9E', accent: '#FFD4E0', text: '#FFFFFF' },
+      'Fantasy': { primary: '#A78BFA', secondary: '#C4B5FD', accent: '#DDD6FE', text: '#FFFFFF' },
+      'Sci-Fi': { primary: '#3B82F6', secondary: '#60A5FA', accent: '#93C5FD', text: '#FFFFFF' },
+      'Mystery': { primary: '#64748B', secondary: '#94A3B8', accent: '#CBD5E1', text: '#FFFFFF' },
+      'Horror': { primary: '#991B1B', secondary: '#DC2626', accent: '#FCA5A5', text: '#FFFFFF' },
+      'Adventure': { primary: '#10B981', secondary: '#34D399', accent: '#6EE7B7', text: '#FFFFFF' },
+      'Drama': { primary: '#F59E0B', secondary: '#FBBF24', accent: '#FDE047', text: '#1F2937' },
+      'Humor': { primary: '#EC4899', secondary: '#F472B6', accent: '#FBCFE8', text: '#FFFFFF' },
+      'Historical': { primary: '#92400E', secondary: '#B45309', accent: '#D97706', text: '#FFFFFF' },
+      'Inspirational': { primary: '#059669', secondary: '#10B981', accent: '#34D399', text: '#FFFFFF' },
+    };
+    return schemes[cat || ''] || { primary: '#6366F1', secondary: '#818CF8', accent: '#A5B4FC', text: '#FFFFFF' };
+  };
+
+  // ── Draw Background ────────────────────────────────────────────
+  const drawBackground = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, layout: string, colors: any) => {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    switch (layout) {
+      case 'gradient-right': {
+        const gradient = ctx.createLinearGradient(0, 0, w, 0);
+        gradient.addColorStop(0, colors.primary);
+        gradient.addColorStop(1, colors.secondary);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+        break;
+      }
+      case 'gradient-left': {
+        const gradient = ctx.createLinearGradient(w, 0, 0, 0);
+        gradient.addColorStop(0, colors.primary);
+        gradient.addColorStop(1, colors.secondary);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+        break;
+      }
+      case 'gradient-diagonal': {
+        const gradient = ctx.createLinearGradient(0, 0, w, h);
+        gradient.addColorStop(0, colors.primary);
+        gradient.addColorStop(1, colors.secondary);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+        break;
+      }
+      case 'solid-accent': {
+        ctx.fillStyle = colors.primary;
+        ctx.fillRect(0, 0, w, h);
+        // Add accent stripe
+        ctx.fillStyle = colors.accent;
+        ctx.fillRect(0, h - 8, w, 8);
+        break;
+      }
+      case 'split-horizontal': {
+        ctx.fillStyle = colors.primary;
+        ctx.fillRect(0, 0, w * 0.6, h);
+        ctx.fillStyle = colors.secondary;
+        ctx.fillRect(w * 0.6, 0, w * 0.4, h);
+        break;
+      }
+    }
+  };
+
+  // ── Draw Decorations ───────────────────────────────────────────
+  const drawDecorations = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, colors: any) => {
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    ctx.save();
+    ctx.globalAlpha = 0.1;
+    ctx.fillStyle = '#FFFFFF';
+
+    // Random decorative shapes
+    const shapes = Math.floor(Math.random() * 4) + 2;
+    for (let i = 0; i < shapes; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const size = Math.random() * 40 + 20;
+      
+      ctx.beginPath();
+      if (Math.random() > 0.5) {
+        // Circle
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+      } else {
+        // Rectangle
+        ctx.rect(x - size/2, y - size/2, size, size);
+      }
+      ctx.fill();
+    }
+    
+    ctx.restore();
+  };
+
+  // ── Draw Text ──────────────────────────────────────────────────
+  const drawText = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, title: string, subtitle: string, colors: any) => {
+    const w = canvas.width;
+    const h = canvas.height;
+    
+    // Calculate text positioning
+    const padding = 30;
+    const maxWidth = w - (padding * 2);
+    
+    // Title styling
+    let titleSize = 28;
+    if (title.length > 40) titleSize = 24;
+    if (title.length > 50) titleSize = 20;
+    
+    ctx.font = `bold ${titleSize}px 'Inter', 'Segoe UI', sans-serif`;
+    ctx.fillStyle = colors.text;
+    ctx.textBaseline = 'middle';
+    
+    // Text shadow for better contrast
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    
+    // Word wrap title
+    const words = title.split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (ctx.measureText(testLine).width <= maxWidth) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    
+    // Limit to 2 lines max
+    const displayLines = lines.slice(0, 2);
+    
+    // Calculate vertical position
+    const lineHeight = titleSize * 1.2;
+    const totalHeight = displayLines.length * lineHeight + (subtitle ? 20 : 0);
+    const startY = (h - totalHeight) / 2;
+    
+    // Draw title
+    displayLines.forEach((line, i) => {
+      ctx.fillText(line, padding, startY + (i * lineHeight));
+    });
+    
+    // Draw subtitle if provided
+    if (subtitle && subtitle.trim()) {
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      
+      const subtitleSize = 14;
+      ctx.font = `500 ${subtitleSize}px 'Inter', 'Segoe UI', sans-serif`;
+      ctx.globalAlpha = 0.9;
+      
+      // Truncate subtitle if too long
+      let displaySubtitle = subtitle;
+      while (ctx.measureText(displaySubtitle + '...').width > maxWidth && displaySubtitle.length > 20) {
+        displaySubtitle = displaySubtitle.slice(0, -1);
+      }
+      if (displaySubtitle.length < subtitle.length) {
+        displaySubtitle += '...';
+      }
+      
+      ctx.fillText(displaySubtitle, padding, startY + (displayLines.length * lineHeight) + 10);
+      ctx.globalAlpha = 1;
+    }
+    
+    // Reset shadow
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
   };
 
   return (
