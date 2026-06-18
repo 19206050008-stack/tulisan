@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
-import { Bot, Send, Square, RotateCcw, Download, Zap, AlertCircle, Sparkles, Trash2 } from 'lucide-react';
+import { Bot, Send, Square, Sparkles, Trash2, Zap } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -12,26 +12,9 @@ interface Message {
   timestamp: number;
 }
 
-type Status = 'idle' | 'loading' | 'ready' | 'generating' | 'error';
+type Status = 'ready' | 'generating';
 
-const MODELS = [
-  {
-    id: 'qwen3-0.6b-q4',
-    name: 'Qwen3 0.6B (Q4_K_M)',
-    repo: 'Qwen/Qwen3-0.6B-GGUF',
-    file: 'Qwen3-0.6B-Q4_K_M.gguf',
-    size: '~400 MB',
-    desc: 'Lebih ringan, cepat download',
-  },
-  {
-    id: 'qwen3-0.6b-q8',
-    name: 'Qwen3 0.6B (Q8_0)',
-    repo: 'Qwen/Qwen3-0.6B-GGUF',
-    file: 'Qwen3-0.6B-Q8_0.gguf',
-    size: '~670 MB',
-    desc: 'Kualitas lebih tinggi',
-  },
-];
+const API_URL = 'https://text.pollinations.ai/openai/chat/completions';
 
 export default function AIChatPage() {
   const router = useRouter();
@@ -43,99 +26,56 @@ export default function AIChatPage() {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [status, setStatus] = useState<Status>('idle');
-  const [dlProgress, setDlProgress] = useState(0);
-  const [selectedModel, setSelectedModel] = useState(0);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [status, setStatus] = useState<Status>('ready');
   const [streamText, setStreamText] = useState('');
 
-  const wllamaRef = useRef<any>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const labels = lang === 'en' ? {
     title: 'AI Chat',
-    subtitle: 'Powered by Qwen3 — runs locally in your browser',
-    selectModel: 'Select Model',
-    loadModel: 'Load Model',
-    downloading: 'Downloading model...',
+    subtitle: 'Powered by Pollinations AI — free, no download needed',
     generating: 'AI is thinking...',
     placeholder: 'Type your message...',
     send: 'Send',
     stop: 'Stop',
     clearChat: 'Clear Chat',
-    error: 'Error loading model',
-    retry: 'Retry',
-    welcome: 'Hello! I am Qwen3, running locally in your browser. How can I help you today?',
-    noData: '100% local — no data leaves your browser',
-    firstLoad: 'First load downloads the model. Cached for future visits.',
+    welcome: "Hello! I'm your AI assistant. Ask me anything — I can help with writing, brainstorming, coding, translations, and more.",
+    free: 'Free & instant — no download, no signup',
+    welcomeTitle: 'Welcome to AI Chat',
+    welcomeDesc: 'Start chatting right away. The AI runs on Pollinations — free and fast.',
   } : {
     title: 'AI Chat',
-    subtitle: 'Didukung Qwen3 — berjalan lokal di browser kamu',
-    selectModel: 'Pilih Model',
-    loadModel: 'Muat Model',
-    downloading: 'Mengunduh model...',
+    subtitle: 'Didukung Pollinations AI — gratis, tanpa download',
     generating: 'AI sedang berpikir...',
     placeholder: 'Ketik pesan...',
     send: 'Kirim',
     stop: 'Stop',
     clearChat: 'Hapus Chat',
-    error: 'Gagal memuat model',
-    retry: 'Coba Lagi',
-    welcome: 'Halo! Saya Qwen3, berjalan lokal di browser kamu. Ada yang bisa saya bantu?',
-    noData: '100% lokal — tidak ada data yang keluar dari browser',
-    firstLoad: 'Muatan pertama mengunduh model. Di-cache untuk kunjungan berikutnya.',
+    welcome: "Halo! Saya asisten AI kamu. Tanya apa saja — saya bisa bantu menulis, brainstorming, coding, terjemahan, dan lainnya.",
+    free: 'Gratis & instan — tanpa download, tanpa daftar',
+    welcomeTitle: 'Selamat Datang di AI Chat',
+    welcomeDesc: 'Langsung mulai mengobrol. AI berjalan di Pollinations — gratis dan cepat.',
   };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamText]);
 
-  const loadModel = useCallback(async () => {
-    setStatus('loading');
-    setErrorMsg('');
-    setDlProgress(0);
-
-    try {
-      const wllamaModule = await import('@wllama/wllama');
-      const Wllama = wllamaModule.Wllama;
-      const LoggerWithoutDebug = wllamaModule.LoggerWithoutDebug;
-
-      // Use WASM config paths for Next.js
-      const configPaths = {
-        default: '/wllama/wllama.wasm',
-      };
-
-      const wllama = new Wllama(configPaths, { logger: LoggerWithoutDebug });
-      const model = MODELS[selectedModel];
-
-      await wllama.loadModelFromHF(
-        { repo: model.repo, file: model.file },
-        {
-          progressCallback: ({ loaded, total }: { loaded: number; total: number }) => {
-            setDlProgress(Math.round((loaded / total) * 100));
-          },
-        }
-      );
-
-      wllamaRef.current = wllama;
-      setStatus('ready');
-
+  // Add welcome message on first render
+  useEffect(() => {
+    if (_hasHydrated && role !== 'guest' && messages.length === 0) {
       setMessages([{
         id: 'welcome',
         role: 'assistant',
         content: labels.welcome,
         timestamp: Date.now(),
       }]);
-    } catch (err: any) {
-      console.error('Model load error:', err);
-      setErrorMsg(err?.message || 'Unknown error');
-      setStatus('error');
     }
-  }, [selectedModel, labels.welcome]);
+  }, [_hasHydrated, role]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || status !== 'ready' || !wllamaRef.current) return;
+  const sendMessage = async () => {
+    if (!input.trim() || status === 'generating') return;
 
     const userMsg: Message = {
       id: 'u-' + Date.now(),
@@ -144,50 +84,85 @@ export default function AIChatPage() {
       timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput('');
     setStatus('generating');
     setStreamText('');
-    abortRef.current = false;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const chatHistory = [...messages, userMsg].map(m => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      const wllama = wllamaRef.current;
-      let fullText = '';
-
-      const output = await wllama.createChatCompletion(chatHistory, {
-        nPredict: 512,
-        temp: 0.7,
-        topK: 40,
-        topP: 0.9,
-        sampling: {
-          onNewToken: (token: string, piece: any, currentText: string) => {
-            if (abortRef.current) {
-              wllama.abort();
-              return;
-            }
-            fullText = currentText;
-            setStreamText(currentText);
-          },
+      const chatMessages = [
+        {
+          role: 'system' as const,
+          content: lang === 'en'
+            ? 'You are a helpful, friendly AI assistant. Reply concisely and clearly.'
+            : 'Kamu adalah asisten AI yang membantu dan ramah. Jawab dengan ringkas dan jelas. Gunakan Bahasa Indonesia kecuali user bertanya dalam bahasa lain.',
         },
+        ...newMessages.map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+      ];
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai',
+          messages: chatMessages,
+          stream: true,
+          max_tokens: 1024,
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
       });
 
-      const finalText = fullText || output?.choices?.[0]?.message?.content || '';
+      if (!res.ok) {
+        throw new Error('API error: ' + res.status);
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+          for (const line of lines) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (delta) {
+                fullText += delta;
+                setStreamText(fullText);
+              }
+            } catch {}
+          }
+        }
+      }
+
       const aiMsg: Message = {
         id: 'ai-' + Date.now(),
         role: 'assistant',
-        content: finalText.trim(),
+        content: fullText.trim() || '(empty response)',
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, aiMsg]);
       setStreamText('');
       setStatus('ready');
     } catch (err: any) {
-      if (abortRef.current) {
+      if (err.name === 'AbortError') {
         const partial: Message = {
           id: 'ai-' + Date.now(),
           role: 'assistant',
@@ -199,21 +174,39 @@ export default function AIChatPage() {
         setStatus('ready');
         return;
       }
-      console.error('Generation error:', err);
+
+      console.error('Chat error:', err);
+      const errMsg: Message = {
+        id: 'err-' + Date.now(),
+        role: 'assistant',
+        content: lang === 'en'
+          ? 'Sorry, something went wrong. Please try again.'
+          : 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errMsg]);
+      setStreamText('');
       setStatus('ready');
     }
-  }, [input, status, messages, streamText]);
 
-  const stopGeneration = () => { abortRef.current = true; };
-
-  const clearChat = () => {
-    if (status === 'generating') abortRef.current = true;
-    setMessages([]);
-    setStreamText('');
-    setStatus(wllamaRef.current ? 'ready' : 'idle');
+    abortRef.current = null;
   };
 
-  const pct = (loaded: number, total: number) => total > 0 ? Math.round((loaded / total) * 100) : 0;
+  const stopGeneration = () => {
+    abortRef.current?.abort();
+  };
+
+  const clearChat = () => {
+    abortRef.current?.abort();
+    setMessages([{
+      id: 'welcome-' + Date.now(),
+      role: 'assistant',
+      content: labels.welcome,
+      timestamp: Date.now(),
+    }]);
+    setStreamText('');
+    setStatus('ready');
+  };
 
   if (!_hasHydrated) {
     return (
@@ -237,107 +230,24 @@ export default function AIChatPage() {
             <div>
               <h1 className="text-sm font-bold flex items-center gap-1.5">
                 {labels.title}
-                {status === 'ready' && <Sparkles className="h-3.5 w-3.5 text-accent" />}
+                <Sparkles className="h-3.5 w-3.5 text-accent" />
               </h1>
               <p className="text-[10px] text-tx-muted">{labels.subtitle}</p>
             </div>
           </div>
-          {(status === 'ready' || status === 'generating') && (
-            <button
-              onClick={clearChat}
-              className="p-2 rounded-full hover:bg-bg-soft text-tx-muted hover:text-tx transition-colors"
-              title={labels.clearChat}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={clearChat}
+            className="p-2 rounded-full hover:bg-bg-soft text-tx-muted hover:text-tx transition-colors"
+            title={labels.clearChat}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-          {/* Model loader screen */}
-          {status === 'idle' && (
-            <div className="text-center py-12 space-y-6">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-accent/10 flex items-center justify-center">
-                <Bot className="h-8 w-8 text-accent" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-bold font-serif">{labels.title}</h2>
-                <p className="text-sm text-tx-soft max-w-md mx-auto">{labels.subtitle}</p>
-                <p className="text-xs text-tx-muted flex items-center justify-center gap-1">
-                  <Zap className="h-3 w-3" /> {labels.noData}
-                </p>
-              </div>
-
-              {/* Model selector */}
-              <div className="max-w-sm mx-auto space-y-3">
-                <p className="text-xs font-semibold text-tx-muted uppercase tracking-wider">{labels.selectModel}</p>
-                {MODELS.map((m, i) => (
-                  <button
-                    key={m.id}
-                    onClick={() => setSelectedModel(i)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all ${
-                      selectedModel === i
-                        ? 'border-accent bg-accent/5'
-                        : 'border-border bg-bg-card hover:border-accent/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">{m.name}</span>
-                      <span className="text-[10px] text-tx-muted bg-bg-input px-2 py-0.5 rounded-full">{m.size}</span>
-                    </div>
-                    <p className="text-xs text-tx-muted mt-1">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
-
-              <p className="text-[10px] text-tx-muted max-w-sm mx-auto">{labels.firstLoad}</p>
-
-              <button
-                onClick={loadModel}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:opacity-90 transition"
-              >
-                <Download className="h-4 w-4" /> {labels.loadModel}
-              </button>
-            </div>
-          )}
-
-          {/* Loading progress */}
-          {status === 'loading' && (
-            <div className="text-center py-16 space-y-4">
-              <div className="w-12 h-12 mx-auto rounded-full bg-accent/10 flex items-center justify-center animate-pulse">
-                <Download className="h-6 w-6 text-accent" />
-              </div>
-              <p className="text-sm font-medium">{labels.downloading}</p>
-              <div className="max-w-xs mx-auto">
-                <div className="h-2 bg-bg-input rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-accent rounded-full transition-all duration-300"
-                    style={{ width: dlProgress + '%' }}
-                  />
-                </div>
-                <p className="text-xs text-tx-muted mt-2">{dlProgress}%</p>
-              </div>
-            </div>
-          )}
-
-          {/* Error */}
-          {status === 'error' && (
-            <div className="text-center py-12 space-y-4">
-              <AlertCircle className="h-10 w-10 mx-auto text-red-500" />
-              <p className="text-sm font-medium">{labels.error}</p>
-              <p className="text-xs text-tx-muted max-w-sm mx-auto">{errorMsg}</p>
-              <button
-                onClick={loadModel}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition"
-              >
-                <RotateCcw className="h-4 w-4" /> {labels.retry}
-              </button>
-            </div>
-          )}
-
           {/* Chat messages */}
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -389,37 +299,35 @@ export default function AIChatPage() {
       </div>
 
       {/* Input area */}
-      {(status === 'ready' || status === 'generating') && (
-        <div className="shrink-0 border-t border-border bg-bg-card p-4">
-          <div className="max-w-3xl mx-auto flex items-center gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-              placeholder={labels.placeholder}
-              disabled={status === 'generating'}
-              className="flex-1 px-4 py-2.5 rounded-full bg-bg-input border border-border focus:outline-none focus:border-accent text-sm disabled:opacity-50"
-            />
-            {status === 'generating' ? (
-              <button
-                onClick={stopGeneration}
-                className="p-2.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-              >
-                <Square className="h-4 w-4" />
-              </button>
-            ) : (
-              <button
-                onClick={sendMessage}
-                disabled={!input.trim()}
-                className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 disabled:opacity-50 transition"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+      <div className="shrink-0 border-t border-border bg-bg-card p-4">
+        <div className="max-w-3xl mx-auto flex items-center gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            placeholder={labels.placeholder}
+            disabled={status === 'generating'}
+            className="flex-1 px-4 py-2.5 rounded-full bg-bg-input border border-border focus:outline-none focus:border-accent text-sm disabled:opacity-50"
+          />
+          {status === 'generating' ? (
+            <button
+              onClick={stopGeneration}
+              className="p-2.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+            >
+              <Square className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim()}
+              className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 disabled:opacity-50 transition"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
