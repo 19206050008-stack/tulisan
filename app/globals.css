@@ -317,9 +317,34 @@ textarea::placeholder {
   max-width: 100%;
 }
 
-/* Ensure all text elements are visible */
+/* Remove ALL table borders and separators - make them completely invisible */
+.ai-markdown table,
 .ai-markdown th,
 .ai-markdown td,
+.ai-markdown tr {
+  border: none !important;
+  padding: 6px 12px;
+  margin: 0;
+}
+
+.ai-markdown table tr {
+  border-bottom: none !important;
+}
+
+.ai-markdown th {
+  font-weight: 600;
+  color: var(--tx-soft) !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ai-markdown td {
+  color: var(--tx) !important;
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Ensure all text elements are visible */
 .ai-markdown strong,
 .ai-markdown em,
 .ai-markdown code,
@@ -328,13 +353,10 @@ textarea::placeholder {
   color: inherit !important;
 }
 
-.ai-markdown th {
-  color: var(--tx-soft);
-  font-weight: 600;
-}
-
-.ai-markdown td {
-  color: var(--tx);
+.ai-markdown code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 
 /* Hide scrollbar for horizontal carousels */
