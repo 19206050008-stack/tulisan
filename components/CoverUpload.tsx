@@ -170,26 +170,7 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
       ctx.fillText(line, 50, startY + i * (fontSize + 14));
     });
 
-    // Large decorative element in bottom right corner only
-    ctx.save();
-    ctx.translate(COVER_WIDTH - 70, COVER_HEIGHT - 70);
-    
-    // Simple geometric shape (circle segment)
-    ctx.beginPath();
-    ctx.arc(35, 35, 40, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fill();
-    
-    // Pen/pencil icon
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.font = `bold 36px Georgia`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('✎', 35, 35);
-    
-    ctx.restore();
-
-    // IMPORTANT: NO WATERMARK, NO LINES - Clean design with only title + background + icon!
+    // IMPORTANT: NO ICONS, NO MARKERS - Just title + gradient background!
 
     canvas.toBlob((blob) => {
       if (blob) { onFileReady(new File([blob], 'generated-cover.png', { type: 'image/png' })); setInfo('Cover berhasil di-generate!'); }
