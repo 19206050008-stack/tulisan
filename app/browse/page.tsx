@@ -120,7 +120,7 @@ function BrowsePage() {
           <h1 className="text-2xl md:text-3xl font-bold font-serif">{t.title}</h1>
         )}
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {/* Search bar */}
           <div className="relative w-full">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -133,71 +133,75 @@ function BrowsePage() {
             />
           </div>
 
-          {/* Filters row - all filters in one row */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Genre dropdown - mobile only */}
-            <select 
-              value={activeCategory} 
-              onChange={e => setActiveCategory(e.target.value)}
-              className="md:hidden px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
-            >
-              <option value="All">{translations[lang].home.all}</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-
-            {/* Sort dropdown */}
-            <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300">
-              <option value="newest">{t.sort.newest}</option>
-              <option value="popular">{t.sort.popular}</option>
-              <option value="most_liked">{t.sort.likes}</option>
-            </select>
-
-            {/* Per page dropdown */}
-            <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} className="px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300">
-              <option value={10}>10 {t.perPage.replace(':', '')}</option>
-              <option value={20}>20 {t.perPage.replace(':', '')}</option>
-              <option value={30}>30 {t.perPage.replace(':', '')}</option>
-            </select>
-
-            {/* Tag filter button */}
-            {allTags.length > 0 && (
-              <button
-                onClick={() => setShowTagModal(true)}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg transition-colors ${
-                  selectedTags.length > 0
-                    ? 'bg-accent text-white hover:opacity-90'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:border-gray-600'
-                }`}
+          {/* Filters Row */}
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+            
+            {/* LEFT SIDE: Genre Selection */}
+            <div className="flex-1">
+              {/* Mobile: Genre Dropdown */}
+              <select 
+                value={activeCategory} 
+                onChange={e => setActiveCategory(e.target.value)}
+                className="md:hidden w-full sm:w-auto px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
               >
-                <Tag className="h-3.5 w-3.5" />
-                <span>{selectedTags.length > 0 ? `Tags (${selectedTags.length})` : 'Tags'}</span>
-              </button>
-            )}
-          </div>
+                <option value="All">{translations[lang].home.all}</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
 
-          {/* Desktop: Genre category buttons */}
-          {(activeCategory === 'All' || activeCategory === translations.id.home.all || activeCategory === translations.en.home.all) && (
-            <div className="hidden md:flex flex-wrap gap-2">
-              <button onClick={() => setActiveCategory('All')} className="px-4 py-2 rounded-full text-sm font-medium bg-accent text-white hover:opacity-90">
-                {translations[lang].home.all}
-              </button>
-              {visibleCategories.map(cat => (
-                <button key={cat} onClick={() => setActiveCategory(cat)} className="px-4 py-2 rounded-full text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:border-gray-700 transition-colors">
-                  {cat}
-                </button>
-              ))}
-              {hasMoreCategories && (
+              {/* Desktop: Genre Buttons */}
+              {(activeCategory === 'All' || activeCategory === translations.id.home.all || activeCategory === translations.en.home.all) && (
+                <div className="hidden md:flex flex-wrap gap-2">
+                  <button onClick={() => setActiveCategory('All')} className="px-4 py-2 rounded-full text-sm font-medium bg-accent text-white hover:opacity-90">
+                    {translations[lang].home.all}
+                  </button>
+                  {visibleCategories.map(cat => (
+                    <button key={cat} onClick={() => setActiveCategory(cat)} className="px-4 py-2 rounded-full text-sm font-medium bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:border-gray-700 transition-colors">
+                      {cat}
+                    </button>
+                  ))}
+                  {hasMoreCategories && (
+                    <button
+                      onClick={() => setShowGenreModal(true)}
+                      className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 border-2 border-accent/30 dark:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
+                    >
+                      More ({categories.length - 6})
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT SIDE: Sort, PerPage, Tags */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} className="px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300">
+                <option value="newest">{t.sort.newest}</option>
+                <option value="popular">{t.sort.popular}</option>
+                <option value="most_liked">{t.sort.likes}</option>
+              </select>
+
+              <select value={perPage} onChange={e => setPerPage(Number(e.target.value))} className="px-3 py-2 text-xs rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300">
+                <option value={10}>10 {t.perPage.replace(':', '')}</option>
+                <option value={20}>20 {t.perPage.replace(':', '')}</option>
+                <option value={30}>30 {t.perPage.replace(':', '')}</option>
+              </select>
+
+              {allTags.length > 0 && (
                 <button
-                  onClick={() => setShowGenreModal(true)}
-                  className="px-4 py-2 rounded-full text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 border-2 border-accent/30 dark:bg-accent/20 dark:hover:bg-accent/30 transition-colors"
+                  onClick={() => setShowTagModal(true)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg transition-colors ${
+                    selectedTags.length > 0
+                      ? 'bg-accent text-white hover:opacity-90'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:border-gray-600'
+                  }`}
                 >
-                  More ({categories.length - 6})
+                  <Tag className="h-3.5 w-3.5" />
+                  <span>{selectedTags.length > 0 ? `Tags (${selectedTags.length})` : 'Tags'}</span>
                 </button>
               )}
             </div>
-          )}
+          </div>
 
           {/* Selected tags display */}
           {selectedTags.length > 0 && (
