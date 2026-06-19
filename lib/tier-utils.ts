@@ -1,6 +1,11 @@
 /**
  * Helper functions untuk Tier Tagging System
  * Menghitung jumlah kata dan menentukan tier cerita
+ * 
+ * Klasifikasi berdasarkan standar sastra Indonesia:
+ * - Pendek: Cerpen & Flash Fiction (< 7,500 kata)
+ * - Sedang: Novelet & Novela (7,500 - 40,000 kata)
+ * - Panjang: Novel (> 40,000 kata)
  */
 
 /**
@@ -25,21 +30,32 @@ export function countWords(content: string): number {
 /**
  * Determine tier based on total word count across all chapters
  * 
- * Tier Categories:
- * - Pendek (Short): 0-700 words
- * - Sedang (Medium): 700-1,000 words
- * - Panjang (Long): 1,000-5,000 words
- * - null: > 5,000 words (very long)
+ * Tier Categories (standar sastra Indonesia):
+ * - Pendek (Short): < 7,500 kata — Cerpen & Fiksi Kilat
+ * - Sedang (Medium): 7,500 - 40,000 kata — Novelet & Novela
+ * - Panjang (Long): > 40,000 kata — Novel
  */
 export function determineTier(totalWords: number): 'Pendek' | 'Sedang' | 'Panjang' | null {
-  if (totalWords > 0 && totalWords <= 700) {
+  if (totalWords <= 0) return null;
+  if (totalWords < 7500) {
     return 'Pendek';
-  } else if (totalWords > 700 && totalWords <= 1000) {
+  } else if (totalWords <= 40000) {
     return 'Sedang';
-  } else if (totalWords > 1000 && totalWords <= 5000) {
+  } else {
     return 'Panjang';
   }
-  return null;
+}
+
+/**
+ * Determine story type based on word count (more granular)
+ */
+export function determineStoryType(totalWords: number): string {
+  if (totalWords <= 0) return '';
+  if (totalWords < 1000) return 'Fiksi Kilat';
+  if (totalWords < 7500) return 'Cerpen';
+  if (totalWords < 17500) return 'Novelet';
+  if (totalWords < 40000) return 'Novela';
+  return 'Novel';
 }
 
 /**
@@ -47,15 +63,18 @@ export function determineTier(totalWords: number): 'Pendek' | 'Sedang' | 'Panjan
  */
 export function calculateStoryTier(chapters: { content: string }[]): {
   tier: 'Pendek' | 'Sedang' | 'Panjang' | null;
+  storyType: string;
   totalWords: number;
   chaptersWordCount: number[];
 } {
   const chaptersWordCount = chapters.map(ch => countWords(ch.content || ''));
   const totalWords = chaptersWordCount.reduce((sum, count) => sum + count, 0);
   const tier = determineTier(totalWords);
+  const storyType = determineStoryType(totalWords);
   
   return {
     tier,
+    storyType,
     totalWords,
     chaptersWordCount
   };
@@ -88,22 +107,37 @@ export function getTierBadgeColor(tier: string | null): string {
 /**
  * Get tier description
  */
-export function getTierDescription(tier: string | null): string {
+export function getTierDescription(tier: string | null, lang: 'id' | 'en' = 'id'): string {
+  if (lang === 'en') {
+    switch (tier) {
+      case 'Pendek': return 'Short (< 7,500 words) — Short Story & Flash Fiction';
+      case 'Sedang': return 'Medium (7,500 - 40,000 words) — Novelette & Novella';
+      case 'Panjang': return 'Long (> 40,000 words) — Novel';
+      default: return '';
+    }
+  }
   switch (tier) {
-    case 'Pendek':
-      return '0-700 kata';
-    case 'Sedang':
-      return '700-1,000 kata';
-    case 'Panjang':
-      return '1,000-5,000 kata';
-    default:
-      return '';
+    case 'Pendek': return 'Pendek (< 7.500 kata) — Cerpen & Fiksi Kilat';
+    case 'Sedang': return 'Sedang (7.500 - 40.000 kata) — Novelet & Novela';
+    case 'Panjang': return 'Panjang (> 40.000 kata) — Novel';
+    default: return '';
   }
 }
 
 /**
- * Calculate reading time (assuming 200 words per minute)
+ * Calculate reading time (assuming 200 words per minute for Indonesian)
  */
 export function calculateReadingTime(wordCount: number): number {
   return Math.max(1, Math.ceil(wordCount / 200));
+}
+
+/**
+ * Format reading time to human-readable string
+ */
+export function formatReadingTime(minutes: number, lang: 'id' | 'en' = 'id'): string {
+  if (minutes < 60) return `${minutes} ${lang === 'en' ? 'min read' : 'menit baca'}`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) return `${hours} ${lang === 'en' ? 'hour read' : 'jam baca'}`;
+  return `${hours} ${lang === 'en' ? 'h' : 'j'} ${mins} ${lang === 'en' ? 'min read' : 'menit baca'}`;
 }
