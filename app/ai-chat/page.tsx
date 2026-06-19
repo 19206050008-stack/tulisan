@@ -189,6 +189,7 @@ export default function NanaChatPage() {
 
   const endRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const streamTextRef = useRef('');
 
   const activeChat = chats.find(c => c.id === activeChatId) || null;
   const messages = activeChat?.messages || [];
@@ -290,6 +291,7 @@ export default function NanaChatPage() {
     setInput('');
     setStatus('generating');
     setStreamText('');
+    streamTextRef.current = '';
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -350,6 +352,7 @@ export default function NanaChatPage() {
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta && typeof delta === 'string') {
                 fullText += delta;
+                streamTextRef.current = fullText;
                 setStreamText(fullText);
               }
             } catch (e) {
@@ -382,8 +385,9 @@ export default function NanaChatPage() {
         finalMessages.map(m => ({ role: m.role, content: m.content }))
       ).catch((err) => console.warn('DB sync failed:', err.message));
       
-      setStreamText('');
       setStatus('ready');
+      setStreamText('');
+      streamTextRef.current = '';
     } catch (err: any) {
       clearTimeout(timeoutId);
       
@@ -391,12 +395,13 @@ export default function NanaChatPage() {
         const partial: Message = {
           id: 'ai-' + Date.now(), // eslint-disable-line react-hooks/purity
           role: 'assistant',
-          content: streamText || labels.generating,
+          content: streamTextRef.current || labels.generating,
           timestamp: Date.now(), // eslint-disable-line react-hooks/purity
         };
         updateChat(chatId, { messages: [...newMessages, partial], updatedAt: Date.now() }); // eslint-disable-line react-hooks/purity
-        setStreamText('');
         setStatus('ready');
+        setStreamText('');
+        streamTextRef.current = '';
         return;
       }
       
@@ -414,9 +419,10 @@ export default function NanaChatPage() {
       if (activeChatId) {
         setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, errMsg] } : c));
       }
-      setStreamText('');
-      setInput(msgText); // Allow user to retry
       setStatus('ready');
+      setStreamText('');
+      streamTextRef.current = '';
+      setInput(msgText);
     }
 
     abortRef.current = null;
