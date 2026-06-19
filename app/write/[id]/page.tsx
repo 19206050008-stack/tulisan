@@ -334,6 +334,31 @@ export default function WriteEditorPage() {
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
 
+          {/* Chapter Tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-border">
+            {chapters.map((ch, i) => (
+              <div key={ch.id} className={`group flex items-center gap-1 px-3 py-1.5 rounded-t-lg text-sm cursor-pointer whitespace-nowrap transition-colors ${i === activeChapter ? 'bg-accent/10 text-accent border-b-2 border-accent font-medium' : 'text-tx-muted hover:text-tx hover:bg-bg-soft'}`}>
+                <span onClick={() => selectChapter(i)} className="truncate max-w-[120px]">{ch.title || `Bab ${ch.chapter_number || i + 1}`}</span>
+                <button onClick={(e) => { e.stopPropagation(); initiateDeleteChapter(ch.id, i); }} className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"><Trash2 className="h-3 w-3" /></button>
+              </div>
+            ))}
+            <button
+              onClick={addNewChapter}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-t-lg text-sm transition-colors ${activeChapter === chapters.length ? 'bg-accent/10 text-accent font-medium' : 'text-tx-muted hover:text-accent hover:bg-bg-soft'}`}
+            >
+              <Plus className="h-3.5 w-3.5" /> Bab Baru
+            </button>
+          </div>
+
+          {/* Chapter Title */}
+          <input
+            type="text"
+            placeholder={t.chapterTitle}
+            value={chapterTitle}
+            onChange={e => setChapterTitle(e.target.value)}
+            className="w-full px-3 py-2 text-base font-medium rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          />
+
           {!loading && (
             <Suspense fallback={
               <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
@@ -385,36 +410,6 @@ export default function WriteEditorPage() {
               placeholder={t.tagsPlaceholder}
               value={tags}
               onChange={e => setTags(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-            />
-          </div>
-
-          <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">{t.chapters}</h3>
-              <button onClick={addNewChapter} className="p-1 rounded hover:bg-bg-soft transition-colors">
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="space-y-1 max-h-60 overflow-y-auto">
-              {chapters.map((ch, i) => (
-                <div key={ch.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${i === activeChapter ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                  <span onClick={() => selectChapter(i)} className="flex-1 truncate">{ch.title || `Chapter ${ch.chapter_number || i + 1}`}</span>
-                  <button onClick={() => initiateDeleteChapter(ch.id, i)} className="p-1 hover:text-red-500 transition-colors"><Trash2 className="h-3 w-3" /></button>
-                </div>
-              ))}
-              <div
-                onClick={() => setActiveChapter(chapters.length)}
-                className={`px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${activeChapter === chapters.length ? 'bg-accent/10 text-accent' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-              >
-                {t.newChapter}
-              </div>
-            </div>
-            <input
-              type="text"
-              placeholder={t.chapterTitle}
-              value={chapterTitle}
-              onChange={e => setChapterTitle(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-900 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
