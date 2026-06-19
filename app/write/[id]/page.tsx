@@ -351,7 +351,7 @@ export default function WriteEditorPage() {
                 if (val === chapters.length) addNewChapter();
                 else selectChapter(val);
               }}
-              className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+              className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               {chapters.map((ch, i) => (
                 <option key={ch.id} value={i}>Bab {ch.chapter_number || i + 1}: {ch.title || '(Tanpa judul)'}</option>
