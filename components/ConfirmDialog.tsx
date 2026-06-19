@@ -118,7 +118,7 @@ export function PromptDialog({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      setValue(defaultValue);
+      setValue(defaultValue); // eslint-disable-line react-hooks/set-state-in-effect
     } else {
       document.body.style.overflow = 'unset';
     }

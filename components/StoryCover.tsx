@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 const GRADIENT_MAP: Record<string, string> = {
   'Romance': 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)',
   'Horror': 'linear-gradient(135deg, #2d1b69 0%, #11001c 100%)',
@@ -15,6 +17,9 @@ const GRADIENT_MAP: Record<string, string> = {
   'Inspirational': 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
 };
 
+// Tiny inline SVG placeholder — 0 network requests, instant render
+const BLUR_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNjAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iIzIyMiIvPjwvc3ZnPg==';
+
 interface StoryCoverProps {
   coverUrl?: string | null;
   category?: string;
@@ -24,14 +29,18 @@ interface StoryCoverProps {
 
 export function StoryCover({ coverUrl, category, title, className = '' }: StoryCoverProps) {
   if (coverUrl && !coverUrl.startsWith('gradient:')) {
-    // If it's a Supabase storage URL, we can append transform parameters 
-    // to reduce file size and bandwidth
-    const isSupabase = coverUrl.includes('.supabase.co/storage/v1/object/public/');
-    const optimizedUrl = isSupabase && !coverUrl.includes('?') 
-      ? `${coverUrl}?width=400&quality=80` 
-      : coverUrl;
-      
-    return <img src={optimizedUrl} alt={title} className={`w-full h-full object-cover ${className}`} loading="lazy" />;
+    return (
+      <Image
+        src={coverUrl}
+        alt={`Cover ${title}`}
+        fill
+        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+        className={`object-cover ${className}`}
+        loading="lazy"
+        placeholder="blur"
+        blurDataURL={BLUR_PLACEHOLDER}
+      />
+    );
   }
 
   const genre = coverUrl?.replace('gradient:', '') || category || '';

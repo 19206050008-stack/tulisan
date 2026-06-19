@@ -62,6 +62,13 @@ export default function NotificationsPage() {
     delete: 'Hapus',
   };
 
+  const loadNotifications = async () => {
+    setLoading(true);
+    const data = await getNotifications(user!.id);
+    setNotifications(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!_hasHydrated) return;
     if (role === 'guest') {
@@ -73,13 +80,6 @@ export default function NotificationsPage() {
     }
   }, [user, role, _hasHydrated]);
 
-  const loadNotifications = async () => {
-    setLoading(true);
-    const data = await getNotifications(user.id);
-    setNotifications(data);
-    setLoading(false);
-  };
-
   const markOneRead = async (id: string) => {
     if (!supabase) return;
     await supabase.from('notifications').update({ read: true }).eq('id', id);
@@ -87,7 +87,7 @@ export default function NotificationsPage() {
   };
 
   const markAllRead = async () => {
-    await markNotificationsRead(user.id);
+    await markNotificationsRead(user!.id);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 

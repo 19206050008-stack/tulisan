@@ -101,6 +101,24 @@ export default function AdminModerationPage() {
     // In production: trigger background job via Supabase edge function
   };
 
+  const manualApprove = async (storyId: string) => {
+    try {
+      await updateStoryModeration(storyId, 'approved', [], 1.0);
+      setStories(prev => prev.filter(s => s.id !== storyId));
+    } catch (err) {
+      console.error('Failed to approve story:', err);
+    }
+  };
+
+  const manualReject = async (storyId: string, reason: string) => {
+    try {
+      await updateStoryModeration(storyId, 'rejected', [reason], 0);
+      setStories(prev => prev.filter(s => s.id !== storyId));
+    } catch (err) {
+      console.error('Failed to reject story:', err);
+    }
+  };
+
   if (loading) return <div className="text-center py-16 text-gray-500">Loading...</div>;
 
   return (

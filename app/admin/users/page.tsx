@@ -20,6 +20,14 @@ export default function AdminUsersPage() {
   const [frameMap, setFrameMap] = useState<Record<string, string>>({});
   const perPage = 10;
 
+  const loadUsers = async () => {
+    if (!supabase) return;
+    setLoading(true);
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    setUsers(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => { loadUsers(); }, []);
   useEffect(() => { setCurrentPage(1); }, [search, roleFilter, sortBy]);
   useEffect(() => {
@@ -29,14 +37,6 @@ export default function AdminUsersPage() {
       setFrameMap(map);
     });
   }, []);
-
-  const loadUsers = async () => {
-    if (!supabase) return;
-    setLoading(true);
-    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    setUsers(data || []);
-    setLoading(false);
-  };
 
   const toggleRole = async (userId: string, currentRole: string) => {
     if (!supabase) return;

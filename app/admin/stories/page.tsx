@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { moderateText, updateStoryModeration } from '@/lib/supabase';
 import { Trash2, Eye, EyeOff, Search, ExternalLink, Heart, BookOpen, Filter, Star, CheckCircle } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 
@@ -39,9 +40,6 @@ export default function AdminStoriesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const perPage = 10;
 
-  useEffect(() => { loadStories(); }, []);
-  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, sortBy, categoryFilter]);
-
   const loadStories = async () => {
     if (!supabase) return;
     setLoading(true);
@@ -52,6 +50,9 @@ export default function AdminStoriesPage() {
     setStories(data || []);
     setLoading(false);
   };
+
+  useEffect(() => { loadStories(); }, []);
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, sortBy, categoryFilter]);
 
   const toggleStatus = async (id: string, current: string) => {
     if (!supabase) return;

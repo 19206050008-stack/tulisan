@@ -9,14 +9,14 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved' | 'dismissed'>('pending');
 
-  useEffect(() => { loadReports(); }, []);
-
   const loadReports = async () => {
     setLoading(true);
     const data = await getReports();
     setReports(data);
     setLoading(false);
   };
+
+  useEffect(() => { loadReports(); }, []);
 
   const handleResolve = async (id: string) => {
     await updateReportStatus(id, 'resolved');

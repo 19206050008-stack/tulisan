@@ -1,14 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createStory, uploadCover, moderateText } from '@/lib/supabase';
 import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
-import { RichEditor } from '@/components/RichEditor';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
+
+// Lazy load TipTap editor - hanya dimuat saat halaman /write dibuka (~200KB savings)
+const RichEditor = dynamic(
+  () => import('@/components/RichEditor').then(m => ({ default: m.RichEditor })),
+  {
+    loading: () => (
+      <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
+        <span className="text-sm text-tx-muted">Loading editor...</span>
+      </div>
+    ),
+    ssr: false, // TipTap tidak perlu SSR
+  }
+);
 
 export default function WritePage() {
   const router = useRouter();
@@ -89,7 +102,7 @@ export default function WritePage() {
       }
       
       // Create story first
-      const story = await createStory(user.id, title, description, category, tagsArray);
+      const story = await createStory(user!.id, title, description, category, tagsArray);
       console.log('Story created:', story.id);
 
       // Upload NEW cover if available
@@ -178,14 +191,20 @@ export default function WritePage() {
             className="w-full text-lg font-medium bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
 
-          <RichEditor
-            value={content}
-            onChange={setContent}
-            placeholder={t.startWriting}
-            minHeight={400}
-            showWordCount={true}
-            mode="full"
-          />
+          <Suspense fallback={
+            <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
+              <span className="text-sm text-tx-muted">Loading editor...</span>
+            </div>
+          }>
+            <RichEditor
+              value={content}
+              onChange={setContent}
+              placeholder={t.startWriting}
+              minHeight={400}
+              showWordCount={true}
+              mode="full"
+            />
+          </Suspense>
         </div>
 
         <div className="space-y-6">

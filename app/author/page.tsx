@@ -53,13 +53,8 @@ export default function AuthorDashboard() {
     edit: 'Edit',
   };
 
-  useEffect(() => {
-    if (_hasHydrated && user?.id) {
-      loadDashboard();
-    }
-  }, [_hasHydrated, user]);
-
   const loadDashboard = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       // Get all stories by this author
@@ -107,6 +102,12 @@ export default function AuthorDashboard() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (_hasHydrated && user?.id) {
+      loadDashboard();
+    }
+  }, [_hasHydrated, user]);
 
   if (!_hasHydrated || loading) {
     return (

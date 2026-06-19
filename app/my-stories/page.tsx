@@ -84,15 +84,9 @@ export default function MyStoriesPage() {
     noResults: 'Tidak ada cerita yang cocok.',
   };
 
-  useEffect(() => {
-    if (!_hasHydrated) return;
-    if (role === 'guest') { router.push('/login'); return; }
-    if (user?.id) loadStories();
-  }, [user, role, _hasHydrated]);
-
   const loadStories = async () => {
     setLoading(true);
-    const data = await getMyStories(user.id);
+    const data = await getMyStories(user!.id);
     setStories(data);
 
     // Load chapter counts
@@ -112,6 +106,12 @@ export default function MyStoriesPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    if (role === 'guest') { router.push('/login'); return; }
+    if (user?.id) loadStories();
+  }, [user, role, _hasHydrated]);
 
   const handleDelete = async (id: string) => {
     if (!confirm(labels.deleteConfirm)) return;
@@ -148,7 +148,7 @@ export default function MyStoriesPage() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
 
-  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, sortBy]);
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter, sortBy]); // eslint-disable-line react-hooks/set-state-in-effect
 
   const formatNum = (n: number) => {
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
@@ -277,7 +277,7 @@ export default function MyStoriesPage() {
                 <div key={story.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl border border-border bg-bg-card hover:border-accent/20 transition-colors group">
                   {/* Cover */}
                   <Link href={`/story/${story.id}`} className="shrink-0">
-                    <div className="w-12 h-16 md:w-14 md:h-20 rounded overflow-hidden">
+                    <div className="w-12 h-16 md:w-14 md:h-20 rounded overflow-hidden relative">
                       <StoryCover coverUrl={story.cover_url} category={story.category} title={story.title} />
                     </div>
                   </Link>

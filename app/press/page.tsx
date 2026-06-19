@@ -15,15 +15,18 @@ export default function PressPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     Promise.all([
       getSiteConfigLocalized('page_press', lang),
       getPressArticles(true),
     ]).then(([cfg, arts]) => {
-      setConfig(cfg);
-      setArticles(arts);
-      setLoading(false);
+      if (!cancelled) {
+        setConfig(cfg);
+        setArticles(arts);
+        setLoading(false);
+      }
     });
+    return () => { cancelled = true; };
   }, [lang]);
 
   const formatDate = (dateStr: string) => {

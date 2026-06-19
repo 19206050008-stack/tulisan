@@ -13,8 +13,6 @@ export default function AdminSliderPage() {
   const [sliderMode, setSliderMode] = useState<'auto' | 'custom'>('auto');
   const [form, setForm] = useState({ title: '', subtitle: '', story_id: '', image_url: '', badge: 'Featured', sort_order: 0 });
 
-  useEffect(() => { loadData(); }, []);
-
   const loadData = async () => {
     setLoading(true);
     const s = await getAllFeaturedSlides();
@@ -29,6 +27,8 @@ export default function AdminSliderPage() {
     setSliderMode(mode === 'custom' ? 'custom' : 'auto');
     setLoading(false);
   };
+
+  useEffect(() => { loadData(); }, []);
 
   const handleModeChange = async (mode: 'auto' | 'custom') => {
     setSliderMode(mode);
@@ -198,9 +198,9 @@ export default function AdminSliderPage() {
         ))}
         {slides.length === 0 && (
           <div className="text-center py-12 space-y-2">
-            <Image className="h-10 w-10 mx-auto text-gray-300" />
+            <Image className="h-10 w-10 mx-auto text-gray-300" aria-hidden="true" />
             <p className="text-gray-500">No slides configured.</p>
-            <p className="text-sm text-gray-400">Click "Auto Generate" to create from popular stories, or add custom slides.</p>
+            <p className="text-sm text-gray-400">Click &quot;Auto Generate&quot; to create from popular stories, or add custom slides.</p>
           </div>
         )}
       </div>

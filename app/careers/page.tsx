@@ -13,8 +13,9 @@ export default function CareersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    getSiteConfigLocalized('page_careers', lang).then(data => { setConfig(data); setLoading(false); });
+    let cancelled = false;
+    getSiteConfigLocalized('page_careers', lang).then(data => { if (!cancelled) { setConfig(data); setLoading(false); } });
+    return () => { cancelled = true; };
   }, [lang]);
 
   if (loading) return <div className="text-center py-16 text-gray-500">{t.loading}</div>;

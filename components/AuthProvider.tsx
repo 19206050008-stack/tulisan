@@ -5,7 +5,10 @@ import { useStore } from '@/lib/store';
 import { supabase, getProfile } from '@/lib/supabase';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { login, logout, _hasHydrated } = useStore();
+  // Gunakan selector untuk mencegah re-render yang tidak perlu
+  const login = useStore((s) => s.login);
+  const logout = useStore((s) => s.logout);
+  const _hasHydrated = useStore((s) => s._hasHydrated);
 
   useEffect(() => {
     if (!supabase) {

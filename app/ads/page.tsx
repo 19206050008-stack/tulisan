@@ -109,24 +109,15 @@ export default function AdsPage() {
     return labels[s as keyof typeof labels] || s;
   };
 
-  useEffect(() => {
-    if (!_hasHydrated) return;
-    if (role === 'guest') { router.push('/login'); return; }
-    if (user?.id) {
-      loadRequests();
-      loadStories();
-    }
-  }, [user, role, _hasHydrated]);
-
   const loadRequests = async () => {
     setLoading(true);
-    const data = await getAdRequests(user.id);
+    const data = await getAdRequests(user?.id);
     setRequests(data);
     setLoading(false);
   };
 
   const loadStories = async () => {
-    if (!supabase) return;
+    if (!supabase || !user?.id) return;
     const { data } = await supabase
       .from('stories')
       .select('id, title, cover_url')
@@ -135,6 +126,15 @@ export default function AdsPage() {
       .order('created_at', { ascending: false });
     setStories(data || []);
   };
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    if (role === 'guest') { router.push('/login'); return; }
+    if (user?.id) {
+      loadRequests();
+      loadStories();
+    }
+  }, [user, role, _hasHydrated]);
 
   const handleSubmit = async () => {
     if (!title.trim() || !startDate || !endDate) {
@@ -148,7 +148,7 @@ export default function AdsPage() {
     try {
       // Upload banner first if file exists
       let finalImageUrl = imageUrl;
-      if (bannerFile) {
+      if (bannerFile && supabase) {
         const formData = new FormData();
         formData.append('file', bannerFile);
         
@@ -167,9 +167,9 @@ export default function AdsPage() {
 
       await createAdRequest({
         title,
-        description: description || null,
-        story_id: storyId || null,
-        image_url: finalImageUrl || null,
+        description: description || undefined,
+        story_id: storyId || undefined,
+        image_url: finalImageUrl || undefined,
         start_date: startDate,
         end_date: endDate,
       });

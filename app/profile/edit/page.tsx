@@ -100,16 +100,9 @@ export default function EditProfilePage() {
     all: 'Semua',
   };
 
-  useEffect(() => {
-    if (!_hasHydrated) return;
-    if (role === 'guest') { router.push('/login'); return; }
-    if (user?.id) loadProfile();
-    loadOptions();
-  }, [user, role, _hasHydrated]);
-
   const loadProfile = async () => {
     setLoading(true);
-    const profile = await getProfile(user.id);
+    const profile = await getProfile(user!.id);
     if (profile) {
       setFullName(profile.full_name || '');
       setUsername(profile.username || '');
@@ -131,6 +124,13 @@ export default function EditProfilePage() {
     setAvatarOptions(av);
     setFrames(fr);
   };
+
+  useEffect(() => {
+    if (!_hasHydrated) return;
+    if (role === 'guest') { router.push('/login'); return; }
+    if (user?.id) loadProfile();
+    loadOptions();
+  }, [user, role, _hasHydrated]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -167,7 +167,7 @@ export default function EditProfilePage() {
       let finalAvatarUrl = avatarUrl;
 
       if (avatarType === 'upload' && avatarFile) {
-        finalAvatarUrl = await uploadAvatar(avatarFile, user.id);
+        finalAvatarUrl = await uploadAvatar(avatarFile, user!.id);
         setAvatarUrl(finalAvatarUrl);
         setAvatarFile(null);
       } else if (avatarType === 'preset') {
@@ -176,7 +176,7 @@ export default function EditProfilePage() {
         finalAvatarUrl = '';
       }
 
-      await updateProfile(user.id, {
+      await updateProfile(user!.id, {
         full_name: fullName,
         username,
         bio,
@@ -190,13 +190,13 @@ export default function EditProfilePage() {
       });
 
       login({
-        ...user,
+        ...user!,
         name: fullName,
         username,
         avatar_url: finalAvatarUrl,
         avatar_type: avatarType,
-        selected_avatar: avatarType === 'preset' ? selectedAvatar : null,
-        frame_id: selectedFrameId,
+        selected_avatar: avatarType === 'preset' ? selectedAvatar : undefined,
+        frame_id: selectedFrameId ?? undefined,
       }, role);
       setSuccess(labels.success);
     } catch (err: any) {

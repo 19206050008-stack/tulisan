@@ -146,10 +146,10 @@ export default function CommunityGuidelinesPage() {
       ))}
 
       {/* Contact Info */}
-      {sections[sections.length - 1].contact && (
+      {sections[sections.length - 1]?.contact && (
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-5 space-y-2">
           <h3 className="font-bold text-blue-700 dark:text-blue-300">📞 Cara Melaporkan Pelanggaran</h3>
-          {sections[sections.length - 1].contact.map((line, idx) => (
+          {sections[sections.length - 1]!.contact!.map((line, idx) => (
             <p key={idx} className="text-sm text-blue-600 dark:text-blue-400">{line}</p>
           ))}
         </div>

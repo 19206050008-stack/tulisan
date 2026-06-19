@@ -1,15 +1,28 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter } from '@/lib/supabase';
 import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
-import { RichEditor } from '@/components/RichEditor';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+
+// Lazy load TipTap editor - hanya dimuat saat halaman /write/[id] dibuka (~200KB savings)
+const RichEditor = dynamic(
+  () => import('@/components/RichEditor').then(m => ({ default: m.RichEditor })),
+  {
+    loading: () => (
+      <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
+        <span className="text-sm text-tx-muted">Loading editor...</span>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 export default function WriteEditorPage() {
   const { id } = useParams();
@@ -37,48 +50,6 @@ export default function WriteEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chapterToDelete, setChapterToDelete] = useState<{ id: string; index: number } | null>(null);
 
-  useEffect(() => {
-    if (!_hasHydrated) return; // Wait for store hydration
-    if (role === 'guest') {
-      router.push('/login');
-      return;
-    }
-    if (id) {
-      loadStory();
-    }
-  }, [id, role, _hasHydrated]);
-
-  const loadStory = async () => {
-    setLoading(true);
-    const story = await getStoryById(id as string);
-    if (story) {
-      setTitle(story.title);
-      setDescription(story.description || '');
-      setCategory(story.category || '');
-      
-      const tierTags = ['Pendek', 'Sedang', 'Panjang'];
-      const foundTier = story.tags?.find((t: string) => tierTags.includes(t));
-      if (foundTier) setSelectedTier(foundTier);
-      
-      const restTags = story.tags?.filter((t: string) => !tierTags.includes(t)) || [];
-      setTags(restTags.join(', '));
-      
-      setCoverUrl(story.cover_url || '');
-      setCoverPreview(story.cover_url || '');
-      setStatus(story.status);
-      const chs = await getChapters(id as string);
-      setChapters(chs);
-      if (chs.length > 0) {
-        setChapterTitle(chs[0].title);
-        const raw = typeof chs[0].content === 'string' ? chs[0].content : JSON.stringify(chs[0].content);
-        setChapterContent(normalizeContent(raw));
-        setEditorKey(k => k + 1); // force remount dengan konten yang sudah ada
-      }
-    }
-    setLoading(false);
-  };
-
-  // Konversi konten dari database ke HTML untuk TipTap
   const normalizeContent = (raw: string): string => {
     if (!raw) return '';
 
@@ -138,6 +109,47 @@ export default function WriteEditorPage() {
       .join('');
   };
 
+  const loadStory = async () => {
+    setLoading(true);
+    const story = await getStoryById(id as string);
+    if (story) {
+      setTitle(story.title);
+      setDescription(story.description || '');
+      setCategory(story.category || '');
+      
+      const tierTags = ['Pendek', 'Sedang', 'Panjang'];
+      const foundTier = story.tags?.find((t: string) => tierTags.includes(t));
+      if (foundTier) setSelectedTier(foundTier);
+      
+      const restTags = story.tags?.filter((t: string) => !tierTags.includes(t)) || [];
+      setTags(restTags.join(', '));
+      
+      setCoverUrl(story.cover_url || '');
+      setCoverPreview(story.cover_url || '');
+      setStatus(story.status);
+      const chs = await getChapters(id as string);
+      setChapters(chs);
+      if (chs.length > 0) {
+        setChapterTitle(chs[0].title);
+        const raw = typeof chs[0].content === 'string' ? chs[0].content : JSON.stringify(chs[0].content);
+        setChapterContent(normalizeContent(raw));
+        setEditorKey(k => k + 1); // force remount dengan konten yang sudah ada
+      }
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!_hasHydrated) return; // Wait for store hydration
+    if (role === 'guest') {
+      router.push('/login');
+      return;
+    }
+    if (id) {
+      loadStory();
+    }
+  }, [id, role, _hasHydrated]);
+
   const handleCoverReady = (file: File) => {
     setCoverFile(file);
     setCoverPreview(URL.createObjectURL(file));
@@ -181,7 +193,7 @@ export default function WriteEditorPage() {
       }
 
       if (!currentStoryId) {
-        const story = await createStory(user.id, title, description, category, tagsArray);
+        const story = await createStory(user!.id, title, description, category, tagsArray);
         currentStoryId = story.id;
         setStoryId(story.id);
       } else {
@@ -318,15 +330,21 @@ export default function WriteEditorPage() {
           />
 
           {!loading && (
-            <RichEditor
-              key={editorKey}
-              value={chapterContent}
-              onChange={setChapterContent}
-              placeholder={t.startWriting}
-              minHeight={400}
-              showWordCount={true}
-              mode="full"
-            />
+            <Suspense fallback={
+              <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
+                <span className="text-sm text-tx-muted">Loading editor...</span>
+              </div>
+            }>
+              <RichEditor
+                key={editorKey}
+                value={chapterContent}
+                onChange={setChapterContent}
+                placeholder={t.startWriting}
+                minHeight={400}
+                showWordCount={true}
+                mode="full"
+              />
+            </Suspense>
           )}
         </div>
 

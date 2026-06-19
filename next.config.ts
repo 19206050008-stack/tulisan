@@ -2,13 +2,28 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true,
+
+  // Bundle size optimization - tree-shake heavy packages
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'date-fns',
+      '@tiptap/react',
+      '@tiptap/starter-kit',
+      '@tiptap/extension-character-count',
+      '@tiptap/extension-link',
+      '@tiptap/extension-placeholder',
+      '@tiptap/extension-text-align',
+      '@tiptap/extension-underline',
+      'motion',
+    ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+
+  // Image optimization - serve modern formats automatically
   images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
       { protocol: 'https', hostname: '*.supabase.co' },
@@ -20,6 +35,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
     ],
   },
+
+  // Enable gzip compression
+  compress: true,
 };
 
 export default nextConfig;

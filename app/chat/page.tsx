@@ -65,6 +65,28 @@ export default function ChatPage() {
     online: 'Online',
   };
 
+  const loadConversations = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    try {
+      const convos = await getConversations(user?.id || '');
+      setConversations(convos);
+    } catch (e) {
+      console.error('loadConversations error:', e);
+    }
+    if (showLoading) setLoading(false);
+  };
+
+  const refreshMessages = useCallback(async () => {
+    if (!activeConvo) return;
+    try {
+      const result = await getMessages(activeConvo);
+      setMessages(result.messages || []);
+    } catch (e) {
+      // Silent fail on auto-refresh
+    }
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+  }, [activeConvo]);
+
   useEffect(() => {
     if (!_hasHydrated) return;
     if (role === 'guest') { router.push('/login'); return; }
@@ -83,17 +105,6 @@ export default function ChatPage() {
     };
   }, [activeConvo]);
 
-  const loadConversations = async (showLoading = false) => {
-    if (showLoading) setLoading(true);
-    try {
-      const convos = await getConversations(user.id);
-      setConversations(convos);
-    } catch (e) {
-      console.error('loadConversations error:', e);
-    }
-    if (showLoading) setLoading(false);
-  };
-
   const openConversation = async (convoId: string, otherUser: any) => {
     setActiveConvo(convoId);
     setActiveOther(otherUser);
@@ -108,18 +119,8 @@ export default function ChatPage() {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  const refreshMessages = useCallback(async () => {
-    if (!activeConvo) return;
-    try {
-      const result = await getMessages(activeConvo);
-      setMessages(result.messages || []);
-    } catch (e) {
-      // Silent fail on auto-refresh
-    }
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-  }, [activeConvo]);
-
   const startNewChat = async (otherUserId: string, otherUser: any) => {
+    if (!user?.id) return;
     setLoading(true);
     setShowSearch(false);
     try {
@@ -164,7 +165,7 @@ export default function ChatPage() {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, username, full_name, avatar_url, avatar_type, selected_avatar, frame_id')
-      .neq('id', user.id)
+      .neq('id', user!.id)
       .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
       .limit(10);
     if (error) {
@@ -288,7 +289,7 @@ export default function ChatPage() {
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className="text-xs text-tx-muted truncate">
-                      {convo.last_message?.sender_id === user.id ? `${labels.you}: ` : ''}{convo.last_message?.content || ''}
+                      {convo.last_message?.sender_id === user?.id ? `${labels.you}: ` : ''}{convo.last_message?.content || ''}
                     </p>
                     {convo.unread_count > 0 && (
                       <span className="ml-2 w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center shrink-0">
@@ -333,7 +334,7 @@ export default function ChatPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-bg">
               {messages.map((msg, i) => {
-                const isMine = msg.sender_id === user.id;
+                const isMine = msg.sender_id === user?.id;
                 return (
                   <div key={msg.id || i} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${isMine ? 'bg-accent text-white rounded-br-sm' : 'bg-bg-card border border-border rounded-bl-sm'}`}>

@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
+import dynamic from 'next/dynamic';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Providers } from '@/components/Providers';
 import { AuthProvider } from '@/components/AuthProvider';
-import { AdPopup } from '@/components/AdPopup';
+
+// Lazy load AdPopup - code splitting via dynamic import
+const AdPopup = dynamic(
+  () => import('@/components/AdPopup').then(m => ({ default: m.AdPopup })),
+  { loading: () => null }
+);
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const playfair = Playfair_Display({

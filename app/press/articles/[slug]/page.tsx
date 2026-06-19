@@ -14,16 +14,16 @@ export default function PressArticleDetailPage() {
   const [article, setArticle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (slug) loadArticle();
-  }, [slug]);
-
   const loadArticle = async () => {
     setLoading(true);
     const data = await getPressArticle(slug);
     setArticle(data);
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (slug) loadArticle();
+  }, [slug]);
 
   const labels = lang === 'en' ? {
     backToPress: 'Back to Press',

@@ -38,6 +38,12 @@ export function HeroSlider() {
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const loadSlides = async () => {
+    const data = await getFeaturedSlides();
+    setSlides(data);
+    setLoading(false);
+  };
+
   useEffect(() => { loadSlides(); }, []);
 
   useEffect(() => {
@@ -47,12 +53,6 @@ export function HeroSlider() {
     }, 6000);
     return () => clearInterval(interval);
   }, [slides.length]);
-
-  const loadSlides = async () => {
-    const data = await getFeaturedSlides();
-    setSlides(data);
-    setLoading(false);
-  };
 
   const prev = () => setCurrent(c => (c - 1 + slides.length) % slides.length);
   const next = () => setCurrent(c => (c + 1) % slides.length);

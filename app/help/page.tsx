@@ -52,8 +52,9 @@ export default function HelpPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    getSiteConfigLocalized('page_help', lang).then(d => { setConfig(d); setLoading(false); });
+    let cancelled = false;
+    getSiteConfigLocalized('page_help', lang).then(d => { if (!cancelled) { setConfig(d); setLoading(false); } });
+    return () => { cancelled = true; };
   }, [lang]);
 
   if (loading) return <div className="text-center py-16 text-gray-500">{t.loading}</div>;

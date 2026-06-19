@@ -5,15 +5,19 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot, Sparkles, Menu, X } from 'lucide-react';
+import { Moon, Sun, Bell, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Sparkles, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { translations } from '@/lib/i18n';
-import { AdPopup } from '@/components/AdPopup';
 import { getProfileFrames } from '@/lib/supabase';
 
 export function Navbar() {
   const router = useRouter();
-  const { role, user, logout, lang, setLang } = useStore();
+  // Gunakan selector untuk mencegah re-render yang tidak perlu
+  const role = useStore((s) => s.role);
+  const user = useStore((s) => s.user);
+  const logout = useStore((s) => s.logout);
+  const lang = useStore((s) => s.lang);
+  const setLang = useStore((s) => s.setLang);
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const [showMenu, setShowMenu] = useState(false);
@@ -27,8 +31,22 @@ export function Navbar() {
   const [frameSvg, setFrameSvg] = useState<string | null>(null);
   const [frameMap, setFrameMap] = useState<Record<string, string>>({});
 
+  const loadChatPreview = async () => {
+    if (!user?.id) return;
+    try {
+      const [convos, unread] = await Promise.all([
+        getConversations(user.id),
+        getUnreadMessageCount(user.id)
+      ]);
+      setChatConvos(convos.slice(0, 5)); // Show max 5 conversations
+      setChatUnread(unread);
+    } catch (e) {
+      // Silent fail
+    }
+  };
+
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   // Load all frames once and build a map
@@ -43,9 +61,9 @@ export function Navbar() {
   // Set own frame SVG from the map whenever user's frame_id changes
   useEffect(() => {
     if (user?.frame_id && frameMap[user.frame_id]) {
-      setFrameSvg(frameMap[user.frame_id]);
+      setFrameSvg(frameMap[user.frame_id]); // eslint-disable-line react-hooks/set-state-in-effect
     } else {
-      setFrameSvg(null);
+      setFrameSvg(null); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [user?.frame_id, frameMap]);
 
@@ -53,8 +71,8 @@ export function Navbar() {
   useEffect(() => {
     if (role !== 'guest' && user?.id) {
       loadChatPreview();
-      // Poll every 10 seconds
-      const interval = setInterval(loadChatPreview, 10000);
+      // Poll setiap 30 detik (dikurangi dari 10 detik untuk performa)
+      const interval = setInterval(loadChatPreview, 30000);
       // Refresh on window focus (user comes back to tab)
       const handleFocus = () => loadChatPreview();
       const handleVisibility = () => { if (!document.hidden) loadChatPreview(); };
@@ -90,20 +108,6 @@ export function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadChatPreview = async () => {
-    if (!user?.id) return;
-    try {
-      const [convos, unread] = await Promise.all([
-        getConversations(user.id),
-        getUnreadMessageCount(user.id)
-      ]);
-      setChatConvos(convos.slice(0, 5)); // Show max 5 conversations
-      setChatUnread(unread);
-    } catch (e) {
-      // Silent fail
-    }
-  };
 
   const t = translations[lang].nav;
   const isDark = theme === 'dark';
@@ -150,7 +154,6 @@ export function Navbar() {
 
   return (
     <>
-    <AdPopup />
     <header className="sticky top-0 z-50 w-full border-b border-border bg-bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-bg-card/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">

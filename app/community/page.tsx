@@ -128,11 +128,6 @@ export default function CommunityPage() {
     ago: 'lalu',
   };
 
-  // Load categories + stats
-  useEffect(() => {
-    loadData();
-  }, [lang]);
-
   const loadData = async () => {
     setLoading(true);
     const [cats, cfg] = await Promise.all([
@@ -152,6 +147,11 @@ export default function CommunityPage() {
     }
     setLoading(false);
   };
+
+  // Load categories + stats
+  useEffect(() => {
+    loadData();
+  }, [lang]);
 
   // Load threads
   const loadThreads = useCallback(async (catSlug?: string | null, p = 1) => {
@@ -173,7 +173,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     if (view === 'list') {
-      loadThreads(activeCat, page);
+      loadThreads(activeCat, page); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [view, activeCat, page, loadThreads]);
 

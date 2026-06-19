@@ -29,8 +29,6 @@ export default function AdminSettingsPage() {
   const [donationEnabled, setDonationEnabled] = useState(true);
   const [donationPlatforms, setDonationPlatforms] = useState<string[]>(['saweria', 'trakteer', 'sociabuzz', 'karyakarsa', 'custom']);
 
-  useEffect(() => { loadConfig(); }, []);
-
   const loadConfig = async () => {
     setLoading(true);
     const data = await getAllSiteConfig();
@@ -51,6 +49,8 @@ export default function AdminSettingsPage() {
     setDonationPlatforms(data.donation_platforms || ['saweria', 'trakteer', 'sociabuzz', 'karyakarsa', 'custom']);
     setLoading(false);
   };
+
+  useEffect(() => { loadConfig(); }, []);
 
   const handleSave = async () => {
     setSaving(true);

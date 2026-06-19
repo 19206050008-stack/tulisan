@@ -41,14 +41,14 @@ export default function PressArticlesPage() {
 
   const categories = ['all', 'news', 'announcement', 'tutorial', 'interview', 'review', 'feature'];
 
-  useEffect(() => { loadArticles(); }, []);
-
   const loadArticles = async () => {
     setLoading(true);
     const data = await getPressArticles(true);
     setArticles(data);
     setLoading(false);
   };
+
+  useEffect(() => { loadArticles(); }, []);
 
   const filtered = categoryFilter === 'all' ? articles : articles.filter(a => a.category === categoryFilter);
 

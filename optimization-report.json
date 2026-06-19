@@ -1,0 +1,263 @@
+{
+  "project": "StoryVerse / Di.tulis",
+  "framework": "Next.js 15.5.19 + React 19 + TypeScript",
+  "backend": "Supabase",
+  "date": "2026-06-19",
+  "goal": "Membuat aplikasi ringan di setiap halaman yang dikunjungi",
+  "summary": {
+    "total_priorities": 8,
+    "completed": 8,
+    "files_modified": 35,
+    "files_created": 20,
+    "estimated_bundle_reduction": "50-70%",
+    "status": "BUILD BERHASIL - semua type errors dan lint errors diperbaiki"
+  },
+  "priorities": {
+    "P5_next_config": {
+      "status": "completed",
+      "description": "Optimasi next.config.ts",
+      "changes": {
+        "file": "next.config.ts",
+        "actions": [
+          "Menambahkan optimizePackageImports untuk lucide-react, date-fns, tiptap, motion",
+          "Menambahkan image formats: AVIF dan WebP otomatis",
+          "Menambahkan deviceSizes dan imageSizes untuk responsive images",
+          "Menambahkan compress: true untuk gzip",
+          "Menghapus ignoreDuringBuilds: true (ESLint)",
+          "Menghapus ignoreBuildErrors: true (TypeScript)"
+        ]
+      },
+      "impact": "Tree-shaking lebih efektif, gambar 50-70% lebih kecil, response terkompresi"
+    },
+    "P8_remove_ignore_errors": {
+      "status": "completed",
+      "description": "Hapus ignoreDuringBuilds dan ignoreBuildErrors",
+      "changes": {
+        "file": "next.config.ts",
+        "actions": [
+          "Menghapus eslint.ignoreDuringBuilds: true",
+          "Menghapus typescript.ignoreBuildErrors: true"
+        ]
+      },
+      "impact": "Build error dan type error sekarang terdeteksi, mencegah bug masuk ke production",
+      "side_effects": "Memunculkan pre-existing type errors yang sebelumnya tersembunyi, sedang diperbaiki satu per satu"
+    },
+    "P2_lazy_loading": {
+      "status": "completed",
+      "description": "Lazy load semua komponen berat",
+      "changes": [
+        {
+          "file": "app/write/page.tsx",
+          "action": "RichEditor (TipTap ~200KB) di-lazy load dengan next/dynamic + ssr: false"
+        },
+        {
+          "file": "app/write/[id]/page.tsx",
+          "action": "RichEditor (TipTap ~200KB) di-lazy load dengan next/dynamic + ssr: false"
+        },
+        {
+          "file": "components/CommentSection.tsx",
+          "action": "RichEditor dan RichContent di-lazy load dengan next/dynamic + ssr: false"
+        },
+        {
+          "file": "app/page.tsx",
+          "action": "HeroSlider di-lazy load dengan next/dynamic"
+        },
+        {
+          "file": "app/story/[id]/page.tsx",
+          "action": "CommentSection di-lazy load dengan next/dynamic"
+        },
+        {
+          "file": "app/story/[id]/page.tsx",
+          "action": "DonateButton di-lazy load dengan next/dynamic + ssr: false"
+        },
+        {
+          "file": "app/layout.tsx",
+          "action": "AdPopup di-lazy load dengan next/dynamic (ssr dihapus karena Server Component)"
+        }
+      ],
+      "impact": "Halaman publik hemat ~200-300KB JS (TipTap tidak dimuat), komponen below-fold dimuat on-demand"
+    },
+    "P7_zustand_selectors": {
+      "status": "completed",
+      "description": "Zustand selectors untuk mencegah re-render",
+      "changes": [
+        {
+          "file": "components/Navbar.tsx",
+          "action": "Mengubah const { role, user, logout, lang, setLang } = useStore() menjadi individual selectors"
+        },
+        {
+          "file": "components/Footer.tsx",
+          "action": "Mengubah const { lang } = useStore() menjadi useStore((s) => s.lang)"
+        },
+        {
+          "file": "components/AuthProvider.tsx",
+          "action": "Mengubah const { login, logout, _hasHydrated } = useStore() menjadi individual selectors"
+        },
+        {
+          "file": "app/page.tsx",
+          "action": "Mengubah const { viewMode, setViewMode, lang } = useStore() menjadi individual selectors"
+        },
+        {
+          "file": "app/story/[id]/page.tsx",
+          "action": "Mengubah const { textSize, setTextSize, role, user } = useStore() menjadi individual selectors"
+        },
+        {
+          "file": "components/CommentSection.tsx",
+          "action": "Mengubah const { user, role } = useStore() menjadi individual selectors"
+        }
+      ],
+      "impact": "Komponen hanya re-render saat state yang digunakan berubah, bukan saat state apapun berubah"
+    },
+    "P4_navbar_optimization": {
+      "status": "completed",
+      "description": "Optimasi Navbar",
+      "changes": {
+        "file": "components/Navbar.tsx",
+        "actions": [
+          "Mengurangi polling chat dari 10 detik menjadi 30 detik",
+          "Menghapus import icons yang tidak dipakai: Search, Bot",
+          "Menghapus import AdPopup (sudah lazy-loaded di layout)",
+          "Menghapus render <AdPopup /> dari dalam Navbar (duplikat)"
+        ]
+      },
+      "impact": "Mengurangi request API 70% (10s -> 30s), bundle Navbar lebih kecil, tidak ada duplikasi AdPopup"
+    },
+    "P6_image_optimization": {
+      "status": "completed",
+      "description": "Optimasi Image dengan next/image di StoryCover",
+      "changes": [
+        {
+          "file": "components/StoryCover.tsx",
+          "action": "Mengubah <img> menjadi <Image> dari next/image dengan fill layout, responsive sizes, lazy loading, dan blur placeholder"
+        },
+        {
+          "file": "app/page.tsx",
+          "action": "Menambahkan class 'relative' ke semua parent container StoryCover (5 container)"
+        },
+        {
+          "file": "app/my-stories/page.tsx",
+          "action": "Menambahkan class 'relative' ke parent container StoryCover"
+        },
+        {
+          "file": "app/library/page.tsx",
+          "action": "Menambahkan class 'relative' ke parent container StoryCover"
+        }
+      ],
+      "impact": "Gambar otomatis di-convert ke AVIF/WebP (50-70% lebih kecil), lazy loading otomatis, responsive sizing, blur placeholder untuk LCP"
+    },
+    "P3_split_supabase": {
+      "status": "completed",
+      "description": "Split supabase.ts (1538 baris) menjadi modul per-feature",
+      "changes": {
+        "old_file": "lib/supabase.ts (DIHAPUS)",
+        "new_directory": "lib/supabase/",
+        "modules_created": [
+          "client.ts - Supabase client setup dan isSupabaseConfigured",
+          "auth.ts - signUp, signIn, signOut, getCurrentUser",
+          "stories.ts - CRUD stories, queries, likes/votes",
+          "chapters.ts - CRUD chapters",
+          "comments.ts - CRUD comments, likes, recent comments",
+          "users.ts - Profiles, follows, avatars, frames",
+          "library.ts - Library saves, reading lists",
+          "notifications.ts - Notifications CRUD",
+          "chat.ts - Conversations, messages, unread count",
+          "storage.ts - File uploads, banner generation",
+          "admin.ts - Admin stats, site config, categories, slides, reports, ads, press articles, frontend stats",
+          "forum.ts - Forum categories, threads, posts, votes",
+          "moderation.ts - Content moderation (Perspective API), moderation stats",
+          "nana.ts - Nana AI chat sync, stats, config",
+          "support.ts - Support tickets CRUD",
+          "index.ts - Re-export semua modul untuk backward compatibility"
+        ]
+      },
+      "impact": "Tree-shaking lebih efektif, setiap halaman hanya memuat modul yang dibutuhkan, maintainability meningkat signifikan"
+    },
+    "P1_server_components": {
+      "status": "completed",
+      "description": "Konversi halaman publik ke Server Components",
+      "changes": [
+        {
+          "page": "Homepage (/)",
+          "old_file": "app/page.tsx (Client Component, 434 baris)",
+          "new_files": [
+            "app/page.tsx (Server Component, ~30 baris) - fetch data di server",
+            "components/HomePageClient.tsx (Client Component) - handle interaksi (filter, view toggle, carousel)"
+          ],
+          "impact": "Data fetching dipindah ke server, bundle JS berkurang signifikan, tidak ada loading state untuk data awal"
+        },
+        {
+          "page": "Browse (/browse)",
+          "old_file": "app/browse/page.tsx (Client Component, 414 baris)",
+          "new_files": [
+            "app/browse/page.tsx (Server Component, ~30 baris) - pre-fetch stories, categories, tags",
+            "components/BrowsePageClient.tsx (Client Component) - handle search, filter, sort, pagination"
+          ],
+          "impact": "Data pre-fetched di server, tidak ada loading spinner saat pertama buka, interaksi tetap responsif"
+        },
+        {
+          "page": "Story Reader (/story/[id])",
+          "old_file": "app/story/[id]/page.tsx (Client Component, 428 baris)",
+          "new_files": [
+            "app/story/[id]/page.tsx (Server Component, ~25 baris) - fetch story, chapters, comments",
+            "components/StoryReaderClient.tsx (Client Component) - handle like, save, share, settings, chapter nav"
+          ],
+          "impact": "Konten cerita langsung di-render di server (SEO friendly), interaksi tetap di client"
+        }
+      ]
+    }
+  },
+  "pre_existing_bugs_fixed": [
+    {
+      "file": "app/admin/moderation/page.tsx",
+      "issue": "Fungsi manualApprove dan manualReject tidak didefinisikan",
+      "fix": "Menambahkan fungsi manualApprove dan manualReject yang memanggil updateStoryModeration"
+    },
+    {
+      "file": "app/admin/stories/page.tsx",
+      "issue": "moderateText digunakan tapi tidak di-import",
+      "fix": "Menambahkan import moderateText dan updateStoryModeration dari @/lib/supabase"
+    },
+    {
+      "file": "app/ads/page.tsx",
+      "issue": "user.id tanpa null check, supabase tanpa null check, null vs undefined type mismatch",
+      "fix": "Menambahkan optional chaining (user?.id), null check (supabase &&), mengganti null dengan undefined"
+    },
+    {
+      "file": "app/ai-chat/page.tsx",
+      "issue": "setMessages tidak didefinisikan (messages derived dari activeChat), labels.welcome tidak ada, formatDate type mismatch",
+      "fix": "Mengganti setMessages dengan setChats, mengganti labels.welcome dengan labels.welcomeTitle + welcomeDesc, memperluas type formatDate ke string | number"
+    },
+    {
+      "file": "app/author/page.tsx",
+      "issue": "user.id tanpa null check",
+      "fix": "Menambahkan guard if (!user?.id) return"
+    },
+    {
+      "file": "app/chat/page.tsx",
+      "issue": "user.id tanpa null check di getConversations dan getOrCreateConversation",
+      "fix": "Menambahkan optional chaining (user?.id) dan guard if (!user?.id) return"
+    }
+  ],
+  "remaining_work": {
+    "build_verification": "SELESAI - build production berhasil tanpa error",
+    "warnings_remaining": "Hanya warnings (no-img-element, exhaustive-deps) yang tidak memblokir build",
+    "additional_pages": "Halaman lain yang bisa dikonversi ke Server Components: /profile/[username], /my-stories, /library, /notifications",
+    "testing": "Perlu testing manual untuk memastikan semua fitur masih berfungsi setelah perubahan"
+  },
+  "architecture_changes": {
+    "before": {
+      "supabase_file": "lib/supabase.ts (1 file, 1538 baris)",
+      "pages": "Semua halaman menggunakan 'use client' (43 halaman)",
+      "lazy_loaded_components": 1,
+      "image_optimization": "Menggunakan <img> tag biasa",
+      "state_management": "Zustand dengan destructuring (re-render semua)"
+    },
+    "after": {
+      "supabase_file": "lib/supabase/ (16 file modul, organized by feature)",
+      "pages": "Halaman publik menggunakan Server Components (/, /browse, /story/[id])",
+      "lazy_loaded_components": 8,
+      "image_optimization": "Menggunakan next/image dengan AVIF/WebP, lazy loading, blur placeholder",
+      "state_management": "Zustand dengan individual selectors (re-render minimal)"
+    }
+  }
+}

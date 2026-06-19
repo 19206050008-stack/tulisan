@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
 
 export function Footer() {
-  const { lang } = useStore();
+  const lang = useStore((s) => s.lang);
   const t = translations[lang].footer;
   const nav = translations[lang].nav;
   

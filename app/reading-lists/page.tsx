@@ -16,6 +16,13 @@ export default function ReadingListsPage() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
 
+  const loadLists = async () => {
+    setLoading(true);
+    const data = await getReadingLists(user!.id);
+    setLists(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
@@ -25,17 +32,10 @@ export default function ReadingListsPage() {
     if (user?.id) loadLists();
   }, [user, role, _hasHydrated]);
 
-  const loadLists = async () => {
-    setLoading(true);
-    const data = await getReadingLists(user.id);
-    setLists(data);
-    setLoading(false);
-  };
-
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      const list = await createReadingList(user.id, newName, newDesc);
+      const list = await createReadingList(user!.id, newName, newDesc);
       setLists([{ ...list, reading_list_items: [] }, ...lists]);
       setNewName('');
       setNewDesc('');

@@ -389,12 +389,12 @@ export default function NanaChatPage() {
       
       if (err.name === 'AbortError') {
         const partial: Message = {
-          id: 'ai-' + Date.now(),
+          id: 'ai-' + Date.now(), // eslint-disable-line react-hooks/purity
           role: 'assistant',
           content: streamText || labels.generating,
-          timestamp: Date.now(),
+          timestamp: Date.now(), // eslint-disable-line react-hooks/purity
         };
-        updateChat(chatId, { messages: [...newMessages, partial], updatedAt: Date.now() });
+        updateChat(chatId, { messages: [...newMessages, partial], updatedAt: Date.now() }); // eslint-disable-line react-hooks/purity
         setStreamText('');
         setStatus('ready');
         return;
@@ -406,12 +406,14 @@ export default function NanaChatPage() {
         : `Maaf, saya mengalami kesalahan. Silakan coba lagi sebentar. Detail: ${err.message || 'Kesalahan tidak diketahui'}`;
         
       const errMsg: Message = {
-        id: 'err-' + Date.now(),
+        id: 'err-' + Date.now(), // eslint-disable-line react-hooks/purity
         role: 'assistant',
         content: errorMsg,
-        timestamp: Date.now(),
+        timestamp: Date.now(), // eslint-disable-line react-hooks/purity
       };
-      setMessages(prev => [...prev, errMsg]);
+      if (activeChatId) {
+        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, messages: [...c.messages, errMsg] } : c));
+      }
       setStreamText('');
       setInput(msgText); // Allow user to retry
       setStatus('ready');
@@ -441,18 +443,23 @@ export default function NanaChatPage() {
 
   const clearChat = () => {
     abortRef.current?.abort();
-    setMessages([{
-      id: 'welcome-' + Date.now(),
-      role: 'assistant',
-      content: labels.welcome,
-      timestamp: Date.now(),
-    }]);
+    if (activeChatId) {
+      setChats(prev => prev.map(c => c.id === activeChatId ? {
+        ...c,
+        messages: [{
+          id: 'welcome-' + Date.now(),
+          role: 'assistant' as const,
+          content: labels.welcomeTitle + '\n\n' + labels.welcomeDesc,
+          timestamp: Date.now(),
+        }],
+      } : c));
+    }
     setStreamText('');
     setStatus('ready');
   };
 
   // Format time helper
-  const formatDate = (ts: string) => {
+  const formatDate = (ts: string | number) => {
     const d = new Date(ts);
     const now = new Date();
     if (d.toDateString() === now.toDateString()) {

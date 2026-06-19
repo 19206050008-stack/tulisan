@@ -2,11 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createComment, updateComment, deleteComment, toggleCommentLike, createReport, createNotification, getProfileFrames } from '@/lib/supabase';
 import { Heart, Reply, Edit, Trash2, Flag, Send, X, MoreHorizontal } from 'lucide-react';
-import { RichEditor, RichContent } from '@/components/RichEditor';
 import { ConfirmDialog, PromptDialog } from '@/components/ConfirmDialog';
+
+// Lazy load RichEditor - hanya dimuat saat user mau menulis komentar (~200KB savings)
+const RichEditor = dynamic(
+  () => import('@/components/RichEditor').then(m => ({ default: m.RichEditor })),
+  {
+    loading: () => (
+      <div className="min-h-[100px] bg-bg-input rounded-lg animate-pulse" />
+    ),
+    ssr: false,
+  }
+);
+
+// Lazy load RichContent untuk render komentar HTML
+const RichContent = dynamic(
+  () => import('@/components/RichEditor').then(m => ({ default: m.RichContent })),
+  {
+    loading: () => <div className="h-4 bg-bg-input rounded animate-pulse" />,
+    ssr: false,
+  }
+);
 
 interface Comment {
   id: string;
@@ -33,7 +53,9 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ storyId, chapterId, comments, likedCommentIds, onCommentAdded, onCommentDeleted, onCommentUpdated, authorId }: CommentSectionProps) {
-  const { user, role } = useStore();
+  // Gunakan selector untuk mencegah re-render yang tidak perlu
+  const user = useStore((s) => s.user);
+  const role = useStore((s) => s.role);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -63,11 +85,11 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
     if (!text.trim() || role === 'guest') return;
     setSending(true);
     try {
-      const comment = await createComment(user.id, storyId, chapterId || null, text);
+      const comment = await createComment(user!.id, storyId, chapterId || null, text);
       onCommentAdded(comment);
       setText('');
-      if (authorId && authorId !== user.id) {
-        await createNotification(authorId, 'comment', user.id, storyId, comment.id);
+      if (authorId && authorId !== user!.id) {
+        await createNotification(authorId, 'comment', user!.id, storyId, comment.id);
       }
     } catch {}
     setSending(false);
@@ -77,13 +99,13 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
     if (!replyText.trim() || role === 'guest') return;
     setSending(true);
     try {
-      const comment = await createComment(user.id, storyId, chapterId || null, replyText, parentId);
+      const comment = await createComment(user!.id, storyId, chapterId || null, replyText, parentId);
       onCommentAdded(comment);
       setReplyText('');
       setReplyTo(null);
       const parent = comments.find(c => c.id === parentId);
-      if (parent && parent.user_id !== user.id) {
-        await createNotification(parent.user_id, 'reply', user.id, storyId, comment.id);
+      if (parent && parent.user_id !== user!.id) {
+        await createNotification(parent.user_id, 'reply', user!.id, storyId, comment.id);
       }
     } catch {}
     setSending(false);
@@ -116,7 +138,7 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
 
   const handleLike = async (commentId: string) => {
     if (role === 'guest') return;
-    const liked = await toggleCommentLike(user.id, commentId);
+    const liked = await toggleCommentLike(user!.id, commentId);
     if (liked) {
       setLikedIds([...likedIds, commentId]);
     } else {
@@ -127,7 +149,7 @@ export function CommentSection({ storyId, chapterId, comments, likedCommentIds, 
   const handleReport = async (reason: string) => {
     if (role === 'guest' || !commentToReport) return;
     try {
-      await createReport(user.id, reason, storyId, commentToReport);
+      await createReport(user!.id, reason, storyId, commentToReport);
       setCommentToReport(null);
     } catch {}
   };

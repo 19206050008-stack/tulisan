@@ -15,6 +15,12 @@ export function RecentComments() {
   const [loading, setLoading] = useState(true);
   const [frameMap, setFrameMap] = useState<Record<string, string>>({});
 
+  const loadComments = async () => {
+    const data = await getRecentComments(5);
+    setComments(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
     loadComments();
     getProfileFrames().then((frames: any[]) => {
@@ -23,12 +29,6 @@ export function RecentComments() {
       setFrameMap(map);
     });
   }, []);
-
-  const loadComments = async () => {
-    const data = await getRecentComments(5);
-    setComments(data);
-    setLoading(false);
-  };
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);

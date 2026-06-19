@@ -108,7 +108,7 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
         'solid-accent',
         'split-horizontal',
       ];
-      const selectedLayout = layouts[Math.floor(Math.random() * layouts.length)];
+      const selectedLayout = layouts[Math.floor(Math.random() * layouts.length)]; // eslint-disable-line react-hooks/purity
 
       // Get color scheme based on category
       const colorScheme = getColorScheme(category);

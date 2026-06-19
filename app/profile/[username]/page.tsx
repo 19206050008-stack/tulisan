@@ -22,10 +22,6 @@ export default function PublicProfilePage() {
   const [frameSvg, setFrameSvg] = useState<string | null>(null);
   const perPage = 10;
 
-  useEffect(() => {
-    loadData();
-  }, [username, user]);
-
   const loadData = async () => {
     setLoading(true);
     const p = await getProfileByUsername(username as string);
@@ -54,6 +50,10 @@ export default function PublicProfilePage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    loadData();
+  }, [username, user]);
 
   const handleFollow = async () => {
     if (!user?.id || !profile) return;

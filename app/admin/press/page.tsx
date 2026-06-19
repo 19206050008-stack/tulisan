@@ -26,15 +26,15 @@ export default function AdminPressPage() {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => { loadArticles(); }, []);
-  useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
-
   const loadArticles = async () => {
     setLoading(true);
     const data = await getPressArticles(false);
     setArticles(data);
     setLoading(false);
   };
+
+  useEffect(() => { loadArticles(); }, []);
+  useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
 
   const startEdit = (article: any) => {
     setEditing(article);

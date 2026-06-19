@@ -14,6 +14,13 @@ export default function LibraryPage() {
   const [saves, setSaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadLibrary = async () => {
+    setLoading(true);
+    const data = await getSavedStories(user!.id);
+    setSaves(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
     if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') {
@@ -25,15 +32,8 @@ export default function LibraryPage() {
     }
   }, [user, role, _hasHydrated]);
 
-  const loadLibrary = async () => {
-    setLoading(true);
-    const data = await getSavedStories(user.id);
-    setSaves(data);
-    setLoading(false);
-  };
-
   const handleRemove = async (storyId: string) => {
-    await toggleSave(user.id, storyId);
+    await toggleSave(user!.id, storyId);
     setSaves(saves.filter(s => s.story_id !== storyId));
   };
 
@@ -61,7 +61,7 @@ export default function LibraryPage() {
           {saves.map(save => (
             <div key={save.story_id} className="flex items-start gap-4 p-4 rounded-xl border border-border bg-bg-card">
               <Link href={`/story/${save.story_id}`} className="flex-1 flex items-start gap-3">
-                <div className="w-12 h-16 rounded overflow-hidden shrink-0">
+                <div className="w-12 h-16 rounded overflow-hidden shrink-0 relative">
                   <StoryCover coverUrl={save.stories?.cover_url} category={save.stories?.category} title={save.stories?.title || ''} />
                 </div>
                 <div>
