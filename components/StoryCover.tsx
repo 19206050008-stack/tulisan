@@ -24,7 +24,14 @@ interface StoryCoverProps {
 
 export function StoryCover({ coverUrl, category, title, className = '' }: StoryCoverProps) {
   if (coverUrl && !coverUrl.startsWith('gradient:')) {
-    return <img src={coverUrl} alt={title} className={`w-full h-full object-cover ${className}`} />;
+    // If it's a Supabase storage URL, we can append transform parameters 
+    // to reduce file size and bandwidth
+    const isSupabase = coverUrl.includes('.supabase.co/storage/v1/object/public/');
+    const optimizedUrl = isSupabase && !coverUrl.includes('?') 
+      ? `${coverUrl}?width=400&quality=80` 
+      : coverUrl;
+      
+    return <img src={optimizedUrl} alt={title} className={`w-full h-full object-cover ${className}`} loading="lazy" />;
   }
 
   const genre = coverUrl?.replace('gradient:', '') || category || '';
