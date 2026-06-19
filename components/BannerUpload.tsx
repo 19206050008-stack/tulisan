@@ -142,16 +142,34 @@ export function BannerUpload({ preview, onFileReady, title, description, categor
   // ── Color Schemes ──────────────────────────────────────────────
   const getColorScheme = (cat?: string) => {
     const schemes: Record<string, { primary: string; secondary: string; accent: string; text: string }> = {
+      'Romansa': { primary: '#FF6B9D', secondary: '#FF8E9E', accent: '#FFD4E0', text: '#FFFFFF' },
       'Romance': { primary: '#FF6B9D', secondary: '#FF8E9E', accent: '#FFD4E0', text: '#FFFFFF' },
+      'Fantasi': { primary: '#A78BFA', secondary: '#C4B5FD', accent: '#DDD6FE', text: '#FFFFFF' },
       'Fantasy': { primary: '#A78BFA', secondary: '#C4B5FD', accent: '#DDD6FE', text: '#FFFFFF' },
+      'Fiksi Ilmiah': { primary: '#3B82F6', secondary: '#60A5FA', accent: '#93C5FD', text: '#FFFFFF' },
       'Sci-Fi': { primary: '#3B82F6', secondary: '#60A5FA', accent: '#93C5FD', text: '#FFFFFF' },
+      'Misteri': { primary: '#64748B', secondary: '#94A3B8', accent: '#CBD5E1', text: '#FFFFFF' },
       'Mystery': { primary: '#64748B', secondary: '#94A3B8', accent: '#CBD5E1', text: '#FFFFFF' },
+      'Horor': { primary: '#991B1B', secondary: '#DC2626', accent: '#FCA5A5', text: '#FFFFFF' },
       'Horror': { primary: '#991B1B', secondary: '#DC2626', accent: '#FCA5A5', text: '#FFFFFF' },
+      'Aksi': { primary: '#10B981', secondary: '#34D399', accent: '#6EE7B7', text: '#FFFFFF' },
       'Adventure': { primary: '#10B981', secondary: '#34D399', accent: '#6EE7B7', text: '#FFFFFF' },
       'Drama': { primary: '#F59E0B', secondary: '#FBBF24', accent: '#FDE047', text: '#1F2937' },
+      'Komedi': { primary: '#EC4899', secondary: '#F472B6', accent: '#FBCFE8', text: '#FFFFFF' },
       'Humor': { primary: '#EC4899', secondary: '#F472B6', accent: '#FBCFE8', text: '#FFFFFF' },
+      'Sejarah': { primary: '#92400E', secondary: '#B45309', accent: '#D97706', text: '#FFFFFF' },
       'Historical': { primary: '#92400E', secondary: '#B45309', accent: '#D97706', text: '#FFFFFF' },
+      'Religi': { primary: '#059669', secondary: '#10B981', accent: '#34D399', text: '#FFFFFF' },
       'Inspirational': { primary: '#059669', secondary: '#10B981', accent: '#34D399', text: '#FFFFFF' },
+      'Thriller': { primary: '#991B1B', secondary: '#7F1D1D', accent: '#FCA5A5', text: '#FFFFFF' },
+      'Teenlit': { primary: '#F472B6', secondary: '#FBB6CE', accent: '#FDF2F8', text: '#FFFFFF' },
+      'Chicklit': { primary: '#EC4899', secondary: '#F9A8D4', accent: '#FCE7F3', text: '#FFFFFF' },
+      'Fan Fiction': { primary: '#A78BFA', secondary: '#C4B5FD', accent: '#EDE9FE', text: '#FFFFFF' },
+      'Fanfiction': { primary: '#A78BFA', secondary: '#C4B5FD', accent: '#EDE9FE', text: '#FFFFFF' },
+      'Werewolf': { primary: '#374151', secondary: '#4B5563', accent: '#9CA3AF', text: '#FFFFFF' },
+      'Non-Fiksi': { primary: '#3B82F6', secondary: '#2563EB', accent: '#93C5FD', text: '#FFFFFF' },
+      'Puisi': { primary: '#8B5CF6', secondary: '#A78BFA', accent: '#DDD6FE', text: '#FFFFFF' },
+      'Slice of Life': { primary: '#10B981', secondary: '#6EE7B7', accent: '#D1FAE5', text: '#FFFFFF' },
     };
     return schemes[cat || ''] || { primary: '#6366F1', secondary: '#818CF8', accent: '#A5B4FC', text: '#FFFFFF' };
   };

@@ -4,33 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getFeaturedSlides } from '@/lib/supabase';
 import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
-
-const GENRE_GRADIENTS: Record<string, string> = {
-  'Romance': 'linear-gradient(135deg, #ff6b9d 0%, #c44569 100%)',
-  'Horror': 'linear-gradient(135deg, #2d1b69 0%, #11001c 100%)',
-  'Mystery': 'linear-gradient(135deg, #4a5568 0%, #1a202c 100%)',
-  'Sci-Fi': 'linear-gradient(135deg, #0099f7 0%, #005999 100%)',
-  'Fantasy': 'linear-gradient(135deg, #7f53ac 0%, #647dee 100%)',
-  'Drama': 'linear-gradient(135deg, #e96443 0%, #904e95 100%)',
-  'Humor': 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
-  'Adventure': 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-  'Thriller': 'linear-gradient(135deg, #c31432 0%, #240b36 100%)',
-  'Slice of Life': 'linear-gradient(135deg, #76b852 0%, #8dc26f 100%)',
-  'Historical': 'linear-gradient(135deg, #8e7c54 0%, #5c4a1e 100%)',
-  'Inspirational': 'linear-gradient(135deg, #ffc107 0%, #ff9800 100%)',
-};
-
-const FALLBACK_GRADIENTS = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-];
+import { getGenreGradient, FALLBACK_GRADIENTS } from '@/lib/genre-colors';
 
 function getSlideGradient(slide: any, index: number) {
   const genre = slide.category || slide.image_url?.replace('gradient:', '') || '';
-  return GENRE_GRADIENTS[genre] || FALLBACK_GRADIENTS[index % FALLBACK_GRADIENTS.length];
+  return getGenreGradient(genre) || FALLBACK_GRADIENTS[index % FALLBACK_GRADIENTS.length];
 }
 
 export function HeroSlider() {

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, AlertTriangle, Check, Info, Wand2 } from 'lucide-react';
+import { getGenreColors } from '@/lib/genre-colors';
 
 const COVER_WIDTH = 600;
 const COVER_HEIGHT = 900;
@@ -9,21 +10,6 @@ const COVER_RATIO = 2 / 3;
 const MIN_WIDTH = 400;
 const MIN_HEIGHT = 600;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-const GENRE_COLORS: Record<string, string[][]> = {
-  'Romance':       [['#ff6b9d','#c44569'],['#e91e63','#ad1457']],
-  'Horror':        [['#2d1b69','#11001c'],['#1a1a2e','#16213e']],
-  'Mystery':       [['#4a5568','#1a202c'],['#2c3e50','#34495e']],
-  'Sci-Fi':        [['#0099f7','#005999'],['#00b4db','#0083b0']],
-  'Fantasy':       [['#7f53ac','#647dee'],['#6a11cb','#2575fc']],
-  'Drama':         [['#e96443','#904e95'],['#c0392b','#8e44ad']],
-  'Humor':         [['#f7971e','#ffd200'],['#f39c12','#f1c40f']],
-  'Adventure':     [['#11998e','#38ef7d'],['#00b09b','#96c93d']],
-  'Thriller':      [['#c31432','#240b36'],['#870000','#190a05']],
-  'Slice of Life': [['#76b852','#8dc26f'],['#56ab2f','#a8e063']],
-  'Historical':    [['#8e7c54','#5c4a1e'],['#6d4c41','#3e2723']],
-  'Inspirational': [['#ffc107','#ff9800'],['#f57c00','#ff6f00']],
-};
 
 // 10 Font options for cover generation
 const FONTS = [
@@ -122,7 +108,8 @@ export function CoverUpload({ preview, onFileReady, title, category }: CoverUplo
     canvas.height = COVER_HEIGHT;
     const ctx = canvas.getContext('2d')!;
 
-    const colorVariants = GENRE_COLORS[category || ''] || [['#667eea', '#764ba2']];
+    const genreColors = getGenreColors(category || '');
+    const colorVariants = [[genreColors.primary, genreColors.secondary]];
     const colors = colorVariants[Math.floor(Math.random() * colorVariants.length)];
 
     const grd = ctx.createLinearGradient(0, 0, COVER_WIDTH, COVER_HEIGHT);

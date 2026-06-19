@@ -5,28 +5,16 @@ import { getAdRequests, updateAdRequestStatus, supabase } from '@/lib/supabase';
 import { CheckCircle, XCircle, Eye, Clock, FileText, Calendar, Filter, MessageSquare, Send, ExternalLink, Play, Wand2, Upload } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 import { BannerUpload } from '@/components/BannerUpload';
+import { getGenreColors } from '@/lib/genre-colors';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'published' | 'rejected';
 
 const BANNER_WIDTH = 728;
 const BANNER_HEIGHT = 90;
 
-// Helper function untuk generate banner menggunakan Canvas
 const getGradientColors = (cat?: string): [string, string] => {
-  const colorMap: Record<string, [string, string]> = {
-    'Romance': ['#ff6b9d', '#ee5a6f'],
-    'Fantasy': ['#a78bfa', '#8b5cf6'],
-    'Sci-Fi': ['#3b82f6', '#2563eb'],
-    'Mystery': ['#64748b', '#475569'],
-    'Horror': ['#991b1b', '#7f1d1d'],
-    'Adventure': ['#10b981', '#059669'],
-    'Drama': ['#f59e0b', '#d97706'],
-    'Comedy': ['#ec4899', '#db2777'],
-    'Thriller': ['#dc2626', '#b91c1c'],
-    'Historical': ['#92400e', '#78350f'],
-  };
-  if (cat && colorMap[cat]) return colorMap[cat];
-  return ['#6366f1', '#8b5cf6'];
+  const colors = getGenreColors(cat);
+  return [colors.primary, colors.secondary];
 };
 
 export default function AdminAdsPage() {

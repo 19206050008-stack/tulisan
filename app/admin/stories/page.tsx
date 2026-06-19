@@ -6,24 +6,10 @@ import { supabase } from '@/lib/supabase';
 import { moderateText, updateStoryModeration } from '@/lib/supabase';
 import { Trash2, Eye, EyeOff, Search, ExternalLink, Heart, BookOpen, Filter, Star, CheckCircle } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
-
-const GRADIENT_MAP: Record<string, string> = {
-  'Romance': 'linear-gradient(135deg, #ff6b9d, #c44569)',
-  'Horror': 'linear-gradient(135deg, #2d1b69, #11001c)',
-  'Mystery': 'linear-gradient(135deg, #4a5568, #1a202c)',
-  'Sci-Fi': 'linear-gradient(135deg, #0099f7, #005999)',
-  'Fantasy': 'linear-gradient(135deg, #7f53ac, #647dee)',
-  'Drama': 'linear-gradient(135deg, #e96443, #904e95)',
-  'Humor': 'linear-gradient(135deg, #f7971e, #ffd200)',
-  'Adventure': 'linear-gradient(135deg, #11998e, #38ef7d)',
-  'Thriller': 'linear-gradient(135deg, #c31432, #240b36)',
-  'Slice of Life': 'linear-gradient(135deg, #76b852, #8dc26f)',
-  'Historical': 'linear-gradient(135deg, #8e7c54, #5c4a1e)',
-  'Inspirational': 'linear-gradient(135deg, #ffc107, #ff9800)',
-};
+import { getGenreGradient } from '@/lib/genre-colors';
 
 function getGradient(category: string) {
-  return GRADIENT_MAP[category] || 'linear-gradient(135deg, #667eea, #764ba2)';
+  return getGenreGradient(category);
 }
 
 type StatusFilter = 'all' | 'published' | 'draft' | 'archived';
