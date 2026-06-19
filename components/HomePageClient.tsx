@@ -47,7 +47,7 @@ export default function HomePageClient({ stories, categoryNames, editorialPicks,
   const [activeCategory, setActiveCategory] = useState('All');
 
   const topStories = [...stories].sort((a, b) => (b.reads_count || 0) - (a.reads_count || 0)).slice(0, 10);
-  const filteredStories = activeCategory === t.all ? stories : stories.filter(s => s.category === activeCategory);
+  const filteredStories = (activeCategory === 'All' || activeCategory === t.all) ? stories : stories.filter(s => s.category === activeCategory);
 
   return (
     <div className="space-y-8">
@@ -209,9 +209,9 @@ function StoryCard({ story, viewMode }: { story: any; viewMode: string }) {
             <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
             <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
             <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
-            {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+            {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
               <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-                {story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t))}
+                {story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t))}
               </span>
             )}
           </div>
@@ -231,9 +231,9 @@ function StoryCard({ story, viewMode }: { story: any; viewMode: string }) {
         <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
         <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
         <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
-        {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+        {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
           <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-            {story.tags.find((t: string) => ['Pendek', 'Sedang', 'Panjang'].includes(t))}
+            {story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t))}
           </span>
         )}
       </div>

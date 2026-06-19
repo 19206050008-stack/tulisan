@@ -117,9 +117,15 @@ export default function WriteEditorPage() {
       setDescription(story.description || '');
       setCategory(story.category || '');
       
-      const tierTags = ['Pendek', 'Sedang', 'Panjang'];
+      const tierTags = ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang'];
+      const oldTierTags = ['Pendek', 'Sedang', 'Panjang'];
       const foundTier = story.tags?.find((t: string) => tierTags.includes(t));
-      if (foundTier) setSelectedTier(foundTier);
+      const foundOldTier = story.tags?.find((t: string) => oldTierTags.includes(t));
+      if (foundTier) {
+        setSelectedTier(foundTier);
+      } else if (foundOldTier) {
+        setSelectedTier('Cerita ' + foundOldTier);
+      }
       
       const restTags = story.tags?.filter((t: string) => !tierTags.includes(t)) || [];
       setTags(restTags.join(', '));
@@ -187,7 +193,7 @@ export default function WriteEditorPage() {
       let tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
       if (finalTier) {
         // Remove old tier tags
-        tagsArray = tagsArray.filter(t => !['Pendek', 'Sedang', 'Panjang'].includes(t));
+        tagsArray = tagsArray.filter(t => !['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t));
         // Add new tier
         tagsArray.push(finalTier);
       }
@@ -377,9 +383,9 @@ export default function WriteEditorPage() {
               className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               <option value="">Auto (Berdasarkan jumlah kata)</option>
-              <option value="Pendek">Pendek (0-700 kata)</option>
-              <option value="Sedang">Sedang (701-1.000 kata)</option>
-              <option value="Panjang">Panjang (&gt; 1.000 kata)</option>
+              <option value="Cerita Pendek">Cerita Pendek (&lt; 7.500 kata)</option>
+              <option value="Cerita Sedang">Cerita Sedang (7.500 - 40.000 kata)</option>
+              <option value="Cerita Panjang">Cerita Panjang (&gt; 40.000 kata)</option>
             </select>
             <input
               type="text"

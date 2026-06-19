@@ -17,7 +17,7 @@ export default async function BrowsePage() {
   storiesData.forEach((story: any) => {
     if (story.tags && Array.isArray(story.tags)) {
       story.tags.forEach((tag: string) => {
-        if (tag && !['Pendek', 'Sedang', 'Panjang'].includes(tag)) {
+        if (tag && !['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(tag)) {
           tagsSet.add(tag);
         }
       });
