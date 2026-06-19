@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
-import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter } from '@/lib/supabase';
+import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter, getCategories } from '@/lib/supabase';
 import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { translations } from '@/lib/i18n';
@@ -49,6 +49,7 @@ export default function WriteEditorPage() {
   const [editorKey, setEditorKey] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chapterToDelete, setChapterToDelete] = useState<{ id: string; index: number } | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
 
   const normalizeContent = (raw: string): string => {
     if (!raw) return '';
@@ -154,6 +155,7 @@ export default function WriteEditorPage() {
     if (id) {
       loadStory();
     }
+    getCategories().then(cats => setCategoryOptions(cats));
   }, [id, role, _hasHydrated]);
 
   const handleCoverReady = (file: File) => {
@@ -367,15 +369,9 @@ export default function WriteEditorPage() {
               className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               <option value="">{t.selectCategory}</option>
-              <option value="Romance">Romance</option>
-              <option value="Fantasy">Fantasy</option>
-              <option value="Sci-Fi">Sci-Fi</option>
-              <option value="Mystery">Mystery</option>
-              <option value="Horror">Horror</option>
-              <option value="Teen Fiction">Teen Fiction</option>
-              <option value="Humor">Humor</option>
-              <option value="Adventure">Adventure</option>
-              <option value="Fanfiction">Fanfiction</option>
+              {categoryOptions.map(cat => (
+                <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
             <select
               value={selectedTier}

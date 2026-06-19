@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
-import { createStory, uploadCover, moderateText } from '@/lib/supabase';
+import { createStory, uploadCover, moderateText, getCategories } from '@/lib/supabase';
 import { Bold, Italic, List, AlignLeft, Save, Send, ArrowLeft } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { translations } from '@/lib/i18n';
@@ -37,10 +37,12 @@ export default function WritePage() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState('');
   const [saving, setSaving] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!_hasHydrated) return; // Wait for store hydration
     if (role === 'guest') router.push('/login');
+    getCategories().then(cats => setCategoryOptions(cats));
   }, [role, _hasHydrated]);
 
   if (!_hasHydrated) return <div className="text-center py-16 text-gray-500">Loading...</div>;
@@ -220,15 +222,9 @@ export default function WritePage() {
               className="w-full px-3 py-2 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 [&>option]:bg-white [&>option]:text-gray-700 dark:[&>option]:bg-gray-800 dark:[&>option]:text-gray-300"
             >
               <option value="">{t.selectCategory}</option>
-              <option value="Romance">Romance</option>
-              <option value="Fantasy">Fantasy</option>
-              <option value="Sci-Fi">Sci-Fi</option>
-              <option value="Mystery">Mystery</option>
-              <option value="Horror">Horror</option>
-              <option value="Teen Fiction">Teen Fiction</option>
-              <option value="Humor">Humor</option>
-              <option value="Adventure">Adventure</option>
-              <option value="Fanfiction">Fanfiction</option>
+              {categoryOptions.map(cat => (
+                <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
             <select
               value={selectedTier}
