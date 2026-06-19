@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot, Sparkles } from 'lucide-react';
+import { Moon, Sun, Bell, Search, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Bot, Sparkles, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { translations } from '@/lib/i18n';
 import { AdPopup } from '@/components/AdPopup';
@@ -17,11 +17,13 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
   const [showMenu, setShowMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatConvos, setChatConvos] = useState<any[]>([]);
   const [chatUnread, setChatUnread] = useState(0);
   const chatRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const [frameSvg, setFrameSvg] = useState<string | null>(null);
   const [frameMap, setFrameMap] = useState<Record<string, string>>({});
 
@@ -80,6 +82,9 @@ export function Navbar() {
     const handleClickOutside = (e: MouseEvent) => {
       if (chatRef.current && !chatRef.current.contains(e.target as Node)) {
         setShowChat(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setShowMobileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -167,6 +172,17 @@ export function Navbar() {
             <Globe className="h-5 w-5" />
             <span className="hidden sm:inline uppercase">{lang}</span>
           </button>
+          
+          {/* Mobile menu button - only show for guests on mobile */}
+          {role === 'guest' && (
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="md:hidden p-2 rounded-full hover:bg-bg-soft transition-colors"
+              aria-label="Toggle menu"
+            >
+              {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          )}
           
           {role !== 'guest' && (
             <>
@@ -281,14 +297,36 @@ export function Navbar() {
           )}
 
           {role === 'guest' ? (
-            <div className="hidden md:flex items-center gap-2 ml-2">
-              <Link href="/login" className="px-4 py-2 text-sm font-medium text-tx-soft hover:text-accent transition-colors">
-                {t.login}
-              </Link>
-              <Link href="/register" className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
-                {t.register}
-              </Link>
-            </div>
+            <>
+              {/* Desktop login/register buttons */}
+              <div className="hidden md:flex items-center gap-2 ml-2">
+                <Link href="/login" className="px-4 py-2 text-sm font-medium text-tx-soft hover:text-accent transition-colors">
+                  {t.login}
+                </Link>
+                <Link href="/register" className="px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
+                  {t.register}
+                </Link>
+              </div>
+
+              {/* Mobile menu dropdown */}
+              {showMobileMenu && (
+                <div ref={mobileMenuRef} className="absolute right-0 top-16 mt-2 w-64 bg-bg-card rounded-lg shadow-xl border border-border py-2 md:hidden">
+                  <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {lang === 'en' ? 'Account' : 'Akun'}
+                  </div>
+                  <Link href="/login" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-bg-soft transition-colors" onClick={() => setShowMobileMenu(false)}>
+                    <LogIn className="h-4 w-4" /> {t.login}
+                  </Link>
+                  <Link href="/register" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-bg-soft transition-colors" onClick={() => setShowMobileMenu(false)}>
+                    <UserCircle className="h-4 w-4" /> {t.register}
+                  </Link>
+                  <div className="border-t border-border my-2"></div>
+                  <Link href="/browse" className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-bg-soft transition-colors" onClick={() => setShowMobileMenu(false)}>
+                    <BookOpen className="h-4 w-4" /> {lang === 'en' ? 'Browse Stories' : 'Jelajahi Cerita'}
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <div className="relative">
               <button 
