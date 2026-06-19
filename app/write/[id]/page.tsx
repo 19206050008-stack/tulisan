@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter, getCategories } from '@/lib/supabase';
-import { Save, Send, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Save, Send, Plus, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
@@ -334,20 +334,46 @@ export default function WriteEditorPage() {
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
 
-          {/* Chapter Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-border">
-            {chapters.map((ch, i) => (
-              <div key={ch.id} className={`group flex items-center gap-1 px-3 py-1.5 rounded-t-lg text-sm cursor-pointer whitespace-nowrap transition-colors ${i === activeChapter ? 'bg-accent/10 text-accent border-b-2 border-accent font-medium' : 'text-tx-muted hover:text-tx hover:bg-bg-soft'}`}>
-                <span onClick={() => selectChapter(i)} className="truncate max-w-[120px]">{ch.title || `Bab ${ch.chapter_number || i + 1}`}</span>
-                <button onClick={(e) => { e.stopPropagation(); initiateDeleteChapter(ch.id, i); }} className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"><Trash2 className="h-3 w-3" /></button>
-              </div>
-            ))}
+          {/* Chapter Navigation */}
+          <div className="flex items-center gap-2 border-b border-border pb-2">
             <button
-              onClick={addNewChapter}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-t-lg text-sm transition-colors ${activeChapter === chapters.length ? 'bg-accent/10 text-accent font-medium' : 'text-tx-muted hover:text-accent hover:bg-bg-soft'}`}
+              onClick={() => { if (activeChapter > 0) selectChapter(activeChapter - 1); }}
+              disabled={activeChapter === 0}
+              className="p-1.5 rounded-lg hover:bg-bg-soft disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Bab sebelumnya"
             >
-              <Plus className="h-3.5 w-3.5" /> Bab Baru
+              <ArrowLeft className="h-4 w-4" />
             </button>
+            <select
+              value={activeChapter}
+              onChange={e => {
+                const val = Number(e.target.value);
+                if (val === chapters.length) addNewChapter();
+                else selectChapter(val);
+              }}
+              className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-white text-gray-700 border border-gray-300 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+            >
+              {chapters.map((ch, i) => (
+                <option key={ch.id} value={i}>Bab {ch.chapter_number || i + 1}: {ch.title || '(Tanpa judul)'}</option>
+              ))}
+              <option value={chapters.length}>+ Bab Baru</option>
+            </select>
+            <button
+              onClick={() => { if (activeChapter < chapters.length - 1) selectChapter(activeChapter + 1); else addNewChapter(); }}
+              className="p-1.5 rounded-lg hover:bg-bg-soft transition-colors"
+              title="Bab berikutnya"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            {chapters.length > 0 && activeChapter < chapters.length && (
+              <button
+                onClick={() => initiateDeleteChapter(chapters[activeChapter].id, activeChapter)}
+                className="p-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 transition-colors"
+                title="Hapus bab ini"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Chapter Title */}
