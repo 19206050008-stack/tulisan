@@ -59,8 +59,12 @@ export default function WritePage() {
       return;
     }
     
+    // Auto-generate description from content
+    const plainText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const autoDescription = plainText.slice(0, 200) + (plainText.length > 200 ? '...' : '');
+
     // Scan content before save
-    const combinedContent = `${title}\n${description}\n${content}`;
+    const combinedContent = `${title}\n${autoDescription}\n${content}`;
     try {
       const moderationResult = await moderateText(combinedContent, 'id');
       
@@ -104,7 +108,7 @@ export default function WritePage() {
       }
       
       // Create story first
-      const story = await createStory(user!.id, title, description, category, tagsArray);
+      const story = await createStory(user!.id, title, autoDescription, category, tagsArray);
       console.log('Story created:', story.id);
 
       // Upload NEW cover if available
@@ -177,13 +181,6 @@ export default function WritePage() {
             value={title}
             onChange={e => setTitle(e.target.value)}
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
-          />
-          <textarea
-            placeholder={t.descPlaceholder}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            rows={2}
-            className="w-full text-sm bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:outline-none focus:border-accent resize-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
           <input
             type="text"
