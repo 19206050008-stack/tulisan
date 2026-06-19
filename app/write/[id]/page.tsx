@@ -329,13 +329,6 @@ export default function WriteEditorPage() {
             onChange={e => setTitle(e.target.value)}
             className="w-full text-2xl font-serif font-bold bg-transparent border-none outline-none text-tx placeholder:text-tx-muted"
           />
-          <textarea
-            placeholder={t.descPlaceholder}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            rows={2}
-            className="w-full text-sm bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:outline-none focus:border-accent resize-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-          />
 
           {!loading && (
             <Suspense fallback={
@@ -363,6 +356,13 @@ export default function WriteEditorPage() {
 
           <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <h3 className="font-semibold text-sm">Details</h3>
+            <textarea
+              placeholder={t.descPlaceholder}
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={3}
+              className="w-full text-sm bg-white text-gray-900 rounded-lg p-3 border border-gray-300 focus:outline-none focus:border-accent resize-none dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
