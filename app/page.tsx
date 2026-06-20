@@ -2,6 +2,8 @@
 import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories } from '@/lib/supabase';
 import HomePageClient from '@/components/HomePageClient';
 
+export const revalidate = 60;
+
 export default async function Home() {
   // Semua query dijalankan di SERVER — tidak masuk ke bundle client
   const [storiesData, catsData, editorial, monthly, completed] = await Promise.all([
