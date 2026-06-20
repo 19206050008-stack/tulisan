@@ -293,20 +293,20 @@ function GenreCarousel({ genre, seeAll }: { genre: string; seeAll: string }) {
 
   return (
     <section className="pt-4 border-t border-border">
-      <div className="rounded-2xl border border-border bg-bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-bold">{genre}</span>
-            <h2 className="text-base font-bold font-serif">{genre}</h2>
+      <div className="rounded-2xl border border-border bg-bg-card p-3 md:p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[9px] md:text-[10px] font-bold shrink-0">{genre}</span>
+            <h2 className="text-sm md:text-base font-bold font-serif truncate">{genre}</h2>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 shrink-0">
             <button onClick={() => scroll('left')} onMouseEnter={pauseAutoScroll} onMouseLeave={resumeAutoScroll} className="p-1 rounded-full border border-border hover:bg-bg-soft transition-colors">
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-3 w-3 md:h-3.5 md:w-3.5" />
             </button>
             <button onClick={() => scroll('right')} onMouseEnter={pauseAutoScroll} onMouseLeave={resumeAutoScroll} className="p-1 rounded-full border border-border hover:bg-bg-soft transition-colors">
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3 w-3 md:h-3.5 md:w-3.5" />
             </button>
-            <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-[10px] font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
+            <Link href={`/browse?genre=${encodeURIComponent(genre)}`} className="text-[9px] md:text-[10px] font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
           </div>
         </div>
 
@@ -348,23 +348,23 @@ function CompletedCarousel({ stories, completedBadge, completedTitle, completedD
 
   return (
     <section className="pt-4 border-t border-border">
-      <div className="rounded-2xl border border-border bg-bg-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-            <div>
-              <h2 className="text-lg md:text-xl font-bold font-serif">{completedTitle}</h2>
-              <p className="text-[10px] text-tx-muted">{completedDesc}</p>
+      <div className="rounded-2xl border border-border bg-bg-card p-4 md:p-5 space-y-3 md:space-y-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500 shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-sm md:text-xl font-bold font-serif truncate">{completedTitle}</h2>
+              <p className="text-[9px] md:text-[10px] text-tx-muted hidden sm:block">{completedDesc}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => scroll('left')} className="p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll left">
-              <ChevronLeft className="h-4 w-4" />
+          <div className="flex items-center gap-1 md:gap-2 shrink-0">
+            <button onClick={() => scroll('left')} className="p-1 md:p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll left">
+              <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </button>
-            <button onClick={() => scroll('right')} className="p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll right">
-              <ChevronRight className="h-4 w-4" />
+            <button onClick={() => scroll('right')} className="p-1 md:p-1.5 rounded-full border border-border hover:bg-bg-soft transition-colors" aria-label="Scroll right">
+              <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </button>
-            <Link href="/browse?completed=true" className="text-xs font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
+            <Link href="/browse?completed=true" className="text-[10px] md:text-xs font-medium text-gray-500 hover:text-accent flex items-center ml-1">{seeAll} <ChevronRight className="h-3 w-3" /></Link>
           </div>
         </div>
 

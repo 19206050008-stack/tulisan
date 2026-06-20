@@ -141,7 +141,7 @@ export async function getUserStories(userId: string) {
 // Likes / Votes
 export async function toggleLike(userId: string, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data: existing } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).single();
+  const { data: existing } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).maybeSingle();
   if (existing) {
     await supabase.from('votes').delete().eq('user_id', userId).eq('story_id', storyId);
     const { data: story } = await supabase.from('stories').select('likes_count').eq('id', storyId).single();

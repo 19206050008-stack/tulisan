@@ -174,41 +174,41 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
       <ScrollToTop />
       <Toast message={toastMessage} isVisible={showToast} onClose={() => setShowToast(false)} />
       <div className="max-w-3xl mx-auto pb-32 px-2 sm:px-0">
-      <div className="flex items-center justify-between mb-6 md:mb-8 pb-4 border-b border-border">
-        <div className="flex items-center gap-3 md:gap-4 min-w-0">
-          <Link href="/" className="p-2 hover:bg-bg-soft rounded-full transition shrink-0">
-            <ChevronLeft className="h-5 w-5" />
+      <div className="flex items-start justify-between mb-4 md:mb-8 pb-4 border-b border-border gap-2">
+        <div className="flex items-start gap-2 md:gap-4 min-w-0">
+          <Link href="/" className="p-1.5 md:p-2 hover:bg-bg-soft rounded-full transition shrink-0 mt-1">
+            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
           </Link>
           <div className="min-w-0">
-            <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{displaySubtitle}</h2>
-            <h1 className="text-2xl md:text-4xl font-bold font-serif tracking-tight leading-tight mt-1 line-clamp-2">{displayTitle}</h1>
+            <h2 className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">{displaySubtitle}</h2>
+            <h1 className="text-lg sm:text-xl md:text-4xl font-bold font-serif tracking-tight leading-tight mt-0.5 md:mt-1 line-clamp-2">{displayTitle}</h1>
             <div className="flex items-center gap-2 mt-1">
               {story?.profiles && (
-                <Link href={`/profile/${story.profiles.username}`} className="text-sm text-gray-500 hover:text-accent transition-colors">
+                <Link href={`/profile/${story.profiles.username}`} className="text-xs md:text-sm text-gray-500 hover:text-accent transition-colors">
                   by {story.profiles.full_name || story.profiles.username}
                 </Link>
               )}
               <span className="text-gray-300 dark:text-gray-700 text-xs">&bull;</span>
-              <span className="text-xs text-gray-500">{readingTime} mnt baca</span>
+              <span className="text-[10px] md:text-xs text-gray-500">{readingTime} mnt baca</span>
             </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
           {isAuthor && (
-            <button onClick={() => router.push(`/write/${id}`)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent text-white text-xs font-medium hover:opacity-90 transition mr-1" title="Edit cerita ini">
-              <Pencil className="h-3.5 w-3.5" />
+            <button onClick={() => router.push(`/write/${id}`)} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-accent text-white text-[10px] md:text-xs font-medium hover:opacity-90 transition mr-0.5" title="Edit cerita ini">
+              <Pencil className="h-3 w-3 md:h-3.5 md:w-3.5" />
               <span className="hidden sm:inline">Edit</span>
             </button>
           )}
-          <button onClick={handleSave} className={`p-2 rounded-full transition ${saved ? 'bg-gray-100 text-accent dark:bg-gray-800/50' : 'hover:bg-bg-soft text-gray-500'}`} title={saved ? 'Saved' : 'Save to Library'}>
-            <Bookmark className={`h-5 w-5 ${saved ? 'fill-current' : ''}`} />
+          <button onClick={handleSave} className={`p-1.5 md:p-2 rounded-full transition ${saved ? 'bg-gray-100 text-accent dark:bg-gray-800/50' : 'hover:bg-bg-soft text-gray-500'}`} title={saved ? 'Saved' : 'Save to Library'}>
+            <Bookmark className={`h-4 w-4 md:h-5 md:w-5 ${saved ? 'fill-current' : ''}`} />
           </button>
-          <button onClick={handleShare} className="p-2 rounded-full hover:bg-bg-soft text-gray-500 transition" title="Bagikan Cerita">
-            <Share2 className="h-5 w-5" />
+          <button onClick={handleShare} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft text-gray-500 transition" title="Bagikan Cerita">
+            <Share2 className="h-4 w-4 md:h-5 md:w-5" />
           </button>
-          <button onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-full hover:bg-bg-soft text-gray-500 transition">
-            <Settings className="h-5 w-5" />
+          <button onClick={() => setShowSettings(!showSettings)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft text-gray-500 transition">
+            <Settings className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         </div>
       </div>
@@ -228,9 +228,9 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
         </div>
       )}
 
-      <article className="space-y-5 relative" style={{ fontSize: `${textSize}px`, lineHeight: 1.9 }}>
+      <article className="space-y-4 md:space-y-5 relative" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }}>
         {parsedContent && isHtml(parsedContent) ? (
-          <div className="tiptap-reader bg-bg px-4 py-3 rounded-lg" style={{ fontSize: `${textSize}px`, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: parsedContent }} />
+          <div className="tiptap-reader bg-bg px-2 md:px-4 py-3 rounded-lg text-sm md:text-base" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: parsedContent }} />
         ) : (
           paragraphs.map((p: any) => (
             p.isSeparator ? (
@@ -240,7 +240,7 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
             ) : (
               <div key={p.id} className="relative group">
                 <p className="text-tx indent-8" dangerouslySetInnerHTML={{ __html: formatParagraph(p.text) }} />
-                <button onClick={() => setActiveParagraph(p.id)} className={`absolute -right-2 md:-right-12 top-0 p-1.5 md:p-2 rounded-full transition-opacity ${activeParagraph === p.id ? 'opacity-100 bg-bg-input text-accent' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
+                <button onClick={() => setActiveParagraph(p.id)} className={`absolute -right-1 md:-right-12 top-0 p-1 md:p-2 rounded-full transition-opacity ${activeParagraph === p.id ? 'opacity-100 bg-bg-input text-accent' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
                   <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 </button>
               </div>
@@ -250,28 +250,28 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
       </article>
 
       {chapters.length > 1 && (
-        <div className="mt-12 flex items-center justify-between">
-          <button onClick={() => setActiveChapterIndex(Math.max(0, activeChapterIndex - 1))} disabled={activeChapterIndex === 0} className="flex items-center gap-2 px-4 py-2 text-sm rounded-full border border-border hover:bg-bg-soft disabled:opacity-30 transition-colors">
-            <ChevronLeft className="h-4 w-4" /> Previous
+        <div className="mt-8 md:mt-12 flex items-center justify-between gap-2">
+          <button onClick={() => setActiveChapterIndex(Math.max(0, activeChapterIndex - 1))} disabled={activeChapterIndex === 0} className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 text-xs md:text-sm rounded-full border border-border hover:bg-bg-soft disabled:opacity-30 transition-colors">
+            <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" /> <span className="hidden sm:inline">Previous</span><span className="sm:hidden">Prev</span>
           </button>
-          <span className="text-sm text-gray-500">{activeChapterIndex + 1} / {chapters.length}</span>
-          <button onClick={() => setActiveChapterIndex(Math.min(chapters.length - 1, activeChapterIndex + 1))} disabled={activeChapterIndex === chapters.length - 1} className="flex items-center gap-2 px-4 py-2 text-sm rounded-full border border-border hover:bg-bg-soft disabled:opacity-30 transition-colors">
-            Next <ChevronRight className="h-4 w-4" />
+          <span className="text-xs md:text-sm text-gray-500">{activeChapterIndex + 1} / {chapters.length}</span>
+          <button onClick={() => setActiveChapterIndex(Math.min(chapters.length - 1, activeChapterIndex + 1))} disabled={activeChapterIndex === chapters.length - 1} className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 text-xs md:text-sm rounded-full border border-border hover:bg-bg-soft disabled:opacity-30 transition-colors">
+            <span className="hidden sm:inline">Next</span><span className="sm:hidden">Next</span> <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </button>
         </div>
       )}
 
-      <div className="mt-16 pt-8 border-t dark:border-gray-800 flex justify-center gap-6">
-        <button onClick={handleLike} className={`flex flex-col items-center gap-2 p-4 rounded-xl transition ${liked ? 'text-red-500' : 'text-gray-500 hover:bg-bg-soft'}`}>
-          <Heart className={`h-8 w-8 ${liked ? 'fill-current' : ''}`} />
-          <span className="text-xs font-semibold">Like</span>
+      <div className="mt-12 md:mt-16 pt-6 md:pt-8 border-t dark:border-gray-800 flex justify-center gap-4 md:gap-6">
+        <button onClick={handleLike} className={`flex flex-col items-center gap-1.5 md:gap-2 p-3 md:p-4 rounded-xl transition ${liked ? 'text-red-500' : 'text-gray-500 hover:bg-bg-soft'}`}>
+          <Heart className={`h-6 w-6 md:h-8 md:w-8 ${liked ? 'fill-current' : ''}`} />
+          <span className="text-[10px] md:text-xs font-semibold">Like</span>
         </button>
-        <button onClick={handleSave} className={`flex flex-col items-center gap-2 p-4 rounded-xl transition ${saved ? 'text-accent' : 'text-gray-500 hover:bg-bg-soft'}`}>
-          <Bookmark className={`h-8 w-8 ${saved ? 'fill-current' : ''}`} />
-          <span className="text-xs font-semibold">Save</span>
+        <button onClick={handleSave} className={`flex flex-col items-center gap-1.5 md:gap-2 p-3 md:p-4 rounded-xl transition ${saved ? 'text-accent' : 'text-gray-500 hover:bg-bg-soft'}`}>
+          <Bookmark className={`h-6 w-6 md:h-8 md:w-8 ${saved ? 'fill-current' : ''}`} />
+          <span className="text-[10px] md:text-xs font-semibold">Save</span>
         </button>
-        <button onClick={handleShare} className="flex flex-col items-center gap-2 p-4 rounded-xl text-gray-500 hover:bg-bg-soft transition">
-          <Share2 className="h-8 w-8" />
+        <button onClick={handleShare} className="flex flex-col items-center gap-1.5 md:gap-2 p-3 md:p-4 rounded-xl text-gray-500 hover:bg-bg-soft transition">
+          <Share2 className="h-6 w-6 md:h-8 md:w-8" />
           <span className="text-xs font-semibold">Share</span>
         </button>
         <DonateButton authorName={story?.profiles?.full_name || story?.profiles?.username || 'Penulis'} links={story?.profiles?.donation_links || []} />
