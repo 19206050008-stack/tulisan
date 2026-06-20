@@ -29,6 +29,14 @@ export default function AdminSettingsPage() {
   const [donationEnabled, setDonationEnabled] = useState(true);
   const [donationPlatforms, setDonationPlatforms] = useState<string[]>(['saweria', 'trakteer', 'sociabuzz', 'karyakarsa', 'custom']);
 
+  const [socialLinks, setSocialLinks] = useState({
+    instagram: '',
+    tiktok: '',
+    twitter: '',
+    youtube: '',
+    facebook: '',
+  });
+
   const loadConfig = async () => {
     setLoading(true);
     const data = await getAllSiteConfig();
@@ -47,6 +55,13 @@ export default function AdminSettingsPage() {
     setSsoCallbackUrl(data.sso_callback_url || (typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback` : ''));
     setDonationEnabled(data.donation_enabled !== false);
     setDonationPlatforms(data.donation_platforms || ['saweria', 'trakteer', 'sociabuzz', 'karyakarsa', 'custom']);
+    setSocialLinks({
+      instagram: data.social_instagram || '',
+      tiktok: data.social_tiktok || '',
+      twitter: data.social_twitter || '',
+      youtube: data.social_youtube || '',
+      facebook: data.social_facebook || '',
+    });
     setLoading(false);
   };
 
@@ -72,6 +87,11 @@ export default function AdminSettingsPage() {
         setSiteConfig('sso_callback_url', ssoCallbackUrl),
         setSiteConfig('donation_enabled', donationEnabled),
         setSiteConfig('donation_platforms', donationPlatforms),
+        setSiteConfig('social_instagram', socialLinks.instagram),
+        setSiteConfig('social_tiktok', socialLinks.tiktok),
+        setSiteConfig('social_twitter', socialLinks.twitter),
+        setSiteConfig('social_youtube', socialLinks.youtube),
+        setSiteConfig('social_facebook', socialLinks.facebook),
       ]);
       setSuccess('Settings saved successfully!');
     } catch (err: any) {
@@ -281,6 +301,31 @@ export default function AdminSettingsPage() {
               <p className="text-xs text-gray-500">Users will only see these platforms when setting up their donation links.</p>
             </div>
           )}
+        </section>
+
+        <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
+          <h2 className="font-semibold flex items-center gap-2"><Globe className="h-4 w-4" /> Social Media Links</h2>
+          <p className="text-xs text-gray-500">Tampilkan icon sosial media di footer. Kosongkan URL untuk menyembunyikan icon.</p>
+          <div className="space-y-3">
+            {[
+              { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/username' },
+              { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@username' },
+              { key: 'twitter', label: 'Twitter / X', placeholder: 'https://twitter.com/username' },
+              { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@channel' },
+              { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/page' },
+            ].map(s => (
+              <div key={s.key} className="flex items-center gap-3">
+                <label className="text-sm font-medium w-24 shrink-0">{s.label}</label>
+                <input
+                  type="url"
+                  value={(socialLinks as any)[s.key]}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, [s.key]: e.target.value }))}
+                  placeholder={s.placeholder}
+                  className="flex-1 px-3 py-2 text-sm rounded-lg bg-bg-input text-tx border border-border focus:outline-none focus:border-accent"
+                />
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="p-5 rounded-xl border border-border bg-bg-card space-y-4">
