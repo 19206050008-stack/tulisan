@@ -3,7 +3,8 @@ import { supabase } from './client';
 // Library / Saves
 export async function toggleSave(userId: string, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data: rows } = await supabase.from('library_saves').select('*').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const { data: rows, error } = await supabase.from('library_saves').select('user_id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  if (error) { console.error('toggleSave check error:', error.message); }
   const existing = rows && rows.length > 0;
   if (existing) {
     await supabase.from('library_saves').delete().eq('user_id', userId).eq('story_id', storyId);
@@ -16,7 +17,8 @@ export async function toggleSave(userId: string, storyId: string) {
 
 export async function isSaved(userId: string, storyId: string) {
   if (!supabase) return false;
-  const { data: rows } = await supabase.from('library_saves').select('id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const { data: rows, error } = await supabase.from('library_saves').select('user_id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  if (error) { console.error('isSaved error:', error.message); return false; }
   return !!(rows && rows.length > 0);
 }
 

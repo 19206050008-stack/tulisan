@@ -141,7 +141,8 @@ export async function getUserStories(userId: string) {
 // Likes / Votes
 export async function toggleLike(userId: string, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data: rows } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const { data: rows, error } = await supabase.from('votes').select('user_id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  if (error) { console.error('toggleLike check error:', error.message); }
   const existing = rows && rows.length > 0;
   if (existing) {
     await supabase.from('votes').delete().eq('user_id', userId).eq('story_id', storyId);
@@ -158,6 +159,7 @@ export async function toggleLike(userId: string, storyId: string) {
 
 export async function isLiked(userId: string, storyId: string) {
   if (!supabase) return false;
-  const { data: rows } = await supabase.from('votes').select('id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const { data: rows, error } = await supabase.from('votes').select('user_id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  if (error) { console.error('isLiked error:', error.message); return false; }
   return !!(rows && rows.length > 0);
 }
