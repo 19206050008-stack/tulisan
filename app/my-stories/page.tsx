@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
 import { translations } from '@/lib/i18n';
+import { getTierDisplayName } from '@/lib/tier-utils';
 
 type StatusFilter = 'all' | 'published' | 'draft' | 'archived';
 type SortOption = 'newest' | 'oldest' | 'most_reads' | 'most_likes' | 'az' | 'za';
@@ -302,9 +303,9 @@ export default function MyStoriesPage() {
                           <span className="hidden sm:flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatNum(story.likes_count || 0)}</span>
                         </>
                       )}
-                      {story.tags && Array.isArray(story.tags) && story.tags.find((tag: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(tag)) && (
+                      {story.tags && Array.isArray(story.tags) && story.tags.find((tag: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(tag)) && (
                         <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[10px]">
-                          {story.tags.find((tag: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(tag))}
+                          {getTierDisplayName(story.tags.find((tag: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(tag)))}
                         </span>
                       )}
                     </div>

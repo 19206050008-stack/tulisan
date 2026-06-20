@@ -102,7 +102,7 @@ export default function WritePage() {
       
       if (finalTier) {
         // Remove old tier tags (if any)
-        tagsArray = tagsArray.filter(t => !['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t));
+        tagsArray = tagsArray.filter(t => !['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t));
         // Add new tier
         tagsArray.push(finalTier);
       }
@@ -231,7 +231,8 @@ export default function WritePage() {
               <option value="">Auto (Berdasarkan jumlah kata)</option>
               <option value="Cerita Pendek">Cerita Pendek (&lt; 7.500 kata)</option>
               <option value="Cerita Sedang">Cerita Sedang (7.500 - 40.000 kata)</option>
-              <option value="Cerita Panjang">Cerita Panjang (&gt; 40.000 kata)</option>
+              <option value="Cerita Panjang">Cerita Panjang (40.000 - 100.000 kata)</option>
+              <option value="Novel">Novel (&gt; 100.000 kata)</option>
             </select>
             <input
               type="text"

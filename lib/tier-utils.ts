@@ -35,14 +35,16 @@ export function countWords(content: string): number {
  * - Sedang (Medium): 7,500 - 40,000 kata — Novelet & Novela
  * - Panjang (Long): > 40,000 kata — Novel
  */
-export function determineTier(totalWords: number): 'Cerita Pendek' | 'Cerita Sedang' | 'Cerita Panjang' | null {
+export function determineTier(totalWords: number): 'Cerita Pendek' | 'Cerita Sedang' | 'Cerita Panjang' | 'Novel' | null {
   if (totalWords <= 0) return null;
   if (totalWords < 7500) {
     return 'Cerita Pendek';
   } else if (totalWords <= 40000) {
     return 'Cerita Sedang';
-  } else {
+  } else if (totalWords <= 100000) {
     return 'Cerita Panjang';
+  } else {
+    return 'Novel';
   }
 }
 
@@ -62,7 +64,7 @@ export function determineStoryType(totalWords: number): string {
  * Calculate tier for a story based on its chapters
  */
 export function calculateStoryTier(chapters: { content: string }[]): {
-  tier: 'Cerita Pendek' | 'Cerita Sedang' | 'Cerita Panjang' | null;
+  tier: 'Cerita Pendek' | 'Cerita Sedang' | 'Cerita Panjang' | 'Novel' | null;
   storyType: string;
   totalWords: number;
   chaptersWordCount: number[];
@@ -89,6 +91,19 @@ export function formatTier(tier: string | null): string {
 }
 
 /**
+ * Map old/new tier tag values to proper display name
+ */
+export function getTierDisplayName(tier: string | null): string {
+  switch (tier) {
+    case 'Pendek': return 'Cerita Pendek';
+    case 'Sedang': return 'Cerita Sedang';
+    case 'Panjang': return 'Cerita Panjang';
+    case 'Cerita Pendek': case 'Cerita Sedang': case 'Cerita Panjang': case 'Novel': return tier;
+    default: return tier || '';
+  }
+}
+
+/**
  * Get tier badge color
  */
 export function getTierBadgeColor(tier: string | null): string {
@@ -102,6 +117,8 @@ export function getTierBadgeColor(tier: string | null): string {
     case 'Cerita Panjang':
     case 'Panjang':
       return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
+    case 'Novel':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
   }
@@ -113,16 +130,18 @@ export function getTierBadgeColor(tier: string | null): string {
 export function getTierDescription(tier: string | null, lang: 'id' | 'en' = 'id'): string {
   if (lang === 'en') {
     switch (tier) {
-      case 'Cerita Pendek': return 'Short (< 7,500 words) — Short Story & Flash Fiction';
-      case 'Cerita Sedang': return 'Medium (7,500 - 40,000 words) — Novelette & Novella';
-      case 'Cerita Panjang': return 'Long (> 40,000 words) — Novel';
+      case 'Cerita Pendek': case 'Pendek': return 'Short (< 7,500 words) — Short Story & Flash Fiction';
+      case 'Cerita Sedang': case 'Sedang': return 'Medium (7,500 - 40,000 words) — Novelette & Novella';
+      case 'Cerita Panjang': case 'Panjang': return 'Long (40,000 - 100,000 words) — Long Fiction';
+      case 'Novel': return 'Novel (> 100,000 words)';
       default: return '';
     }
   }
   switch (tier) {
-    case 'Cerita Pendek': return 'Pendek (< 7.500 kata) — Cerpen & Fiksi Kilat';
-    case 'Cerita Sedang': return 'Sedang (7.500 - 40.000 kata) — Novelet & Novela';
-    case 'Cerita Panjang': return 'Panjang (> 40.000 kata) — Novel';
+    case 'Cerita Pendek': case 'Pendek': return 'Pendek (< 7.500 kata) — Cerpen & Fiksi Kilat';
+    case 'Cerita Sedang': case 'Sedang': return 'Sedang (7.500 - 40.000 kata) — Novelet & Novela';
+    case 'Cerita Panjang': case 'Panjang': return 'Panjang (40.000 - 100.000 kata) — Cerita Panjang';
+    case 'Novel': return 'Novel (> 100.000 kata)';
     default: return '';
   }
 }

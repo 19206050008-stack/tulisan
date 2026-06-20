@@ -8,6 +8,7 @@ import { StoryCover } from '@/components/StoryCover';
 import { Pagination } from '@/components/Pagination';
 import { useStore } from '@/lib/store';
 import { translations } from '@/lib/i18n';
+import { getTierDisplayName } from '@/lib/tier-utils';
 
 interface BrowsePageClientProps {
   stories: any[];
@@ -205,9 +206,9 @@ export function BrowsePageInner({ stories: initialStories, categories: initialCa
                 <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
                 <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
                 <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{story.category}</span>
-                {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+                {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
                   <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-                    {story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t))}
+                    {getTierDisplayName(story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)))}
                   </span>
                 )}
               </div>

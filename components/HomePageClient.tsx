@@ -9,6 +9,7 @@ import { getStoriesByCategory } from '@/lib/supabase';
 import { StoryCover } from '@/components/StoryCover';
 import { GenreFilter } from '@/components/GenreFilter';
 import { translations } from '@/lib/i18n';
+import { getTierDisplayName } from '@/lib/tier-utils';
 
 // Lazy load below-fold components
 const RecentComments = lazy(() => import('@/components/RecentComments').then(m => ({ default: m.RecentComments })));
@@ -209,9 +210,9 @@ function StoryCard({ story, viewMode }: { story: any; viewMode: string }) {
             <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
             <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
             <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
-            {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+            {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
               <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-                {story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t))}
+                {getTierDisplayName(story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)))}
               </span>
             )}
           </div>
@@ -231,9 +232,9 @@ function StoryCard({ story, viewMode }: { story: any; viewMode: string }) {
         <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" /> {formatCount(story.reads_count || 0)}</span>
         <span className="flex items-center gap-0.5"><Heart className="h-3 w-3" /> {formatCount(story.likes_count || 0)}</span>
         <span className="px-1.5 py-0.5 rounded bg-bg-input text-tx-soft">{story.category}</span>
-        {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
+        {story.tags && Array.isArray(story.tags) && story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)) && (
           <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent">
-            {story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Pendek', 'Sedang', 'Panjang'].includes(t))}
+            {getTierDisplayName(story.tags.find((t: string) => ['Cerita Pendek', 'Cerita Sedang', 'Cerita Panjang', 'Novel', 'Pendek', 'Sedang', 'Panjang'].includes(t)))}
           </span>
         )}
       </div>
