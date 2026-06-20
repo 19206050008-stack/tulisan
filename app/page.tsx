@@ -2,7 +2,7 @@
 import { getHomepageStories, getCategories, getEditorialPicks, getTopMonthly, getCompletedStories } from '@/lib/supabase';
 import HomePageClient from '@/components/HomePageClient';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Semua query dijalankan di SERVER — tidak masuk ke bundle client

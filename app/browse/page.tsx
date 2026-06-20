@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { getStories, getCategories } from '@/lib/supabase';
 import { BrowsePageInner } from '@/components/BrowsePageClient';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 export default async function BrowsePage() {
   // Fetch data di SERVER — tidak masuk ke bundle client
