@@ -420,6 +420,9 @@ export default function WriteEditorPage() {
               {categoryOptions.map(cat => (
                 <option key={cat.id || cat.slug} value={cat.name}>{cat.name}</option>
               ))}
+              {category && !categoryOptions.find(c => c.name === category) && (
+                <option value={category}>{category}</option>
+              )}
             </select>
             <select
               value={selectedTier}

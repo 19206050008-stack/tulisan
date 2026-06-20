@@ -20,6 +20,7 @@ const CATEGORIES = [
   { name: 'Non-Fiksi', slug: 'non-fiksi', description: 'Karya tulis berdasarkan fakta, pengalaman nyata, atau pengetahuan', sort_order: 16 },
   { name: 'Puisi', slug: 'puisi', description: 'Karya sastra yang mengutamakan keindahan bahasa, irama, dan makna mendalam', sort_order: 17 },
   { name: 'Slice of Life', slug: 'slice-of-life', description: 'Cerita tentang kehidupan sehari-hari tanpa konflik besar, fokus pada momen kecil', sort_order: 18 },
+  { name: 'Novel', slug: 'novel', description: 'Karya fiksi prosa panjang dengan alur kompleks, penokohan mendalam, dan banyak bab', sort_order: 19 },
 ];
 
 export async function GET(request: Request) {
