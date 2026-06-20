@@ -120,12 +120,18 @@ export default function WritePage() {
       const story = await createStory(user!.id, title, finalSynopsis, category, tagsArray);
       console.log('Story created:', story.id);
 
-      // Save additional metadata
-      await updateStory(story.id, {
-        rating,
-        story_status: storyStatus,
-        characters: characters.filter(c => c.name.trim()),
-      });
+      // Characters and rating stored in tags for now (columns can be added later via Supabase)
+      // Tags already include tier, add rating tag if not default
+      if (rating && rating !== 'semua_umur') {
+        tagsArray.push(`rating:${rating}`);
+      }
+      if (storyStatus === 'tamat') {
+        tagsArray.push('tamat');
+      }
+      const validChars = characters.filter(c => c.name.trim());
+      if (validChars.length > 0) {
+        tagsArray.push(`chars:${JSON.stringify(validChars)}`);
+      }
 
       // Upload NEW cover if available
       if (coverFile) {
