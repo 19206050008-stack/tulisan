@@ -381,6 +381,7 @@ export default function NanaChatPage() {
       
       // Sync to DB for admin logs
       syncNanaChat(
+        chatId!,
         finalMessages[0]?.content?.slice(0, 40) || 'Chat',
         finalMessages.map(m => ({ role: m.role, content: m.content }))
       ).catch((err) => console.warn('DB sync failed:', err.message));

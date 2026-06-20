@@ -2,22 +2,43 @@ import { supabase } from './client';
 import { getCurrentUser } from './auth';
 
 // Nana AI
-export async function syncNanaChat(title: string, messages: { role: string; content: string }[]) {
+export async function syncNanaChat(localChatId: string, title: string, messages: { role: string; content: string }[]) {
   if (!supabase) return null;
   const user = await getCurrentUser();
   if (!user) return null;
-  const { data: chat, error: chatErr } = await supabase
+
+  // Check if this chat already has a DB record (upsert logic)
+  const { data: existing } = await supabase
     .from('nana_chats')
-    .insert({ user_id: user.id, title, updated_at: new Date().toISOString() })
-    .select()
-    .single();
-  if (chatErr || !chat) return null;
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('title', title)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let chatId: string;
+
+  if (existing) {
+    chatId = existing.id;
+    await supabase.from('nana_chats').update({ title, updated_at: new Date().toISOString() }).eq('id', chatId);
+    await supabase.from('nana_messages').delete().eq('chat_id', chatId);
+  } else {
+    const { data: chat, error: chatErr } = await supabase
+      .from('nana_chats')
+      .insert({ user_id: user.id, title, updated_at: new Date().toISOString() })
+      .select()
+      .single();
+    if (chatErr || !chat) return null;
+    chatId = chat.id;
+  }
+
   if (messages.length > 0) {
     await supabase.from('nana_messages').insert(
-      messages.map(m => ({ chat_id: chat.id, role: m.role, content: m.content }))
+      messages.map(m => ({ chat_id: chatId, role: m.role, content: m.content }))
     );
   }
-  return chat;
+  return { id: chatId };
 }
 
 export async function getNanaChatStats() {
