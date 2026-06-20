@@ -5,7 +5,7 @@ import { getCurrentUser } from './auth';
 export async function syncNanaChat(localChatId: string, title: string, messages: { role: string; content: string }[]) {
   if (!supabase) return null;
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) { console.warn('syncNanaChat: no user session'); return null; }
 
   // Check if this chat already has a DB record (upsert logic)
   const { data: existing } = await supabase
@@ -43,7 +43,11 @@ export async function syncNanaChat(localChatId: string, title: string, messages:
 
 export async function getNanaChatStats() {
   if (!supabase) return { totalChats: 0, totalMessages: 0, totalUsers: 0, users: [] };
-  const { data: chats } = await supabase.from('nana_chats').select('id, user_id, title, created_at, updated_at').order('updated_at', { ascending: false });
+  const { data: chats, error } = await supabase.from('nana_chats').select('id, user_id, title, created_at, updated_at').order('updated_at', { ascending: false });
+  if (error) {
+    console.error('getNanaChatStats error:', error.message);
+    return { totalChats: 0, totalMessages: 0, totalUsers: 0, users: [], error: error.message };
+  }
   if (!chats || chats.length === 0) return { totalChats: 0, totalMessages: 0, totalUsers: 0, users: [] };
   
   // Fetch unique user IDs

@@ -202,13 +202,14 @@ export async function updateAdRequestStatus(id: string, status: string, reason?:
 export async function getPublishedAds() {
   if (!supabase) return [];
   const now = new Date().toISOString().split('T')[0];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('ad_requests')
     .select('*, stories(id, title, reads_count, likes_count)')
-    .eq('status', 'published')
+    .in('status', ['published', 'approved'])
     .lte('start_date', now)
     .gte('end_date', now)
     .order('created_at', { ascending: false });
+  if (error) console.error('getPublishedAds error:', error.message);
   return data || [];
 }
 
