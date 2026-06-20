@@ -156,7 +156,7 @@ export default function WritePage() {
 
       alert(publish ? 'Cerita berhasil diterbitkan!' : 'Draf berhasil disimpan!');
       
-      router.push(`/story/${story.id}`);
+      router.push(`/write/${story.id}`);
     } catch (error: any) {
       console.error('❌ Save error:', error);
       alert(`Error: ${error.message || 'Failed to save story'}`);
