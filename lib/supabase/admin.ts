@@ -204,7 +204,7 @@ export async function getPublishedAds() {
   const now = new Date().toISOString().split('T')[0];
   const { data, error } = await supabase
     .from('ad_requests')
-    .select('*, stories(id, title, reads_count, likes_count)')
+    .select('*, stories(id, title, description, reads_count, likes_count)')
     .in('status', ['published', 'approved'])
     .lte('start_date', now)
     .gte('end_date', now)

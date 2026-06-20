@@ -74,6 +74,9 @@ export function AdPopup() {
                 <BookOpen className="h-3.5 w-3.5 shrink-0" />
                 <span className="font-medium text-tx truncate">{ad.stories.title}</span>
               </div>
+              {ad.stories.description && (
+                <p className="text-[11px] md:text-xs text-tx-soft line-clamp-2">{ad.stories.description}</p>
+              )}
               <div className="flex items-center gap-3 text-[10px] md:text-xs text-tx-muted">
                 <span className="flex items-center gap-1"><Eye className="h-3 w-3" /> {ad.stories.reads_count || 0}</span>
                 <span className="flex items-center gap-1"><Heart className="h-3 w-3" /> {ad.stories.likes_count || 0}</span>
