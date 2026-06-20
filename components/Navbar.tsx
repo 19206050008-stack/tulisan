@@ -288,7 +288,7 @@ export function Navbar() {
               {/* Nana AI button */}
               <Link
                 href="/ai-chat"
-                className="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
+                className="group relative flex items-center gap-1.5 px-1.5 py-1.5 sm:px-3 rounded-full sm:bg-accent/10 text-accent hover:bg-accent/20 transition-colors text-sm font-medium"
               >
                 <img src="/nana-avatar.gif" alt="" className="w-5 h-5 rounded-full object-cover" />
                 <span className="hidden sm:inline">Nana AI</span>
