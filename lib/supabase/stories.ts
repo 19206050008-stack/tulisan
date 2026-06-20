@@ -141,7 +141,8 @@ export async function getUserStories(userId: string) {
 // Likes / Votes
 export async function toggleLike(userId: string, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data: existing } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).maybeSingle();
+  const { data: rows } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const existing = rows && rows.length > 0;
   if (existing) {
     await supabase.from('votes').delete().eq('user_id', userId).eq('story_id', storyId);
     const { data: story } = await supabase.from('stories').select('likes_count').eq('id', storyId).single();
@@ -157,6 +158,6 @@ export async function toggleLike(userId: string, storyId: string) {
 
 export async function isLiked(userId: string, storyId: string) {
   if (!supabase) return false;
-  const { data } = await supabase.from('votes').select('*').eq('user_id', userId).eq('story_id', storyId).single();
-  return !!data;
+  const { data: rows } = await supabase.from('votes').select('id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  return !!(rows && rows.length > 0);
 }

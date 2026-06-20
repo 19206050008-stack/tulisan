@@ -3,7 +3,8 @@ import { supabase } from './client';
 // Library / Saves
 export async function toggleSave(userId: string, storyId: string) {
   if (!supabase) throw new Error('Supabase not configured');
-  const { data: existing } = await supabase.from('library_saves').select('*').eq('user_id', userId).eq('story_id', storyId).maybeSingle();
+  const { data: rows } = await supabase.from('library_saves').select('*').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  const existing = rows && rows.length > 0;
   if (existing) {
     await supabase.from('library_saves').delete().eq('user_id', userId).eq('story_id', storyId);
     return false;
@@ -15,8 +16,8 @@ export async function toggleSave(userId: string, storyId: string) {
 
 export async function isSaved(userId: string, storyId: string) {
   if (!supabase) return false;
-  const { data } = await supabase.from('library_saves').select('*').eq('user_id', userId).eq('story_id', storyId).maybeSingle();
-  return !!data;
+  const { data: rows } = await supabase.from('library_saves').select('id').eq('user_id', userId).eq('story_id', storyId).limit(1);
+  return !!(rows && rows.length > 0);
 }
 
 export async function getSavedStories(userId: string) {
