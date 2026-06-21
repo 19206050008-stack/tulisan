@@ -175,7 +175,7 @@ export default function AdminModerationPage() {
 
         <div className="space-y-2">
           {stories.map(story => (
-            <div key={story.id} className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-bg hover:border-accent/30 transition-colors">
+            <div key={story.id} className="flex items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg border border-border/50 bg-bg hover:border-accent/30 transition-colors flex-wrap sm:flex-nowrap">
               <FileText className="h-4 w-4 text-tx-muted shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{story.title}</h3>

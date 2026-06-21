@@ -166,8 +166,8 @@ export default function AdminPressPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-serif flex items-center gap-2"><Newspaper className="h-6 w-6" /> Press Articles</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold font-serif flex items-center gap-2"><Newspaper className="h-5 w-5 sm:h-6 sm:w-6" /> Press Articles</h1>
         <button onClick={startNew} className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90">
           <Plus className="h-4 w-4" /> New Article
         </button>
@@ -295,7 +295,7 @@ export default function AdminPressPage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:flex-nowrap">
               {article.published && (
                 <a href={`/press/articles/${article.slug}`} target="_blank" className="p-2 rounded-lg hover:bg-bg-soft transition-colors text-tx-muted" title="View">
                   <ExternalLink className="h-4 w-4" />

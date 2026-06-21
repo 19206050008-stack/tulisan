@@ -39,7 +39,7 @@ export default function AdminReportsPage() {
         <span className="text-sm text-gray-500">{reports.filter(r => r.status === 'pending').length} pending</span>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['all', 'pending', 'resolved', 'dismissed'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${filter === f ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}>
             {f}

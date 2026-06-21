@@ -97,8 +97,8 @@ export default function AdminApiPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-serif flex items-center gap-2"><Globe className="h-6 w-6" /> Public API</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold font-serif flex items-center gap-2"><Globe className="h-5 w-5 sm:h-6 sm:w-6" /> Public API</h1>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity">
           <Plus className="h-4 w-4" /> Create API Key
         </button>
@@ -132,7 +132,7 @@ export default function AdminApiPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Permissions</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {PERMISSIONS.map(p => (
                 <label key={p.value} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input

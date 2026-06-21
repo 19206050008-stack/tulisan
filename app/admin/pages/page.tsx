@@ -77,9 +77,9 @@ export default function AdminPagesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-serif flex items-center gap-2"><FileText className="h-6 w-6" /> Page Content</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold font-serif flex items-center gap-2"><FileText className="h-5 w-5 sm:h-6 sm:w-6" /> Page Content</h1>
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Language toggle */}
           <div className="flex items-center gap-1 p-1 rounded-lg bg-bg-input">
             <button
@@ -159,7 +159,7 @@ export default function AdminPagesPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Featured Topics</label>
             {(current.featured_topics || []).map((t: any, i: number) => (
-              <div key={i} className="flex gap-2">
+              <div key={i} className="flex gap-2 flex-wrap">
                 <input type="text" value={t.title} onChange={e => { const arr = [...current.featured_topics]; arr[i] = { ...arr[i], title: e.target.value }; setActiveData({ ...current, featured_topics: arr }); }} placeholder="Title" className="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
                 <input type="text" value={t.category} onChange={e => { const arr = [...current.featured_topics]; arr[i] = { ...arr[i], category: e.target.value }; setActiveData({ ...current, featured_topics: arr }); }} placeholder="Category" className="w-32 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
                 <button onClick={() => setActiveData({ ...current, featured_topics: current.featured_topics.filter((_: any, j: number) => j !== i) })} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 className="h-4 w-4" /></button>
@@ -200,7 +200,7 @@ export default function AdminPagesPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Press Releases</label>
             {(current.releases || []).map((pr: any, i: number) => (
-              <div key={i} className="flex gap-2">
+              <div key={i} className="flex gap-2 flex-wrap">
                 <input type="text" value={pr.date} onChange={e => { const arr = [...current.releases]; arr[i] = { ...arr[i], date: e.target.value }; setActiveData({ ...current, releases: arr }); }} placeholder="Date" className="w-32 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
                 <input type="text" value={pr.title} onChange={e => { const arr = [...current.releases]; arr[i] = { ...arr[i], title: e.target.value }; setActiveData({ ...current, releases: arr }); }} placeholder="Title" className="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-900 border border-border focus:outline-none focus:border-accent" />
                 <button onClick={() => setActiveData({ ...current, releases: current.releases.filter((_: any, j: number) => j !== i) })} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><Trash2 className="h-4 w-4" /></button>
