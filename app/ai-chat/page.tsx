@@ -559,18 +559,18 @@ export default function NanaChatPage() {
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
             {/* Welcome screen */}
             {messages.length === 0 && status !== 'generating' && (
-              <div className="text-center py-12 space-y-5">
-                <img src="/nana-avatar.gif" alt="Nana" className="w-16 h-16 rounded-full object-cover mx-auto shrink-0" />
+              <div className="text-center py-8 md:py-12 space-y-4 md:space-y-5">
+                <img src="/nana-avatar.gif" alt="Nana" className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover mx-auto shrink-0" />
                 <div className="space-y-1">
-                  <h2 className="text-xl font-bold font-serif">{labels.welcomeTitle}</h2>
-                  <p className="text-sm text-tx-soft">{labels.welcomeDesc}</p>
+                  <h2 className="text-base md:text-xl font-bold font-serif">{labels.welcomeTitle}</h2>
+                  <p className="text-xs md:text-sm text-tx-soft">{labels.welcomeDesc}</p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+                <div className="flex flex-wrap justify-center gap-1.5 md:gap-2 max-w-lg mx-auto">
                   {labels.suggestions.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(s)}
-                      className="px-4 py-2 rounded-xl border border-border bg-bg-card text-xs font-medium hover:border-accent/30 hover:bg-accent/5 transition-colors"
+                      className="px-3 md:px-4 py-1.5 md:py-2 rounded-xl border border-border bg-bg-card text-[11px] md:text-xs font-medium hover:border-accent/30 hover:bg-accent/5 transition-colors"
                     >
                       {s}
                     </button>
@@ -583,9 +583,9 @@ export default function NanaChatPage() {
             {messages.map(msg => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <img src="/nana-avatar.gif" alt="Nana" className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-0.5" />
+                  <img src="/nana-avatar.gif" alt="Nana" className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover shrink-0 mr-1.5 md:mr-2 mt-0.5" />
                 )}
-                <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
+                <div className={`max-w-[85%] sm:max-w-[80%] px-3 md:px-4 py-2 md:py-2.5 rounded-2xl text-xs md:text-sm ${
                   msg.role === 'user'
                     ? 'bg-accent text-white rounded-br-sm'
                     : 'bg-bg-card border border-border rounded-bl-sm'
@@ -595,7 +595,7 @@ export default function NanaChatPage() {
                   ) : (
                     <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
                   )}
-                  <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-tx-muted'}`}>
+                  <p className={`text-[9px] md:text-[10px] mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-tx-muted'}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -605,8 +605,8 @@ export default function NanaChatPage() {
             {/* Streaming */}
             {status === 'generating' && (
               <div className="flex justify-start">
-                <img src="/nana-avatar.gif" alt="Nana" className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-0.5" />
-                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-bl-sm bg-bg-card border border-border text-sm relative">
+                <img src="/nana-avatar.gif" alt="Nana" className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover shrink-0 mr-1.5 md:mr-2 mt-0.5" />
+                    <div className="max-w-[85%] sm:max-w-[80%] px-3 md:px-4 py-2 md:py-2.5 rounded-2xl rounded-bl-sm bg-bg-card border border-border text-xs md:text-sm relative">
                       {streamText ? (
                         <>
                           <MarkdownBubble content={streamText} />
@@ -631,8 +631,8 @@ export default function NanaChatPage() {
         </div>
 
         {/* Input */}
-        <div className="shrink-0 border-t border-border bg-bg-card p-4">
-          <div className="max-w-3xl mx-auto flex items-center gap-2">
+        <div className="shrink-0 border-t border-border bg-bg-card p-2.5 md:p-4">
+          <div className="max-w-3xl mx-auto flex items-center gap-1.5 md:gap-2">
             <input
               type="text"
               value={input}
@@ -640,7 +640,7 @@ export default function NanaChatPage() {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
               placeholder={labels.placeholder}
               disabled={status === 'generating'}
-              className="flex-1 px-4 py-2.5 rounded-full bg-bg-input border border-border focus:outline-none focus:border-accent text-sm disabled:opacity-50"
+              className="flex-1 px-3 md:px-4 py-2 md:py-2.5 rounded-full bg-bg-input border border-border focus:outline-none focus:border-accent text-xs md:text-sm disabled:opacity-50"
             />
             {status === 'generating' ? (
               <button onClick={stopGeneration} className="p-2.5 rounded-full bg-red-500 text-white hover:bg-red-600 transition">
