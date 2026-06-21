@@ -141,8 +141,8 @@ export default function AdminStoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-serif">Manage Stories</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold font-serif">Manage Stories</h1>
         <span className="text-sm text-gray-500">{filtered.length} stories</span>
       </div>
 
@@ -230,8 +230,8 @@ export default function AdminStoriesPage() {
       {/* Story list */}
       <div className="space-y-2">
         {paginated.map(s => (
-          <div key={s.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div key={s.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               {s.cover_url && !s.cover_url.startsWith('gradient:') ? (
                 <img src={s.cover_url} alt="" className="w-10 h-14 rounded object-cover shrink-0" />
               ) : (
