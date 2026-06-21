@@ -298,7 +298,7 @@ export async function getFrontendStats() {
     supabase.from('featured_slides').select('*', { count: 'exact', head: true }),
     supabase.from('forum_threads').select('*', { count: 'exact', head: true }),
     supabase.from('press_articles').select('*', { count: 'exact', head: true }),
-    supabase.from('ads').select('*', { count: 'exact', head: true }),
+    supabase.from('ad_requests').select('*', { count: 'exact', head: true }),
   ]);
   
   return {

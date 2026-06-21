@@ -124,7 +124,7 @@ export default function AdminModerationPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/30">
             <Shield className="h-6 w-6 text-red-500" />
@@ -134,7 +134,7 @@ export default function AdminModerationPage() {
             <p className="text-sm text-tx-muted">Lindungi platform dari konten tidak layak</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={runFullScan} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-bg-soft text-sm">
             <RefreshCw className="h-4 w-4" /> Scan Semua Cerita
           </button>

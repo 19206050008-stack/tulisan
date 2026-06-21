@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       {/* Stories Breakdown */}
       <section className="rounded-xl border border-border bg-bg-card p-5 space-y-3">
         <h2 className="text-lg font-bold font-serif flex items-center gap-2"><BookOpen className="h-4 w-4" /> Story Statistics</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatSmall label="Published" value={stats.publishedStories} color="text-green-500 bg-green-100 dark:bg-green-900/30" />
           <StatSmall label="Drafts" value={stats.draftStories} color="text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30" />
           <StatSmall label="Archived" value={stats.archivedStories} color="text-red-500 bg-red-100 dark:bg-red-900/30" />
