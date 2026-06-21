@@ -314,8 +314,8 @@ export default function AdminSettingsPage() {
               { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@channel' },
               { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/page' },
             ].map(s => (
-              <div key={s.key} className="flex items-center gap-3">
-                <label className="text-sm font-medium w-24 shrink-0">{s.label}</label>
+              <div key={s.key} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                <label className="text-sm font-medium sm:w-24 sm:shrink-0">{s.label}</label>
                 <input
                   type="url"
                   value={(socialLinks as any)[s.key]}

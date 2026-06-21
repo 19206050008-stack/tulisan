@@ -205,7 +205,7 @@ export function Navbar() {
                 </button>
 
                 {showChat && (
-                  <div className="absolute right-0 mt-2 w-80 bg-bg-card rounded-xl shadow-2xl border border-border overflow-hidden">
+                  <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 w-auto sm:w-80 bg-bg-card rounded-xl shadow-2xl border border-border overflow-hidden z-50">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                       <h3 className="font-semibold text-sm flex items-center gap-2">

@@ -143,7 +143,7 @@ export default function AdminStoriesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: stories.length, color: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30' },
           { label: 'Published', value: statusCounts.published, color: 'text-green-500 bg-green-100 dark:bg-green-900/30' },
@@ -252,7 +252,7 @@ export default function AdminStoriesPage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 flex-wrap sm:flex-nowrap">
               <button onClick={() => scanStoryContent(s.id, s.title, s.description || '', s.status)} className={`p-2 rounded-lg transition-colors text-blue-600 hover:bg-bg-soft`} title="Scan Content">
                 <Eye className="h-4 w-4" />
               </button>

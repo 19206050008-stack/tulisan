@@ -103,7 +103,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Total Users', value: users.length, icon: <UsersIcon className="h-4 w-4" />, color: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30' },
           { label: 'Admins', value: roleCounts.admin, icon: <Crown className="h-4 w-4" />, color: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' },
@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
       {/* User list */}
       <div className="space-y-2">
         {paginated.map(u => (
-          <div key={u.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors">
+          <div key={u.id} className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-border bg-bg-card group hover:border-accent/20 transition-colors flex-wrap gap-2 sm:flex-nowrap">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="relative w-10 h-10 shrink-0">
                 {u.frame_id && frameMap[u.frame_id] && (
