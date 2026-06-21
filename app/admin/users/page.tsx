@@ -49,8 +49,8 @@ export default function AdminUsersPage() {
 
   const deleteUser = async (userId: string) => {
     if (!supabase) return;
-    if (!confirm('Ban user ini? User tidak akan bisa login lagi.')) return;
-    const { error } = await supabase.from('profiles').update({ role: 'banned' }).eq('id', userId);
+    if (!confirm('Hapus user ini secara permanen? Semua data akan hilang dan tidak bisa dikembalikan.')) return;
+    const { error } = await supabase.rpc('delete_user_completely', { target_user_id: userId });
     if (error) { alert(`Gagal: ${error.message}`); return; }
     setUsers(users.filter(u => u.id !== userId));
   };
