@@ -42,14 +42,16 @@ export default function AdminUsersPage() {
     if (!supabase) return;
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
     if (!confirm(`Change role to ${newRole}?`)) return;
-    await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
   };
 
   const deleteUser = async (userId: string) => {
     if (!supabase) return;
-    if (!confirm('Delete this user and all their data? This action cannot be undone.')) return;
-    await supabase.from('profiles').delete().eq('id', userId);
+    if (!confirm('Ban user ini? User tidak akan bisa login lagi.')) return;
+    const { error } = await supabase.from('profiles').update({ role: 'banned' }).eq('id', userId);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setUsers(users.filter(u => u.id !== userId));
   };
 

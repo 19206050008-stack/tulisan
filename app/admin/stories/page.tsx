@@ -43,14 +43,16 @@ export default function AdminStoriesPage() {
   const toggleStatus = async (id: string, current: string) => {
     if (!supabase) return;
     const newStatus = current === 'published' ? 'archived' : 'published';
-    await supabase.from('stories').update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from('stories').update({ status: newStatus }).eq('id', id);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setStories(stories.map(s => s.id === id ? { ...s, status: newStatus } : s));
   };
 
   const deleteStory = async (id: string) => {
     if (!supabase) return;
     if (!confirm('Delete this story? This action cannot be undone.')) return;
-    await supabase.from('stories').delete().eq('id', id);
+    const { error } = await supabase.from('stories').delete().eq('id', id);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setStories(stories.filter(s => s.id !== id));
   };
 
@@ -78,13 +80,15 @@ export default function AdminStoriesPage() {
 
   const toggleEditorialPick = async (id: string, current: boolean) => {
     if (!supabase) return;
-    await supabase.from('stories').update({ is_editorial_pick: !current }).eq('id', id);
+    const { error } = await supabase.from('stories').update({ is_editorial_pick: !current }).eq('id', id);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setStories(stories.map(s => s.id === id ? { ...s, is_editorial_pick: !current } : s));
   };
 
   const toggleCompleted = async (id: string, current: boolean) => {
     if (!supabase) return;
-    await supabase.from('stories').update({ is_completed: !current }).eq('id', id);
+    const { error } = await supabase.from('stories').update({ is_completed: !current }).eq('id', id);
+    if (error) { alert(`Gagal: ${error.message}`); return; }
     setStories(stories.map(s => s.id === id ? { ...s, is_completed: !current } : s));
   };
 
