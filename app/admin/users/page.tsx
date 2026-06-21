@@ -191,11 +191,11 @@ export default function AdminUsersPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-sm truncate">{u.full_name || u.username}</p>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                  <span className="text-xs text-gray-500">@{u.username}</span>
+                  <span className="text-xs text-gray-500 truncate max-w-[120px]">@{u.username}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${u.role === 'admin' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
                     {u.role}
                   </span>
-                  {u.location && <span className="text-[10px] text-tx-muted">{u.location}</span>}
+                  {u.location && <span className="text-[10px] text-tx-muted truncate max-w-[80px]">{u.location}</span>}
                   <span className="text-[10px] text-tx-muted">Joined {formatDate(u.created_at)}</span>
                 </div>
                 {u.bio && <p className="text-[11px] text-tx-soft mt-0.5 line-clamp-1">{u.bio}</p>}

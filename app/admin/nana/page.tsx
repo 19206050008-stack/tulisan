@@ -84,18 +84,18 @@ export default function AdminNanaPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl border border-border bg-bg-card">
             <div className="flex items-center gap-2 text-tx-muted text-xs font-medium mb-1"><Users className="h-3.5 w-3.5" /> Total Users</div>
-            <p className="text-2xl font-bold">{stats.totalUsers}</p>
+            <p className="text-xl sm:text-2xl font-bold">{stats.totalUsers}</p>
           </div>
           <div className="p-4 rounded-xl border border-border bg-bg-card">
             <div className="flex items-center gap-2 text-tx-muted text-xs font-medium mb-1"><MessageSquare className="h-3.5 w-3.5" /> Total Chats</div>
-            <p className="text-2xl font-bold">{stats.totalChats}</p>
+            <p className="text-xl sm:text-2xl font-bold">{stats.totalChats}</p>
           </div>
           <div className="p-4 rounded-xl border border-border bg-bg-card">
             <div className="flex items-center gap-2 text-tx-muted text-xs font-medium mb-1"><Bot className="h-3.5 w-3.5" /> Total Messages</div>
-            <p className="text-2xl font-bold">{stats.totalMessages}</p>
+            <p className="text-xl sm:text-2xl font-bold">{stats.totalMessages}</p>
           </div>
         </div>
       )}
@@ -216,7 +216,7 @@ export default function AdminNanaPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{u.full_name || u.username}</p>
-                    <p className="text-[10px] text-tx-muted">@{u.username}</p>
+                    <p className="text-[10px] text-tx-muted truncate">@{u.username}</p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold">{u.chat_count} <span className="text-tx-muted font-normal text-xs">chat</span></p>

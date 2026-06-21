@@ -182,7 +182,7 @@ export default function AdminAdsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Pending', value: statusCounts.pending, color: 'text-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' },
           { label: 'Approved', value: statusCounts.approved, color: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30' },
@@ -220,7 +220,7 @@ export default function AdminAdsPage() {
               <div className="flex items-start justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-sm">{req.title}</h3>
+                    <h3 className="font-semibold text-sm truncate">{req.title}</h3>
                     <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${config.color}`}>
                       <Icon className="h-3 w-3" /> {req.status}
                     </span>
@@ -229,7 +229,7 @@ export default function AdminAdsPage() {
                     User ID: {req.user_id.substring(0, 8)}...
                     {req.story_id && <span> — Story ID: {req.story_id.substring(0, 8)}...</span>}
                   </p>
-                  {req.description && <p className="text-xs text-tx-muted mt-1">{req.description}</p>}
+                  {req.description && <p className="text-xs text-tx-muted mt-1 line-clamp-2">{req.description}</p>}
                 </div>
               </div>
 
