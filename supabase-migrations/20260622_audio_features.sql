@@ -28,33 +28,25 @@ CREATE INDEX idx_audio_requests_requested_by ON audio_requests(requested_by);
 CREATE INDEX idx_audio_requests_status_priority ON audio_requests(status, priority) WHERE status = 'pending';
 
 -- ========================================
--- audio_contents Table (Approved Audio Files)
+-- audio_contents Table (Approval Metadata Only)
+-- NOTE: Audio is generated client-side (Web Speech API), NOT stored.
+-- This table only tracks WHICH stories are approved for audio playback.
+-- No file storage needed = no 50MB limit issue.
 -- ========================================
 CREATE TABLE IF NOT EXISTS audio_contents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     story_id UUID NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
-    chapter_id UUID REFERENCES chapters(id) ON DELETE CASCADE,  -- null = entire story audio
+    chapter_id UUID REFERENCES chapters(id) ON DELETE CASCADE,  -- null = entire story
     audio_request_id UUID REFERENCES audio_requests(id) ON DELETE SET NULL,
-    storage_path TEXT NOT NULL,
-    file_url TEXT NOT NULL,
-    format TEXT NOT NULL DEFAULT 'mp3' CHECK (format IN ('mp3', 'aac', 'opus', 'wav')),
-    bitrate INTEGER DEFAULT 128,  -- kbps
-    sample_rate INTEGER DEFAULT 44100,  -- Hz
-    duration_seconds INTEGER NOT NULL,
-    file_size_bytes BIGINT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'uploading' CHECK (status IN ('uploading', 'ready', 'failed', 'expired')),
-    tts_provider TEXT,
-    tts_model TEXT,
-    tts_voice_id TEXT,
-    transcription TEXT,
-    waveform_data JSONB,
+    status TEXT NOT NULL DEFAULT 'ready' CHECK (status IN ('ready', 'expired')),
+    voice_style TEXT DEFAULT 'narrative',
+    approved_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(story_id, chapter_id)
 );
 
 CREATE INDEX idx_audio_contents_story_id ON audio_contents(story_id);
-CREATE INDEX idx_audio_contents_chapter_id ON audio_contents(chapter_id);
-CREATE INDEX idx_audio_contents_storage_path ON audio_contents(storage_path);
 CREATE INDEX idx_audio_contents_status ON audio_contents(status) WHERE status = 'ready';
 
 -- ========================================
@@ -83,11 +75,11 @@ ALTER TABLE stories ADD COLUMN IF NOT EXISTS audio_approval_needed BOOLEAN DEFAU
 UPDATE stories SET audio_approval_needed = FALSE WHERE is_completed = TRUE AND author_id IS NOT NULL;
 
 -- ========================================
--- Storage Bucket for Audio Files
+-- NO STORAGE BUCKET NEEDED
+-- Audio is generated client-side via Web Speech API.
+-- Playback & download happen in the browser (0 bytes server storage).
+-- This avoids the 50MB Supabase storage limit entirely.
 -- ========================================
--- Run this manually or add to your deployment process:
--- INSERT INTO storage.buckets (id, name, public) VALUES ('audio', 'audio', false);
--- Note: You'll need to configure RLS policies for this bucket separately
 
 -- ========================================
 -- Sample Data (Optional - for testing)
