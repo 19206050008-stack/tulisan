@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { supabase, signOut, getConversations, getUnreadMessageCount } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Bell, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Sparkles, Menu, X } from 'lucide-react';
+import { Moon, Sun, Bell, UserCircle, PenTool, LayoutDashboard, LogIn, LogOut, BookOpen, List, Globe, MessageCircle, Megaphone, Sparkles, Menu, X, Music } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { translations } from '@/lib/i18n';
 import { getProfileFrames } from '@/lib/supabase';
@@ -363,6 +363,9 @@ export function Navbar() {
                   </Link>
                   <Link href="/library" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
                     <BookOpen className="h-4 w-4" /> {t.library}
+                  </Link>
+                  <Link href="/audio" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
+                    <Music className="h-4 w-4" /> {lang === 'en' ? 'Audio Stories' : 'Audio Cerita'}
                   </Link>
                   <Link href="/reading-lists" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-bg-soft" onClick={() => setShowMenu(false)}>
                     <List className="h-4 w-4" /> {t.readingLists}
