@@ -551,59 +551,63 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                     {sec.items.map((story, i) => {
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
-                      const cardProgress = isCurrent ? progress : 0;
+                      const cardProgress = isCurrent ? progress : 35;
+                      const barHeights = [6,11,16,22,14,8,18,24,12,20,16,9,22,18,7,14,24,16,10,6,20,12,17,9];
                       return (
                         <div
                           key={story.id}
-                          className={`rounded-3xl border p-4 md:p-5 transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border bg-bg-card hover:border-accent/40'}`}
+                          className={`rounded-[28px] border p-5 transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border bg-bg-card hover:border-accent/40'}`}
                         >
                           {/* Tag (Introducing) */}
-                          <p className="text-[11px] font-semibold text-accent mb-1.5">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
+                          <p className="text-[12px] font-semibold text-accent mb-1.5">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
                           {/* Number (New Recorder) */}
-                          <p className="text-3xl md:text-4xl font-bold leading-none mb-2">#{i + 1}</p>
+                          <p className="text-[40px] font-extrabold leading-none tracking-tight mb-2.5">#{i + 1}</p>
                           {/* Title (description) */}
-                          <p className="text-xs md:text-sm text-tx-soft leading-snug line-clamp-2 min-h-[2.25rem]">{story.title}</p>
+                          <p className="text-sm text-tx-soft leading-snug line-clamp-2 min-h-[2.5rem]">{story.title}</p>
                           {/* Author */}
-                          <p className="text-[10px] text-tx-muted mt-1 mb-3 truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
+                          <p className="text-[11px] text-tx-muted mt-1 mb-4 truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
                           {/* Timestamp */}
-                          <div className="flex justify-center mb-1">
-                            <span className="text-[11px] font-mono text-accent">{isCurrent ? `${sentenceIdx + 1}/${totalSentences}` : '—'}</span>
-                          </div>
+                          {isCurrent && (
+                            <p className="text-[12px] font-mono text-accent text-center mb-1 tabular-nums">{sentenceIdx + 1}/{totalSentences}</p>
+                          )}
 
-                          {/* Waveform box */}
-                          <div className="relative h-9 rounded-xl bg-bg-input overflow-hidden mb-3 px-2 flex items-center">
-                            <div className="relative w-full h-5">
-                              <div className="absolute inset-0">
-                                <AudioVisualizer audioElement={null} barCount={28} barColor="#E65A28" barGap={1} active={isActive} />
-                              </div>
-                              {isCurrent && (
-                                <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${cardProgress}%` }} />
-                              )}
+                          {/* Waveform box — static bars + flat line + playhead */}
+                          <div className="relative bg-bg-input rounded-2xl h-12 px-3.5 flex items-center mb-3.5 overflow-hidden">
+                            <div className="flex items-center gap-[2px] h-6 shrink-0">
+                              {barHeights.map((h, bi) => (
+                                <span
+                                  key={bi}
+                                  className={isActive ? 'bg-accent' : 'bg-tx-muted'}
+                                  style={{ width: '2px', height: `${h}px`, borderRadius: '1px', opacity: isActive ? 1 : 0.55 }}
+                                />
+                              ))}
                             </div>
+                            <div className="flex-1 h-px bg-border ml-[2px]" />
+                            <div className="absolute top-2 bottom-2 w-0.5 bg-accent transition-all duration-300" style={{ left: `${Math.min(cardProgress, 90)}%` }} />
                           </div>
 
                           {/* Controls pill */}
-                          <div className="flex items-center justify-between rounded-full bg-bg-input/60 px-2 py-1.5">
-                            <div className="flex items-center gap-1.5">
-                              <button onClick={(e) => { e.stopPropagation(); selectAndPlay(story); }} className="p-1.5 rounded-full bg-bg-card border border-border hover:border-accent/40 transition-colors" title="Play">
+                          <div className="flex items-center justify-between bg-bg-input rounded-full px-3 py-2">
+                            <div className="flex items-center gap-2.5">
+                              <button onClick={(e) => { e.stopPropagation(); selectAndPlay(story); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-bg-card border border-border hover:border-accent/40 transition-colors" title="Play">
                                 <Play className="h-3.5 w-3.5" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent) togglePlayPause(); else selectAndPlay(story); }} className={`p-1.5 rounded-full transition-colors ${isActive ? 'bg-accent text-white' : 'bg-bg-card border border-border hover:border-accent/40'}`} title={isActive ? 'Pause' : 'Resume'}>
+                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent) togglePlayPause(); else selectAndPlay(story); }} className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-accent text-white' : 'bg-bg-card border border-border hover:border-accent/40'}`} title={isActive ? 'Pause' : 'Resume'}>
                                 {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="p-1.5 rounded-full bg-bg-card border border-border hover:border-red-400 transition-colors" title="Stop">
+                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-bg-card border border-border hover:border-red-400 transition-colors" title="Stop">
                                 <Square className="h-3 w-3" />
                               </button>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-3">
                               {user?.id && (
                                 <>
-                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className={`p-1.5 rounded-full transition-colors ${isCurrent && liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
-                                    <Heart className={`h-3.5 w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
+                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className={`transition-colors ${isCurrent && liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
+                                    <Heart className={`h-4 w-4 ${isCurrent && liked ? 'fill-current' : ''}`} />
                                   </button>
-                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className={`p-1.5 rounded-full transition-colors ${isCurrent && saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
-                                    <Bookmark className={`h-3.5 w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
+                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className={`transition-colors ${isCurrent && saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
+                                    <Bookmark className={`h-4 w-4 ${isCurrent && saved ? 'fill-current' : ''}`} />
                                   </button>
                                 </>
                               )}
