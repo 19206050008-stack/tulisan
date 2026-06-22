@@ -29,6 +29,14 @@ export async function getSavedStories(userId: string) {
   return data || [];
 }
 
+// Bulk fetch all story ids the user has liked (voted)
+export async function getLikedStoryIds(userId: string): Promise<string[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from('votes').select('story_id').eq('user_id', userId);
+  if (error) { console.error('getLikedStoryIds error:', error.message); return []; }
+  return (data || []).map((r: { story_id: string }) => r.story_id).filter(Boolean);
+}
+
 // Reading Lists
 export async function createReadingList(userId: string, name: string, description?: string) {
   if (!supabase) throw new Error('Supabase not configured');

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
-import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
+import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved, getLikedStoryIds } from '@/lib/supabase';
 import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 import { preprocessTextForTTS, getIntonationForSentence } from '@/lib/tts-text-preprocessor';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
@@ -28,6 +28,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [activeGenre, setActiveGenre] = useState('All');
   const [tab, setTab] = useState<'all' | 'saved'>('all');
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
   // Player state
   const [current, setCurrent] = useState<AudioStory | null>(null);
@@ -93,6 +94,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         const data = await getSavedStories(user.id);
         const ids = new Set<string>((data || []).map((s: any) => s.story_id || s.id || s.stories?.id).filter(Boolean));
         setSavedIds(ids);
+      } catch {}
+      try {
+        const ids = await getLikedStoryIds(user.id);
+        setLikedIds(new Set<string>(ids));
       } catch {}
     })();
   }, [user?.id]);
@@ -324,12 +329,14 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     if (!user?.id || !current) return;
     const result = await toggleLike(user.id, current.id);
     setLiked(result);
+    setLikedIds(prev => { const n = new Set(prev); if (result) n.add(current.id); else n.delete(current.id); return n; });
   };
 
   const handleSave = async () => {
     if (!user?.id || !current) return;
     const result = await toggleSave(user.id, current.id);
     setSaved(result);
+    setSavedIds(prev => { const n = new Set(prev); if (result) n.add(current.id); else n.delete(current.id); return n; });
   };
 
   useEffect(() => {
@@ -682,11 +689,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                             <div className="flex items-center gap-1 lg:gap-1.5">
                               {user?.id && (
                                 <>
-                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className="text-white/80 hover:text-white transition-colors" title="Like">
-                                    <Heart className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
+                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); setLikedIds(prev => { const n = new Set(prev); if (r) n.add(story.id); else n.delete(story.id); return n; }); if (isCurrent) setLiked(r); }} className="text-white/80 hover:text-white transition-colors" title="Like">
+                                    <Heart className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${likedIds.has(story.id) ? 'fill-current' : ''}`} />
                                   </button>
-                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className="text-white/80 hover:text-white transition-colors" title="Save">
-                                    <Bookmark className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
+                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); setSavedIds(prev => { const n = new Set(prev); if (r) n.add(story.id); else n.delete(story.id); return n; }); if (isCurrent) setSaved(r); }} className="text-white/80 hover:text-white transition-colors" title="Save">
+                                    <Bookmark className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${savedIds.has(story.id) ? 'fill-current' : ''}`} />
                                   </button>
                                 </>
                               )}
