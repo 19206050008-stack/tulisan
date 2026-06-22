@@ -84,6 +84,51 @@ export default function AdminAudioPage() {
     }
   };
 
+  const handleDownload = async (story: AudioStory) => {
+    try {
+      const { getChapters } = await import('@/lib/supabase');
+      const { generateAndDownloadAudio, buildAudioFilename } = await import('@/lib/audio-download');
+
+      const author = story.author.full_name || story.author.username || 'anonim';
+      const chapters = await getChapters(story.id);
+
+      if (!chapters || chapters.length === 0) {
+        alert('Cerita tidak punya konten');
+        return;
+      }
+
+      const decode = (raw: any): string => {
+        const s = typeof raw === 'string' ? raw : JSON.stringify(raw || '');
+        return s.replace(/<[^>]+>/g, ' ').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+      };
+
+      // Single chapter (non-chaptered story) -> judul_oleh.mp3
+      if (chapters.length === 1) {
+        alert('Memproses audio... File akan otomatis terunduh saat selesai.');
+        await generateAndDownloadAudio({
+          text: decode(chapters[0].content),
+          filename: buildAudioFilename(story.title, author),
+          lang: 'id',
+        });
+      } else {
+        // Multi-chapter -> per batch: judul_bab_oleh.mp3 each
+        alert(`Cerita ini punya ${chapters.length} bab. Setiap bab akan diunduh terpisah.`);
+        for (let i = 0; i < chapters.length; i++) {
+          const ch = chapters[i];
+          const chapterTitle = ch.title || `Bab ${ch.chapter_number || i + 1}`;
+          await generateAndDownloadAudio({
+            text: decode(ch.content),
+            filename: buildAudioFilename(story.title, author, chapterTitle),
+            lang: 'id',
+            chapterTitle,
+          });
+        }
+      }
+    } catch (err) {
+      alert('Gagal mengunduh: ' + (err as Error).message);
+    }
+  };
+
   // Filter and sort stories
   const filteredStories = stories.filter(s => {
     if (filterStatus !== 'all' && s.audio_status !== filterStatus) return false;
@@ -207,6 +252,7 @@ export default function AdminAudioPage() {
               onApprove={handleApprove}
               onReject={handleReject}
               onDelete={handleDeleteAudio}
+              onDownload={handleDownload}
             />
           ))}
           {filteredStories.length > perPage && (
@@ -252,11 +298,12 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 }
 
 // Audio Story Card Component
-function AudioStoryCard({ story, onApprove, onReject, onDelete }: {
+function AudioStoryCard({ story, onApprove, onReject, onDelete, onDownload }: {
   story: AudioStory;
   onApprove: (id: string) => void;
   onReject: (id: string, reason: string) => void;
   onDelete: (storyId: string, chapterId?: string) => void;
+  onDownload: (story: AudioStory) => void;
 }) {
   const [showRejectReason, setShowRejectReason] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -320,13 +367,22 @@ function AudioStoryCard({ story, onApprove, onReject, onDelete }: {
           )}
           
           {(story.audio_status === 'approved' || story.audio_status === 'completed') && (
-            <button
-              onClick={() => onDelete(story.id, story.chapterId)}
-              className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
-              title="Hapus file audio"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <>
+              <button
+                onClick={() => onDownload(story)}
+                className="p-2 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                title="Unduh audio (MP3)"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => onDelete(story.id, story.chapterId)}
+                className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                title="Hapus file audio"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
           )}
         </div>
       </div>
