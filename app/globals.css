@@ -360,38 +360,51 @@ textarea::placeholder {
   max-width: 100% !important;
 }
 
-/* NEW: Div-based tiny table without ANY borders */
+/* Div-based tiny table with subtle borders */
 .nana-tiny-table {
   display: flex !important;
   flex-direction: column !important;
-  gap: 0.5rem !important;
-  margin: 1em 0 !important;
+  gap: 0 !important;
+  margin: 0.5em 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
 }
 
 .nana-tt-head,
 .nana-tt-row {
   display: flex !important;
   align-items: center !important;
-  gap: 1rem !important;
+  gap: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.nana-tt-row:last-child {
+  border-bottom: none !important;
 }
 
 .nana-tt-cell {
-  padding: 0.375rem 0.625rem !important;
-  font-size: 0.875rem !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.7rem !important;
   color: var(--tx) !important;
   background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  min-width: 80px !important;
-  max-width: 200px !important;
+  border-right: 1px solid var(--border) !important;
+  min-width: 60px !important;
+  max-width: 180px !important;
   word-wrap: break-word !important;
   white-space: normal !important;
+  flex: 1 !important;
+}
+
+.nana-tt-cell:last-child {
+  border-right: none !important;
 }
 
 .nana-tt-head > .nana-tt-cell {
   font-weight: 600 !important;
+  font-size: 0.65rem !important;
   color: var(--tx-soft) !important;
+  background: var(--bg-soft) !important;
 }
 
 /* Keep all other markdown styles */
@@ -414,43 +427,53 @@ textarea::placeholder {
 .ai-markdown table {
   display: block;
   overflow-x: auto;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
+  font-size: 0.75rem;
+  border-collapse: collapse;
+  margin: 0.5em 0;
 }
 
-/* Remove ALL table borders and separators - make them completely invisible */
 .ai-markdown table,
 .ai-markdown th,
 .ai-markdown td,
-.ai-markdown tr,
-.nana-table,
-.nana-table th,
-.nana-table td,
-.nana-table tr,
-.nana-table thead,
-.nana-table tbody {
-  border: none !important;
+.ai-markdown tr {
+  border: 1px solid var(--border) !important;
   background: transparent !important;
-  padding: 6px 12px;
+  padding: 4px 8px;
   margin: 0;
 }
 
-.ai-markdown table tr,
-.nana-table tr {
-  border-bottom: none !important;
+.ai-markdown table tr {
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .ai-markdown th {
   font-weight: 600;
+  font-size: 0.7rem;
   color: var(--tx-soft) !important;
   text-align: left;
   white-space: nowrap;
+  background: var(--bg-soft) !important;
 }
 
 .ai-markdown td {
   color: var(--tx) !important;
   text-align: left;
   vertical-align: top;
+  font-size: 0.7rem;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .ai-markdown table {
+    font-size: 0.65rem;
+  }
+  .ai-markdown th,
+  .ai-markdown td {
+    padding: 3px 5px;
+    font-size: 0.65rem;
+  }
 }
 
 /* Ensure all text elements are visible */

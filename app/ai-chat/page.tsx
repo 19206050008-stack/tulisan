@@ -556,7 +556,7 @@ export default function NanaChatPage() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+          <div className="mx-auto px-3 md:px-4 py-6 space-y-4">
             {/* Welcome screen */}
             {messages.length === 0 && status !== 'generating' && (
               <div className="text-center py-8 md:py-12 space-y-4 md:space-y-5">
@@ -632,7 +632,7 @@ export default function NanaChatPage() {
 
         {/* Input */}
         <div className="shrink-0 border-t border-border bg-bg-card p-2.5 md:p-4">
-          <div className="max-w-3xl mx-auto flex items-center gap-1.5 md:gap-2">
+          <div className="mx-auto flex items-center gap-1.5 md:gap-2 px-3 md:px-4">
             <input
               type="text"
               value={input}
