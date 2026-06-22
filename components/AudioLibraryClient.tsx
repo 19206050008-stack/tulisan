@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
-import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star } from 'lucide-react';
 
 interface AudioStory {
   id: string;
@@ -29,6 +29,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const { user, lang } = useStore();
   const [search, setSearch] = useState('');
   const [activeGenre, setActiveGenre] = useState('All');
+  const [tab, setTab] = useState<'all' | 'saved'>('all');
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
   // Player state
   const [current, setCurrent] = useState<AudioStory | null>(null);
@@ -39,16 +41,34 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [totalSentences, setTotalSentences] = useState(0);
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sleepMin, setSleepMin] = useState(0);
+  const [sleepRemaining, setSleepRemaining] = useState(0);
+  const [showSleep, setShowSleep] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const abortRef = useRef(false);
   const pausedRef = useRef(false);
+  const currentIdRef = useRef<string | null>(null);
+
+  // Load saved story ids for "Saved" tab
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      try {
+        const { getSavedStories } = await import('@/lib/supabase');
+        const data = await getSavedStories(user.id);
+        const ids = new Set<string>((data || []).map((s: any) => s.story_id || s.id || s.stories?.id).filter(Boolean));
+        setSavedIds(ids);
+      } catch {}
+    })();
+  }, [user?.id]);
 
   const genres = ['All', ...Array.from(new Set(stories.map(s => s.category).filter(Boolean)))] as string[];
 
   const filtered = stories.filter(s => {
+    if (tab === 'saved' && !savedIds.has(s.id)) return false;
     if (activeGenre !== 'All' && s.category !== activeGenre) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -94,6 +114,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     for (let i = startIdx; i < sentencesRef.current.length; i++) {
       if (abortRef.current) break;
       setSentenceIdx(i);
+      // Save resume position per story
+      if (currentIdRef.current) {
+        try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
+      }
       const sentence = sentencesRef.current[i];
       setLoading(true);
       const url = await fetchAudio(sentence);
@@ -117,6 +141,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       if (!abortRef.current && i + 1 < sentencesRef.current.length) {
         await new Promise(r => setTimeout(r, 250));
       }
+    }
+    // Finished fully — clear resume position
+    if (!abortRef.current && currentIdRef.current) {
+      try { localStorage.removeItem(`audio_pos_${currentIdRef.current}`); } catch {}
     }
     setPlaying(false);
     setSentenceIdx(0);
@@ -152,6 +180,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     cacheRef.current.clear();
 
     setCurrent(story);
+    currentIdRef.current = story.id;
     setPaused(false);
     setSentenceIdx(0);
     setLoading(true);
@@ -165,7 +194,17 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     const ok = await loadStoryContent(story);
     setLoading(false);
     if (ok) {
-      setTimeout(() => playSequence(0), 100);
+      // Resume from saved position if available
+      let startAt = 0;
+      try {
+        const saved = localStorage.getItem(`audio_pos_${story.id}`);
+        if (saved) {
+          const idx = parseInt(saved, 10);
+          if (!isNaN(idx) && idx > 0 && idx < sentencesRef.current.length) startAt = idx;
+        }
+      } catch {}
+      setSentenceIdx(startAt);
+      setTimeout(() => playSequence(startAt), 100);
     }
   }, [user, loadStoryContent, playSequence]);
 
@@ -228,7 +267,67 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     };
   }, []);
 
+  // Sleep timer countdown
+  useEffect(() => {
+    if (sleepRemaining <= 0) return;
+    const t = setInterval(() => {
+      setSleepRemaining(prev => {
+        if (prev <= 1) {
+          // Time's up — stop playback
+          abortRef.current = true;
+          pausedRef.current = false;
+          audioRef.current?.pause();
+          speechSynthesis.cancel();
+          setPlaying(false);
+          setPaused(false);
+          setSleepMin(0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [sleepRemaining]);
+
+  const startSleepTimer = (minutes: number) => {
+    setSleepMin(minutes);
+    setSleepRemaining(minutes * 60);
+  };
+
+  const formatSleep = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   const progress = totalSentences > 0 ? Math.round((sentenceIdx / totalSentences) * 100) : 0;
+
+  // Build SoundCloud-style sections (5 items each). Derived from available metrics.
+  const base = tab === 'saved' ? stories.filter(s => savedIds.has(s.id)) : stories;
+  const searched = base.filter(s => {
+    if (activeGenre !== 'All' && s.category !== activeGenre) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return s.title.toLowerCase().includes(q) ||
+        (s.profiles?.full_name || '').toLowerCase().includes(q) ||
+        (s.category || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const byReads = [...searched].sort((a, b) => (b.reads_count || 0) - (a.reads_count || 0));
+  const byLikes = [...searched].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+  const byNewest = [...searched].sort((a, b) => String(b.id).localeCompare(String(a.id)));
+  const byScore = [...searched].sort((a, b) => ((b.reads_count || 0) + (b.likes_count || 0) * 2) - ((a.reads_count || 0) + (a.likes_count || 0) * 2));
+
+  const isSearching = search.trim().length > 0 || activeGenre !== 'All' || tab === 'saved';
+
+  const sections = [
+    { key: 'picks', title: lang === 'en' ? "Listener's Picks" : 'Pilihan Pendengar', icon: Star, items: byLikes.slice(0, 5) },
+    { key: 'monthly', title: lang === 'en' ? 'Top This Month' : 'Pilihan Bulan Ini', icon: Calendar, items: byScore.slice(0, 5) },
+    { key: 'weekly', title: lang === 'en' ? 'Top This Week' : 'Pilihan Minggu Ini', icon: TrendingUp, items: byNewest.slice(0, 5) },
+    { key: 'most', title: lang === 'en' ? 'Most Listened' : 'Paling Banyak Didengar', icon: Flame, items: byReads.slice(0, 5) },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto pb-32">
@@ -257,6 +356,22 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             className="w-full pl-9 pr-4 py-2.5 bg-bg-input rounded-xl text-sm focus:outline-none border border-border focus:border-accent"
           />
         </div>
+        {user?.id && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTab('all')}
+              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${tab === 'all' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
+            >
+              {lang === 'en' ? 'All' : 'Semua'}
+            </button>
+            <button
+              onClick={() => setTab('saved')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${tab === 'saved' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
+            >
+              <Bookmark className="h-3 w-3" /> {lang === 'en' ? 'Saved' : 'Tersimpan'}
+            </button>
+          </div>
+        )}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {genres.map(g => (
             <button
@@ -270,35 +385,77 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       </div>
 
-      {/* Story grid */}
-      {filtered.length === 0 ? (
+      {/* Sections (SoundCloud-style) */}
+      {searched.length === 0 ? (
         <div className="text-center py-16 text-tx-muted">
           <Music className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm">{lang === 'en' ? 'No stories found' : 'Tidak ada cerita'}</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-          {filtered.map(story => {
+      ) : isSearching ? (
+        <div className="rounded-2xl border border-border bg-bg-card divide-y divide-border overflow-hidden">
+          {searched.map((story, i) => {
             const isCurrent = current?.id === story.id;
+            const isActive = isCurrent && playing && !paused;
             return (
-              <div
+              <button
                 key={story.id}
-                className={`group relative rounded-xl overflow-hidden border transition-all cursor-pointer ${isCurrent ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/40'}`}
                 onClick={() => selectAndPlay(story)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
               >
-                <div className="aspect-[2/3] relative">
-                  <StoryCover coverUrl={story.cover_url} title={story.title} category={story.category} />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <div className={`p-3 rounded-full bg-accent text-white shadow-lg transition-all ${isCurrent && playing && !paused ? 'opacity-100 scale-100' : 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100'}`}>
-                      {isCurrent && playing && !paused ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                    </div>
+                <span className="w-5 text-center text-xs text-tx-muted shrink-0">{i + 1}</span>
+                <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
+                  {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium truncate">{story.title}</span>
+                  <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
+                </span>
+                <span className="flex items-center gap-2 text-[10px] text-tx-muted shrink-0">
+                  <span className="flex items-center gap-0.5"><Volume2 className="h-3 w-3" />{story.reads_count || 0}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {sections.map(sec => {
+            const SecIcon = sec.icon;
+            if (sec.items.length === 0) return null;
+            return (
+              <section key={sec.key} className="rounded-2xl border border-border bg-bg-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="p-1.5 rounded-lg bg-accent/10 text-accent shrink-0"><SecIcon className="h-4 w-4" /></span>
+                    <h2 className="text-sm md:text-base font-bold font-serif truncate">{sec.title}</h2>
                   </div>
+                  <Link href="/browse" className="text-[10px] md:text-xs font-medium text-tx-muted hover:text-accent flex items-center shrink-0">
+                    {lang === 'en' ? 'More' : 'Lainnya'} <ChevronRight className="h-3 w-3" />
+                  </Link>
                 </div>
-                <div className="p-2">
-                  <p className="text-xs font-medium truncate">{story.title}</p>
-                  <p className="text-[10px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
+                <div className="divide-y divide-border">
+                  {sec.items.map((story, i) => {
+                    const isCurrent = current?.id === story.id;
+                    const isActive = isCurrent && playing && !paused;
+                    return (
+                      <button
+                        key={story.id}
+                        onClick={() => selectAndPlay(story)}
+                        className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
+                      >
+                        <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
+                        <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
+                          {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium truncate">{story.title}</span>
+                          <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
@@ -311,8 +468,17 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
           <div className="max-w-6xl mx-auto px-3 md:px-4 py-2.5 flex items-center gap-3">
-            <div className="w-10 h-14 md:w-11 md:h-16 rounded overflow-hidden shrink-0">
-              <StoryCover coverUrl={current.cover_url} title={current.title} category={current.category} />
+            <div className="flex items-end gap-0.5 h-10 w-10 md:w-11 shrink-0 justify-center">
+              {[0, 1, 2, 3, 4].map(i => (
+                <span
+                  key={i}
+                  className="w-1 rounded-full bg-accent"
+                  style={{
+                    height: playing && !paused ? undefined : '20%',
+                    animation: playing && !paused ? `eqbar 0.9s ease-in-out ${i * 0.12}s infinite` : 'none',
+                  }}
+                />
+              ))}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
@@ -340,6 +506,29 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
               <button onClick={() => skipSentence(1)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft transition-colors hidden sm:block" title="Next">
                 <SkipForward className="h-4 w-4" />
               </button>
+              <div className="relative">
+                <button onClick={() => setShowSleep(!showSleep)} className={`p-1.5 md:p-2 rounded-full transition-colors ${sleepRemaining > 0 ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Sleep timer">
+                  <Moon className="h-4 w-4" />
+                </button>
+                {sleepRemaining > 0 && (
+                  <span className="absolute -top-1 -right-1 text-[8px] bg-accent text-white rounded-full px-1 leading-tight">{formatSleep(sleepRemaining)}</span>
+                )}
+                {showSleep && (
+                  <div className="absolute bottom-full right-0 mb-2 p-2 rounded-xl bg-bg-card border border-border shadow-xl w-32 space-y-1">
+                    <p className="text-[10px] font-medium text-tx-muted px-2 py-1">{lang === 'en' ? 'Sleep timer' : 'Timer tidur'}</p>
+                    {[5, 10, 15, 30, 60].map(m => (
+                      <button key={m} onClick={() => { startSleepTimer(m); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-bg-soft transition-colors">
+                        {m} {lang === 'en' ? 'min' : 'menit'}
+                      </button>
+                    ))}
+                    {sleepRemaining > 0 && (
+                      <button onClick={() => { setSleepRemaining(0); setSleepMin(0); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        {lang === 'en' ? 'Cancel' : 'Batalkan'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               <button onClick={stopPlayback} className="p-1.5 md:p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Stop">
                 <X className="h-4 w-4" />
               </button>

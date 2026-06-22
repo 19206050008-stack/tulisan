@@ -494,3 +494,9 @@ textarea::placeholder {
 /* Hide scrollbar for horizontal carousels */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Audio equalizer visualizer bars */
+@keyframes eqbar {
+  0%, 100% { height: 20%; }
+  50% { height: 90%; }
+}
