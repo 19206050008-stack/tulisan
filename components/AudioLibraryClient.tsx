@@ -577,12 +577,18 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           {/* Author */}
                           <p className="text-[8px] lg:text-[9px] mt-0.5 mb-2 lg:mb-2.5 truncate text-white/60">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
-                          {/* Waveform box — same AudioVisualizer equalizer as elsewhere */}
+                          {/* Waveform box — equalizer on desktop, simple line loader on mobile */}
                           <div className="relative bg-black/25 rounded-lg h-6 lg:h-8 px-1.5 lg:px-2 flex items-center mb-2 lg:mb-2.5 overflow-hidden">
-                            <div className="absolute inset-0 px-1.5 lg:px-2 py-1 lg:py-1.5">
+                            {/* Desktop: equalizer */}
+                            <div className="hidden lg:block absolute inset-0 px-2 py-1.5">
                               <AudioVisualizer audioElement={null} barCount={20} barColor={isActive ? '#ffffff' : '#d1d5db'} barGap={1} active={isActive} />
                             </div>
-                            <div className="absolute top-1 bottom-1 lg:top-1.5 lg:bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
+                            {/* Mobile: line loader */}
+                            <div className="lg:hidden relative w-full h-0.5 rounded-full bg-white/25">
+                              <div className="absolute inset-y-0 left-0 rounded-full bg-white transition-all duration-300" style={{ width: `${cardProgress}%` }} />
+                            </div>
+                            {/* Playhead (desktop equalizer) */}
+                            <div className="hidden lg:block absolute top-1.5 bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>
 
                           {/* Controls — Play, Pause, Stop + Like, Save */}
