@@ -10,12 +10,12 @@ interface TTSPlayerProps {
 
 const VOICES = {
   id: [
-    { id: 'id-ID-GadisNeural', name: 'Gadis (Wanita)' },
-    { id: 'id-ID-ArdiNeural', name: 'Ardi (Pria)' },
+    { id: 'id-ID-GadisNeural', name: 'Wanita' },
+    { id: 'id-ID-ArdiNeural', name: 'Pria' },
   ],
   en: [
-    { id: 'en-US-JennyNeural', name: 'Jenny (Female)' },
-    { id: 'en-US-GuyNeural', name: 'Guy (Male)' },
+    { id: 'en-US-JennyNeural', name: 'Wanita' },
+    { id: 'en-US-GuyNeural', name: 'Pria' },
   ],
 };
 

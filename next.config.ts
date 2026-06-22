@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // ws package must run on Node, not be bundled by webpack
+  serverExternalPackages: ['ws'],
+
   // Bundle size optimization - tree-shake heavy packages
   experimental: {
     optimizePackageImports: [
