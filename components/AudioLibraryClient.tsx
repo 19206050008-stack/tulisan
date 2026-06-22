@@ -572,7 +572,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           {/* Waveform box — same AudioVisualizer equalizer as elsewhere */}
                           <div className="relative bg-black/25 rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
                             <div className="absolute inset-0 px-2 py-1.5">
-                              <AudioVisualizer audioElement={null} barCount={20} barColor="#ffffff" barGap={1} active={isActive} />
+                              <AudioVisualizer audioElement={null} barCount={20} barColor={isActive ? '#ffffff' : '#d1d5db'} barGap={1} active={isActive} />
                             </div>
                             <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>

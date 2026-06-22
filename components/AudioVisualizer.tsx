@@ -150,8 +150,9 @@ export function AudioVisualizer({
   // Connect to audio element when it changes
   useEffect(() => {
     if (!active) {
-      drawIdle();
-      return;
+      // Defer so the canvas has been sized by the resize effect before drawing
+      rafRef.current = requestAnimationFrame(() => drawIdle());
+      return () => cancelAnimationFrame(rafRef.current);
     }
 
     // No audio element — use animated fallback
@@ -214,12 +215,14 @@ export function AudioVisualizer({
       canvas.height = rect.height * window.devicePixelRatio;
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      // Redraw idle bars after sizing when not actively animating
+      if (!active) drawIdle();
     };
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, []);
+  }, [active, drawIdle]);
 
   return (
     <canvas
