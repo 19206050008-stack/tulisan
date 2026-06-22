@@ -7,6 +7,7 @@ import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
 import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
+import { preprocessTextForTTS, getIntonationForSentence } from '@/lib/tts-text-preprocessor';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
 
@@ -19,12 +20,6 @@ interface AudioStory {
   reads_count?: number;
   likes_count?: number;
   profiles?: { username?: string; full_name?: string };
-}
-
-function splitIntoSentences(text: string): string[] {
-  const cleaned = (text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
-  return sentences.map(s => s.trim()).filter(s => s.length > 2);
 }
 
 export default function AudioLibraryClient({ stories }: { stories: AudioStory[] }) {
@@ -50,6 +45,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [gender, setGender] = useState<TTSGender>('wanita');
   const [speed, setSpeed] = useState(1);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [currentWord, setCurrentWord] = useState('');
+  const [currentSentence, setCurrentSentence] = useState('');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
@@ -129,12 +126,32 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(sentence);
       u.lang = lang === 'id' ? 'id-ID' : 'en-US';
-      u.rate = speedRef.current;
-      const { voice, pitch } = pickVoiceWithPitch(genderRef.current, lang as 'id' | 'en');
+      
+      // Get base voice and pitch from gender preference
+      const { voice, pitch: basePitch } = pickVoiceWithPitch(genderRef.current, lang as 'id' | 'en');
       if (voice) u.voice = voice;
-      u.pitch = pitch;
-      u.onend = () => resolve();
-      u.onerror = () => resolve();
+      
+      // Apply intonation based on sentence punctuation
+      const intonation = getIntonationForSentence(sentence);
+      u.pitch = basePitch * intonation.pitch;
+      u.rate = speedRef.current * intonation.rate;
+      
+      // Word boundary event for highlighting
+      u.onboundary = (event) => {
+        if (event.name === 'word') {
+          const word = sentence.substr(event.charIndex, event.charLength);
+          setCurrentWord(word);
+        }
+      };
+      
+      u.onend = () => {
+        setCurrentWord('');
+        resolve();
+      };
+      u.onerror = () => {
+        setCurrentWord('');
+        resolve();
+      };
       speechSynthesis.speak(u);
     });
   }, [lang]);
@@ -145,10 +162,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     for (let i = startIdx; i < sentencesRef.current.length; i++) {
       if (abortRef.current) break;
       setSentenceIdx(i);
+      const sentence = sentencesRef.current[i];
+      setCurrentSentence(sentence);
       if (currentIdRef.current) {
         try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
       }
-      const sentence = sentencesRef.current[i];
       await playWithWebSpeech(sentence);
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
@@ -162,6 +180,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     }
     setPlaying(false);
     setSentenceIdx(0);
+    setCurrentSentence('');
+    setCurrentWord('');
   }, [playWithWebSpeech]);
 
   const loadStoryContent = useCallback(async (story: AudioStory) => {
@@ -173,12 +193,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         const raw = typeof c.content === 'string' ? c.content : JSON.stringify(c.content);
         return raw.replace(/<[^>]+>/g, ' ');
       }).join(' ');
-      const list = splitIntoSentences(fullText || story.description || story.title);
+      // Use preprocessor: normalizes numbers, abbreviations, and splits into sentences
+      const list = preprocessTextForTTS(fullText || story.description || story.title);
       sentencesRef.current = list;
       setTotalSentences(list.length);
       return list.length > 0;
     } catch {
-      const list = splitIntoSentences(story.description || story.title);
+      const list = preprocessTextForTTS(story.description || story.title);
       sentencesRef.current = list;
       setTotalSentences(list.length);
       return list.length > 0;
@@ -259,6 +280,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     setPaused(false);
     setCurrent(null);
     setSentenceIdx(0);
+    setCurrentSentence('');
+    setCurrentWord('');
   };
 
   const skipSentence = (dir: number) => {
@@ -303,6 +326,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           speechSynthesis.cancel();
           setPlaying(false);
           setPaused(false);
+          setCurrentSentence('');
+          setCurrentWord('');
           setSleepMin(0);
           return 0;
         }
@@ -666,6 +691,19 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
               <p className="text-[10px] md:text-xs text-tx-muted truncate">
                 {loading ? (lang === 'en' ? 'Loading...' : 'Memuat...') : paused ? (lang === 'en' ? 'Paused' : 'Dijeda') : `${sentenceIdx + 1}/${totalSentences}`}
               </p>
+              {/* Current sentence with word highlighting */}
+              {playing && !paused && currentSentence && currentWord && (
+                <p className="text-[10px] md:text-xs text-tx-soft truncate mt-0.5">
+                  {currentSentence.split(' ').map((word, idx) => {
+                    const isCurrentWord = word.toLowerCase().replace(/[.,!?;:]/g, '') === currentWord.toLowerCase().replace(/[.,!?;:]/g, '');
+                    return (
+                      <span key={idx} className={isCurrentWord ? 'text-accent font-bold' : ''}>
+                        {word}{' '}
+                      </span>
+                    );
+                  })}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
               {user?.id && (
