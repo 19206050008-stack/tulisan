@@ -5,9 +5,10 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved, getCommentLikes } from '@/lib/supabase';
-import { Share2, Heart, MessageCircle, Bookmark, Settings, X, ChevronLeft, ChevronRight, Send, Pencil } from 'lucide-react';
+import { Share2, Heart, MessageCircle, Bookmark, Settings, X, ChevronLeft, ChevronRight, Send, Pencil, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { LoginPopup } from '@/components/LoginPopup';
+import { TTSPlayer } from '@/components/TTSPlayer';
 import { countWords, calculateReadingTime } from '@/lib/tier-utils';
 import { ReadingProgress } from '@/components/ReadingProgress';
 import { ScrollToTop } from '@/components/ScrollToTop';
@@ -46,6 +47,7 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
   const setTextSize = useStore((s) => s.setTextSize);
   const role = useStore((s) => s.role);
   const user = useStore((s) => s.user);
+  const lang = useStore((s) => s.lang);
 
   const [showSettings, setShowSettings] = useState(false);
   const [activeParagraph, setActiveParagraph] = useState<string | null>(null);
@@ -227,6 +229,11 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
           </div>
         </div>
       )}
+
+      {/* TTS Player */}
+      <div className="mb-4 relative">
+        <TTSPlayer text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')} lang={lang as 'id' | 'en'} />
+      </div>
 
       <article className="space-y-4 md:space-y-5 relative" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }}>
         {parsedContent && isHtml(parsedContent) ? (
