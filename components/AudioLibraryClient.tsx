@@ -42,6 +42,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [sleepRemaining, setSleepRemaining] = useState(0);
   const [showSleep, setShowSleep] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [slide, setSlide] = useState(0);
+  const [sliderStories, setSliderStories] = useState<AudioStory[]>([]);
   const [gender, setGender] = useState<TTSGender>('wanita');
   const [speed, setSpeed] = useState(1);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
@@ -63,6 +65,24 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     if (!el) return;
     el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.8), behavior: 'smooth' });
   };
+
+  // Pick random stories for the hero slider (client-only to avoid hydration mismatch)
+  useEffect(() => {
+    if (stories.length === 0) return;
+    const shuffled = [...stories].sort(() => Math.random() - 0.5).slice(0, Math.min(6, stories.length));
+    setSliderStories(shuffled);
+    setSlide(0);
+  }, [stories]);
+
+  // Auto-advance the slider
+  useEffect(() => {
+    if (sliderStories.length <= 1) return;
+    const t = setInterval(() => setSlide(s => (s + 1) % sliderStories.length), 6000);
+    return () => clearInterval(t);
+  }, [sliderStories.length]);
+
+  const nextSlide = () => setSlide(s => (sliderStories.length ? (s + 1) % sliderStories.length : 0));
+  const prevSlide = () => setSlide(s => (sliderStories.length ? (s - 1 + sliderStories.length) % sliderStories.length : 0));
 
   // Load saved story ids for "Saved" tab
   useEffect(() => {
@@ -357,6 +377,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   const progress = totalSentences > 0 ? Math.round((sentenceIdx / totalSentences) * 100) : 0;
 
+  // Hero slider current slide
+  const heroStory = sliderStories[slide] || null;
+  const heroActive = !!heroStory && current?.id === heroStory.id && playing && !paused;
+  const heroGrad = heroStory ? getGenreGradient(heroStory.category || '') : '';
+
   // Build SoundCloud-style sections (5 items each). Derived from available metrics.
   const base = tab === 'saved' ? stories.filter(s => savedIds.has(s.id)) : stories;
   const searched = base.filter(s => {
@@ -399,6 +424,48 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           </div>
         </div>
       </div>
+
+      {/* Hero slider — random audio, Spotify "This Is..." style */}
+      {heroStory && (
+        <div className="relative mb-6 rounded-2xl overflow-hidden" style={{ background: heroGrad }}>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+          <div className="relative flex items-center gap-4 md:gap-6 p-4 md:p-6">
+            {/* Prev / Next buttons */}
+            <button onClick={prevSlide} className="absolute left-3 top-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Previous">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={nextSlide} className="absolute left-12 top-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Next">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+
+            {/* Cover */}
+            <div className="relative w-20 h-20 md:w-32 md:h-32 shrink-0 rounded-xl overflow-hidden shadow-2xl mt-6 md:mt-4">
+              <StoryCover coverUrl={heroStory.cover_url} category={heroStory.category} title={heroStory.title} />
+            </div>
+
+            {/* Info */}
+            <div className="min-w-0 flex-1 text-white mt-6 md:mt-4">
+              <p className="text-[10px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
+              <h2 className="text-xl md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
+              <p className="hidden md:block text-xs md:text-sm text-white/70 line-clamp-2 mb-2">{heroStory.description || (lang === 'en' ? 'Listen to this story narrated by AI.' : 'Dengarkan cerita ini dengan narasi AI.')}</p>
+              <div className="flex items-center gap-3">
+                <button onClick={() => selectAndPlay(heroStory)} className="flex items-center gap-2 px-4 py-1.5 md:py-2 rounded-full bg-white text-black text-xs md:text-sm font-semibold hover:scale-105 transition-transform">
+                  {heroActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {heroActive ? (lang === 'en' ? 'Pause' : 'Jeda') : (lang === 'en' ? 'Play' : 'Putar')}
+                </button>
+                <span className="text-[10px] md:text-xs text-white/70 truncate">{heroStory.profiles?.full_name || heroStory.profiles?.username || 'Anonim'}{heroStory.category ? ` · ${heroStory.category}` : ''}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Dots indicator */}
+          <div className="absolute bottom-2.5 right-4 flex items-center gap-1.5">
+            {sliderStories.map((_, di) => (
+              <button key={di} onClick={() => setSlide(di)} className={`h-1.5 rounded-full transition-all ${di === slide ? 'w-4 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}`} title={`Slide ${di + 1}`} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Search + genre filter */}
       <div className="space-y-3 mb-6">
