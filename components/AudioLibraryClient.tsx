@@ -569,43 +569,43 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           style={{ backgroundColor: color }}
                         >
                           {/* Tag (Introducing) */}
-                          <p className="text-[9px] font-semibold mb-1 truncate text-white/70">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
+                          <p className="text-[8px] lg:text-[9px] font-semibold mb-0.5 lg:mb-1 truncate text-white/70">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
                           {/* Number (New Recorder) */}
-                          <p className="text-2xl font-extrabold leading-none tracking-tight mb-1.5 text-white">#{i + 1}</p>
+                          <p className="text-xl lg:text-2xl font-extrabold leading-none tracking-tight mb-1 lg:mb-1.5 text-white">#{i + 1}</p>
                           {/* Title (description) */}
-                          <p className="text-[11px] font-medium leading-snug line-clamp-2 min-h-[1.9rem] text-white">{story.title}</p>
+                          <p className="text-[10px] lg:text-[11px] font-medium leading-snug line-clamp-2 min-h-[1.7rem] lg:min-h-[1.9rem] text-white">{story.title}</p>
                           {/* Author */}
-                          <p className="text-[9px] mt-0.5 mb-2.5 truncate text-white/60">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
+                          <p className="text-[8px] lg:text-[9px] mt-0.5 mb-2 lg:mb-2.5 truncate text-white/60">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
                           {/* Waveform box — same AudioVisualizer equalizer as elsewhere */}
-                          <div className="relative bg-black/25 rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
-                            <div className="absolute inset-0 px-2 py-1.5">
+                          <div className="relative bg-black/25 rounded-lg h-6 lg:h-8 px-1.5 lg:px-2 flex items-center mb-2 lg:mb-2.5 overflow-hidden">
+                            <div className="absolute inset-0 px-1.5 lg:px-2 py-1 lg:py-1.5">
                               <AudioVisualizer audioElement={null} barCount={20} barColor={isActive ? '#ffffff' : '#d1d5db'} barGap={1} active={isActive} />
                             </div>
-                            <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
+                            <div className="absolute top-1 bottom-1 lg:top-1.5 lg:bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>
 
                           {/* Controls — Play, Pause, Stop + Like, Save */}
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent && paused) togglePlayPause(); else if (!isCurrent) selectAndPlay(story); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors" title="Play">
-                                <Play className="h-3 w-3 text-white" />
+                            <div className="flex items-center gap-0.5 lg:gap-1">
+                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent && paused) togglePlayPause(); else if (!isCurrent) selectAndPlay(story); }} className="w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors" title="Play">
+                                <Play className="h-2.5 w-2.5 lg:h-3 lg:w-3 text-white" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); if (isActive) togglePlayPause(); }} className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-white' : 'bg-white/15 hover:bg-white/25'}`} title="Pause">
-                                <Pause className="h-3 w-3" style={{ color: isActive ? color : '#fff' }} />
+                              <button onClick={(e) => { e.stopPropagation(); if (isActive) togglePlayPause(); }} className={`w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-white' : 'bg-white/15 hover:bg-white/25'}`} title="Pause">
+                                <Pause className="h-2.5 w-2.5 lg:h-3 lg:w-3" style={{ color: isActive ? color : '#fff' }} />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors" title="Stop">
-                                <Square className="h-2.5 w-2.5 text-white" />
+                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-5 h-5 lg:w-6 lg:h-6 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors" title="Stop">
+                                <Square className="h-2 w-2 lg:h-2.5 lg:w-2.5 text-white" />
                               </button>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 lg:gap-1.5">
                               {user?.id && (
                                 <>
                                   <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className="text-white/80 hover:text-white transition-colors" title="Like">
-                                    <Heart className={`h-3.5 w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
+                                    <Heart className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
                                   </button>
                                   <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className="text-white/80 hover:text-white transition-colors" title="Save">
-                                    <Bookmark className={`h-3.5 w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
+                                    <Bookmark className={`h-3 w-3 lg:h-3.5 lg:w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
                                   </button>
                                 </>
                               )}
