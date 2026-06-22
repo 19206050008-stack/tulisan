@@ -79,7 +79,7 @@ export function AudioVisualizer({
     rafRef.current = requestAnimationFrame(drawBars);
   }, [barCount, barColor, barGap]);
 
-  // Draw idle flat bars when not active
+  // Draw static (frozen) equalizer bars when not active — visible placeholder
   const drawIdle = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -90,11 +90,23 @@ export function AudioVisualizer({
     const totalGap = barGap * (barCount - 1);
     const bw = Math.max(1, (w - totalGap) / barCount);
     for (let i = 0; i < barCount; i++) {
-      const barH = Math.max(2, h * 0.08);
+      // Deterministic varied heights so it looks like a frozen equalizer
+      const wave = Math.sin(i * 0.9) * 0.3 + Math.sin(i * 0.45) * 0.2;
+      const barH = Math.max(2, (0.4 + wave) * h);
       const x = i * (bw + barGap);
       const y = h - barH;
-      ctx.fillStyle = barColor + '33';
-      ctx.fillRect(x, y, bw, barH);
+      ctx.fillStyle = barColor + '99';
+      const radius = Math.min(bw / 2, 3);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + bw - radius, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + radius);
+      ctx.lineTo(x + bw, h);
+      ctx.lineTo(x, h);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
     }
   }, [barCount, barColor, barGap]);
 
