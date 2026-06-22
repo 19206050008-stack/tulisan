@@ -551,9 +551,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                     {sec.items.map((story, i) => {
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
-                      const cardProgress = isCurrent ? progress : 35;
+                      const cardProgress = isCurrent ? progress : 0;
                       const palette = ['#E65A28', '#2563EB', '#059669', '#7C3AED', '#DB2777'];
                       const color = palette[i % palette.length];
+                      // Placeholder cards animate so equalizer is always visible; current card animates only while playing (static when paused)
+                      const eqActive = isCurrent ? isActive : true;
                       return (
                         <div
                           key={story.id}
@@ -572,7 +574,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           {/* Waveform box — same AudioVisualizer equalizer as elsewhere */}
                           <div className="relative bg-black/25 rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
                             <div className="absolute inset-0 px-2 py-1.5">
-                              <AudioVisualizer audioElement={null} barCount={20} barColor="#ffffff" barGap={1} active={isActive} />
+                              <AudioVisualizer audioElement={null} barCount={20} barColor="#ffffff" barGap={1} active={eqActive} />
                             </div>
                             <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>
