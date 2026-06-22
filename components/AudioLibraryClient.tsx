@@ -512,19 +512,19 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                  <div className="flex-1 min-w-0">
                    <span className="block text-sm font-medium truncate">{story.title}</span>
                    <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
-                   {/* Equalizer - below title, full width */}
-                   {isCurrent && isActive && (
-                     <div className="mt-1.5 overflow-hidden" style={{ width: '100%', height: '16px' }}>
-                       <AudioVisualizer
-                         audioElement={null}
-                         barCount={16}
-                         barColor="#E65A28"
-                         barGap={1}
-                         active={isActive}
-                       />
-                     </div>
-                   )}
                  </div>
+                 {/* Equalizer - right side, no border */}
+                 {isCurrent && isActive && (
+                   <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
+                     <AudioVisualizer
+                       audioElement={null}
+                       barCount={6}
+                       barColor="#E65A28"
+                       barGap={1}
+                       active={isActive}
+                     />
+                   </div>
+                 )}
                </button>
             );
           })}
@@ -554,28 +554,28 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                         <button
                           key={story.id}
                           onClick={() => selectAndPlay(story)}
-                           className={`relative flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
-                         >
-                           <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
-                             {i + 1}
-                           </span>
-                           <div className="flex-1 min-w-0">
-                             <span className="block text-sm font-medium truncate">{story.title}</span>
-                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                             {/* Equalizer - below title, full width */}
-                             {isCurrent && isActive && (
-                               <div className="mt-1.5 overflow-hidden" style={{ width: '100%', height: '16px' }}>
-                                 <AudioVisualizer
-                                   audioElement={null}
-                                   barCount={12}
-                                   barColor="#E65A28"
-                                   barGap={1}
-                                   active={isActive}
-                                 />
-                               </div>
-                             )}
-                           </div>
-                         </button>
+                          className={`relative flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
+                        >
+                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
+                            {i + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium truncate">{story.title}</span>
+                            <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                          </div>
+                          {/* Equalizer - right side, no border */}
+                          {isCurrent && isActive && (
+                            <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
+                              <AudioVisualizer
+                                audioElement={null}
+                                barCount={6}
+                                barColor="#E65A28"
+                                barGap={1}
+                                active={isActive}
+                              />
+                            </div>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
@@ -594,19 +594,19 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           <div className="flex-1 min-w-0">
                             <span className="block text-sm font-medium truncate">{story.title}</span>
                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                            {/* Equalizer - below title, full width */}
-                            {isCurrent && isActive && (
-                              <div className="mt-1.5 overflow-hidden" style={{ width: '100%', height: '16px' }}>
-                                <AudioVisualizer
-                                  audioElement={null}
-                                  barCount={16}
-                                  barColor="#E65A28"
-                                  barGap={1}
-                                  active={isActive}
-                                />
-                              </div>
-                            )}
                           </div>
+                          {/* Equalizer - right side, no border */}
+                          {isCurrent && isActive && (
+                            <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
+                              <AudioVisualizer
+                                audioElement={null}
+                                barCount={6}
+                                barColor="#E65A28"
+                                barGap={1}
+                                active={isActive}
+                              />
+                            </div>
+                          )}
                         </button>
                       );
                     })}
