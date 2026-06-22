@@ -552,44 +552,47 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
                       const cardProgress = isCurrent ? progress : 35;
-                      const barHeights = [5,9,13,18,11,6,15,20,10,16,13,7,18,15];
+                      const barHeights = [40,65,85,55,70,45,90,60,75,50,80,55,68,42];
+                      const palette = ['#E65A28', '#3B82F6', '#10B981', '#8B5CF6', '#EC4899'];
+                      const color = palette[i % palette.length];
                       return (
                         <div
                           key={story.id}
-                          className={`rounded-2xl border p-3 transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border bg-bg-card hover:border-accent/40'}`}
+                          className={`rounded-2xl border p-3 transition-colors ${isCurrent ? 'bg-bg-soft' : 'bg-bg-card hover:bg-bg-soft'}`}
+                          style={{ borderColor: isCurrent ? color : undefined }}
                         >
                           {/* Tag (Introducing) */}
-                          <p className="text-[9px] font-semibold text-accent mb-1 truncate">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
+                          <p className="text-[9px] font-semibold mb-1 truncate" style={{ color }}>{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
                           {/* Number (New Recorder) */}
-                          <p className="text-2xl font-extrabold leading-none tracking-tight mb-1.5">#{i + 1}</p>
+                          <p className="text-2xl font-extrabold leading-none tracking-tight mb-1.5" style={{ color }}>#{i + 1}</p>
                           {/* Title (description) */}
                           <p className="text-[11px] font-medium text-tx-soft leading-snug line-clamp-2 min-h-[1.9rem]">{story.title}</p>
                           {/* Author */}
                           <p className="text-[9px] text-tx-muted mt-0.5 mb-2.5 truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
-                          {/* Waveform box — static bars + flat line + playhead */}
+                          {/* Waveform box — animated equalizer bars + flat line + playhead */}
                           <div className="relative bg-bg-input rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
-                            <div className="flex items-center gap-[1px] h-4 shrink-0">
+                            <div className={`flex items-center gap-[1.5px] h-5 shrink-0 ${isActive ? 'eq-anim' : ''}`}>
                               {barHeights.map((h, bi) => (
                                 <span
                                   key={bi}
-                                  className={isActive ? 'bg-accent' : 'bg-tx-muted'}
-                                  style={{ width: '2px', height: `${h}px`, borderRadius: '1px', opacity: isActive ? 1 : 0.55 }}
+                                  className="eq-bar"
+                                  style={{ width: '2px', height: `${h}%`, borderRadius: '1px', backgroundColor: color, animationDelay: `${bi * 0.07}s`, opacity: isActive ? 1 : 0.5 }}
                                 />
                               ))}
                             </div>
                             <div className="flex-1 h-px bg-border ml-[2px]" />
-                            <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-accent transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
+                            <div className="absolute top-1.5 bottom-1.5 w-0.5 transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%`, backgroundColor: color }} />
                           </div>
 
                           {/* Controls — Play, Pause, Stop + Like, Save */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent && paused) togglePlayPause(); else if (!isCurrent) selectAndPlay(story); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors" title="Play">
+                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent && paused) togglePlayPause(); else if (!isCurrent) selectAndPlay(story); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-bg-input border border-border hover:opacity-80 transition-opacity" title="Play">
                                 <Play className="h-3 w-3" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); if (isActive) togglePlayPause(); }} className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-accent text-white' : 'bg-bg-input border border-border text-tx-muted'}`} title="Pause">
-                                <Pause className="h-3 w-3" />
+                              <button onClick={(e) => { e.stopPropagation(); if (isActive) togglePlayPause(); }} className="w-6 h-6 flex items-center justify-center rounded-full transition-colors" style={isActive ? { backgroundColor: color, color: '#fff' } : undefined} title="Pause">
+                                <Pause className={`h-3 w-3 ${isActive ? '' : 'text-tx-muted'}`} />
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors" title="Stop">
                                 <Square className="h-2.5 w-2.5" />
@@ -601,7 +604,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                                   <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className={`transition-colors ${isCurrent && liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
                                     <Heart className={`h-3.5 w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
                                   </button>
-                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className={`transition-colors ${isCurrent && saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
+                                  <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className="transition-colors text-tx-muted hover:text-tx" style={isCurrent && saved ? { color } : undefined} title="Save">
                                     <Bookmark className={`h-3.5 w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
                                   </button>
                                 </>
