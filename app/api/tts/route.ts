@@ -9,6 +9,43 @@ function buildGoogleTTSUrl(text: string, lang: string): string {
   return `https://translate.google.com/translate_tts?ie=UTF-8&tl=${tl}&client=tw-ob&q=${encodeURIComponent(text)}`;
 }
 
+// Normalisasi teks agar dibaca lebih natural oleh TTS Indonesia
+function normalizeForTTS(text: string, lang: string): string {
+  if (lang.startsWith('en')) return text;
+  let s = text;
+
+  // Singkatan umum Indonesia -> bentuk lengkap
+  const abbreviations: Record<string, string> = {
+    '\\bdll\\.?': 'dan lain-lain',
+    '\\bdsb\\.?': 'dan sebagainya',
+    '\\bdkk\\.?': 'dan kawan-kawan',
+    '\\byg\\b': 'yang',
+    '\\bdg\\b': 'dengan',
+    '\\btsb\\.?': 'tersebut',
+    '\\bsbg\\b': 'sebagai',
+    '\\bspt\\b': 'seperti',
+    '\\bkrn\\b': 'karena',
+    '\\btdk\\b': 'tidak',
+    '\\bjml\\b': 'jumlah',
+    '\\bhal\\.': 'halaman',
+    '\\bNo\\.': 'nomor',
+    '\\bdr\\.': 'dokter',
+    '\\bPm\\b': 'sore',
+    '\\bAm\\b': 'pagi',
+  };
+  for (const [pattern, replacement] of Object.entries(abbreviations)) {
+    s = s.replace(new RegExp(pattern, 'gi'), replacement);
+  }
+
+  // Beri jeda natural: ganti elipsis dan tanda hubung panjang
+  s = s.replace(/\.\.\./g, ', ');
+  s = s.replace(/[—–-]{1,}/g, ', ');
+
+  // Rapikan spasi ganda
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
 // Split text into chunks <= 200 chars (Google TTS limit), breaking on word boundaries
 function chunkText(text: string, maxLen = 190): string[] {
   if (text.length <= maxLen) return [text];
@@ -51,7 +88,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Text too long (max 5000 chars)' }, { status: 400 });
     }
 
-    const chunks = chunkText(text.trim());
+    const normalized = normalizeForTTS(text.trim(), lang);
+    const chunks = chunkText(normalized);
     const buffers: Buffer[] = [];
     for (const chunk of chunks) {
       const audio = await fetchGoogleAudio(chunk, lang);
