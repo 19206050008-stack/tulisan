@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useStore } from '@/lib/store';
-import { sendAudioRequest as _sendAudioRequest, getStoriesWithAudio } from '@/lib/supabase/stories';
+import { sendAudioRequest as _sendAudioRequest } from '@/lib/supabase/admin';
 import { AudioVisualizer } from './AudioVisualizer';
 import { Play, Pause, FileAudio, CheckCircle, XCircle } from 'lucide-react';
 

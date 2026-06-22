@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
@@ -63,6 +63,9 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [zenMode, setZenMode] = useState(false);
+  const [ttsSentenceIdx, setTtsSentenceIdx] = useState(-1);
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const ttsToggleRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (user?.id && id) {
@@ -73,6 +76,20 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
       }
     }
   }, [user?.id, id]);
+
+  // Enter key toggles TTS play/pause (when not typing in an input)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      const target = e.target as HTMLElement;
+      const tag = target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || target.isContentEditable) return;
+      e.preventDefault();
+      ttsToggleRef.current?.();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const isAuthor = !!(user?.id && story?.author_id && user.id === story.author_id);
 
@@ -232,21 +249,32 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
 
       {/* TTS Player */}
       <div className="mb-4 relative">
-        <TTSPlayer text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')} lang={lang as 'id' | 'en'} genre={story?.category} />
+        <TTSPlayer
+          text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')}
+          lang={lang as 'id' | 'en'}
+          genre={story?.category}
+          onSentenceChange={(idx) => {
+            setTtsSentenceIdx(idx);
+            const el = document.querySelector(`[data-tts-idx="${idx}"]`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }}
+          onPlayStateChange={(p) => { setTtsPlaying(p); if (!p) setTtsSentenceIdx(-1); }}
+          registerControls={(c) => { ttsToggleRef.current = c.toggle; }}
+        />
       </div>
 
       <article className="space-y-4 md:space-y-5 relative" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }}>
         {parsedContent && isHtml(parsedContent) ? (
           <div className="tiptap-reader bg-bg px-2 md:px-4 py-3 rounded-lg text-sm md:text-base" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: parsedContent }} />
         ) : (
-          paragraphs.map((p: any) => (
+          paragraphs.map((p: any, pIdx: number) => (
             p.isSeparator ? (
               <div key={p.id} className="flex items-center justify-center py-4">
                 <span className="text-tx-muted text-lg tracking-[0.5em]">***</span>
               </div>
             ) : (
-              <div key={p.id} className="relative group">
-                <p className="text-tx indent-8" dangerouslySetInnerHTML={{ __html: formatParagraph(p.text) }} />
+              <div key={p.id} className="relative group" data-tts-idx={pIdx}>
+                <p className={`text-tx indent-8 transition-colors rounded ${ttsPlaying && ttsSentenceIdx === pIdx ? 'bg-accent/10 ring-1 ring-accent/30' : ''}`} dangerouslySetInnerHTML={{ __html: formatParagraph(p.text) }} />
                 <button onClick={() => setActiveParagraph(p.id)} className={`absolute -right-1 md:-right-12 top-0 p-1 md:p-2 rounded-full transition-opacity ${activeParagraph === p.id ? 'opacity-100 bg-bg-input text-accent' : 'opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}>
                   <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 </button>

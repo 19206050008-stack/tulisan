@@ -8,6 +8,9 @@ interface TTSPlayerProps {
   text: string;
   lang?: 'id' | 'en';
   genre?: string;
+  onSentenceChange?: (idx: number, sentence: string) => void;
+  onPlayStateChange?: (playing: boolean) => void;
+  registerControls?: (controls: { toggle: () => void }) => void;
 }
 
 // Map story genre to Edge TTS emotion style for more immersive narration
@@ -38,7 +41,7 @@ function splitIntoSentences(text: string): string[] {
   return sentences.map(s => s.trim()).filter(s => s.length > 2);
 }
 
-export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
+export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlayStateChange, registerControls }: TTSPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -109,11 +112,13 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   const playSequence = useCallback(async (startIdx: number) => {
     abortRef.current = false;
     setPlaying(true);
+    onPlayStateChange?.(true);
 
     for (let i = startIdx; i < sentencesRef.current.length; i++) {
       if (abortRef.current) break;
       setCurrentIdx(i);
       const sentence = sentencesRef.current[i];
+      onSentenceChange?.(i, sentence);
 
       await playWithWebSpeech(sentence);
 
@@ -130,7 +135,8 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
 
     setPlaying(false);
     setCurrentIdx(0);
-  }, [playWithWebSpeech]);
+    onPlayStateChange?.(false);
+  }, [playWithWebSpeech, onPlayStateChange, onSentenceChange]);
 
   const handlePlay = () => {
     if (playing && !paused) {
@@ -152,6 +158,11 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
       playSequence(currentIdx);
     }
   };
+
+  // Register toggle control for external keyboard shortcuts (Enter key)
+  useEffect(() => {
+    registerControls?.({ toggle: handlePlay });
+  }, [registerControls, playing, paused, currentIdx]);
 
   const handleStop = () => {
     abortRef.current = true;

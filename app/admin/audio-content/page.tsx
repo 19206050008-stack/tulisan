@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getAllStoriesWithAudio, approveAudioRequest, rejectAudioRequest, deleteAudioContent } from '@/lib/supabase/admin';
-import { GetSupabaseClient } from '@/lib/supabase/client';
 import { FileAudio, Play, CheckCircle, XCircle, Trash2, Download, Search, Filter, ChevronDown, ChevronUp, DownloadCloud } from 'lucide-react';
 import Link from 'next/link';
 
@@ -17,6 +16,7 @@ interface AudioStory {
   request_id?: string;
   audio_status: 'pending' | 'approved' | 'processing' | 'completed' | 'rejected';
   story_status: 'published' | 'draft' | 'archived';
+  created_at?: string;
 }
 
 export default function AdminAudioPage() {
@@ -36,8 +36,7 @@ export default function AdminAudioPage() {
   const loadAudioStories = async () => {
     setLoading(true);
     try {
-      const supabase = getSupabaseClient();
-      const data = await getAllStoriesWithAudio(supabase);
+      const data = await getAllStoriesWithAudio();
       setStories(data || []);
     } catch (err) {
       console.error('Error loading audio stories:', err);
@@ -95,8 +94,8 @@ export default function AdminAudioPage() {
     return true;
   }).sort((a, b) => {
     switch (sortBy) {
-      case 'newest': return new Date(b.request_id ? new Date().getTime() : 0) - new Date(a.request_id ? new Date().getTime() : 0);
-      case 'oldest': return new Date(a.request_id ? new Date().getTime() : 0) - new Date(b.request_id ? new Date().getTime() : 0);
+      case 'newest': return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      case 'oldest': return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
       case 'title': return a.title.localeCompare(b.title);
       case 'author': return (a.author.full_name || '').localeCompare(b.author.full_name || '');
       default: return 0;

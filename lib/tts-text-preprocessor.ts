@@ -5,6 +5,70 @@
  * - Split into sentences
  */
 
+// Number to Indonesian words
+const ONES = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+const TEENS = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas', 'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
+const TENS = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh', 'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
+
+function convH(n: number): string {
+  if (n === 0) return '';
+  if (n < 10) return ONES[n];
+  if (n < 20) return TEENS[n - 10];
+  if (n < 100) { const t = Math.floor(n / 10), o = n % 10; return TENS[t] + (o ? ' ' + ONES[o] : ''); }
+  if (n < 200) return 'seratus' + (n > 100 ? ' ' + convH(n - 100) : '');
+  const h = Math.floor(n / 100), r = n % 100;
+  return ONES[h] + ' ratus' + (r ? ' ' + convH(r) : '');
+}
+
+function convT(n: number): string {
+  if (n < 1000) return convH(n);
+  if (n < 2000) return 'seribu' + (n > 1000 ? ' ' + convT(n - 1000) : '');
+  const t = Math.floor(n / 1000), r = n % 1000;
+  return convH(t) + ' ribu' + (r ? ' ' + convT(r) : '');
+}
+
+export function numberToWords(num: number | string): string {
+  const n = typeof num === 'string' ? parseInt(num, 10) : num;
+  if (isNaN(n)) return String(num);
+  if (n === 0) return 'nol';
+  if (n < 1000000) return convT(n);
+  const m = Math.floor(n / 1000000), r = n % 1000000;
+  return convH(m) + ' juta' + (r ? ' ' + convT(r) : '');
+}
+
+const ABBREVIATIONS: Record<string, string> = {
+  dll: 'dan lain-lain', dsb: 'dan sebagainya', dst: 'dan seterusnya',
+  yth: 'yang terhormat', sdr: 'saudara', no: 'nomor', thn: 'tahun',
+  bln: 'bulan', dgn: 'dengan', utk: 'untuk', pd: 'pada', dlm: 'dalam',
+  krn: 'karena', sbg: 'sebagai', tsb: 'tersebut', yg: 'yang',
+};
+
+export function normalizeAbbreviations(text: string): string {
+  let r = text;
+  for (const [a, f] of Object.entries(ABBREVIATIONS)) {
+    r = r.replace(new RegExp(`\\b${a}\\.?\\b`, 'gi'), f);
+  }
+  return r;
+}
+
+export function normalizeNumbers(text: string): string {
+  return text.replace(/\b(\d{1,7})\b/g, (m) => {
+    const n = parseInt(m, 10);
+    if (n > 9999999) return m;
+    if (m.length === 4 && (m.startsWith('19') || m.startsWith('20'))) return m; // years
+    return numberToWords(n);
+  });
+}
+
+export function getIntonationForSentence(sentence: string): { pitch: number; rate: number } {
+  const t = sentence.trim();
+  if (t.endsWith('?')) return { pitch: 1.15, rate: 1.0 };
+  if (t.endsWith('!')) return { pitch: 1.1, rate: 1.05 };
+  if (t.endsWith('...') || t.endsWith('…')) return { pitch: 0.95, rate: 0.9 };
+  if ((t.match(/,/g) || []).length > 3) return { pitch: 1.0, rate: 0.95 };
+  return { pitch: 1.0, rate: 1.0 };
+}
+
 /**
  * Filter out text that should be skipped in TTS (special chars only)
  */
