@@ -547,34 +547,29 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   </Link>
                 </div>
                 {sec.key === 'new' && view === 'grid' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
                     {sec.items.map((story, i) => {
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
                       const cardProgress = isCurrent ? progress : 35;
-                      const barHeights = [6,11,16,22,14,8,18,24,12,20,16,9,22,18,7,14,24,16,10,6,20,12,17,9];
+                      const barHeights = [5,9,13,18,11,6,15,20,10,16,13,7,18,15];
                       return (
                         <div
                           key={story.id}
-                          className={`rounded-[28px] border p-5 transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border bg-bg-card hover:border-accent/40'}`}
+                          className={`rounded-2xl border p-3 transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border bg-bg-card hover:border-accent/40'}`}
                         >
                           {/* Tag (Introducing) */}
-                          <p className="text-[12px] font-semibold text-accent mb-1.5">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
+                          <p className="text-[9px] font-semibold text-accent mb-1 truncate">{story.category || (lang === 'en' ? 'Story' : 'Cerita')}</p>
                           {/* Number (New Recorder) */}
-                          <p className="text-[40px] font-extrabold leading-none tracking-tight mb-2.5">#{i + 1}</p>
+                          <p className="text-2xl font-extrabold leading-none tracking-tight mb-1.5">#{i + 1}</p>
                           {/* Title (description) */}
-                          <p className="text-sm text-tx-soft leading-snug line-clamp-2 min-h-[2.5rem]">{story.title}</p>
+                          <p className="text-[11px] font-medium text-tx-soft leading-snug line-clamp-2 min-h-[1.9rem]">{story.title}</p>
                           {/* Author */}
-                          <p className="text-[11px] text-tx-muted mt-1 mb-4 truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
-
-                          {/* Timestamp */}
-                          {isCurrent && (
-                            <p className="text-[12px] font-mono text-accent text-center mb-1 tabular-nums">{sentenceIdx + 1}/{totalSentences}</p>
-                          )}
+                          <p className="text-[9px] text-tx-muted mt-0.5 mb-2.5 truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
                           {/* Waveform box — static bars + flat line + playhead */}
-                          <div className="relative bg-bg-input rounded-2xl h-12 px-3.5 flex items-center mb-3.5 overflow-hidden">
-                            <div className="flex items-center gap-[2px] h-6 shrink-0">
+                          <div className="relative bg-bg-input rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
+                            <div className="flex items-center gap-[1px] h-4 shrink-0">
                               {barHeights.map((h, bi) => (
                                 <span
                                   key={bi}
@@ -584,30 +579,30 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                               ))}
                             </div>
                             <div className="flex-1 h-px bg-border ml-[2px]" />
-                            <div className="absolute top-2 bottom-2 w-0.5 bg-accent transition-all duration-300" style={{ left: `${Math.min(cardProgress, 90)}%` }} />
+                            <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-accent transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>
 
-                          {/* Controls pill */}
-                          <div className="flex items-center justify-between bg-bg-input rounded-full px-3 py-2">
-                            <div className="flex items-center gap-2.5">
-                              <button onClick={(e) => { e.stopPropagation(); selectAndPlay(story); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-bg-card border border-border hover:border-accent/40 transition-colors" title="Play">
-                                <Play className="h-3.5 w-3.5" />
+                          {/* Controls — Play, Pause, Stop + Like, Save */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent && paused) togglePlayPause(); else if (!isCurrent) selectAndPlay(story); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors" title="Play">
+                                <Play className="h-3 w-3" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); if (isCurrent) togglePlayPause(); else selectAndPlay(story); }} className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-accent text-white' : 'bg-bg-card border border-border hover:border-accent/40'}`} title={isActive ? 'Pause' : 'Resume'}>
-                                {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                              <button onClick={(e) => { e.stopPropagation(); if (isActive) togglePlayPause(); }} className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${isActive ? 'bg-accent text-white' : 'bg-bg-input border border-border text-tx-muted'}`} title="Pause">
+                                <Pause className="h-3 w-3" />
                               </button>
-                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-bg-card border border-border hover:border-red-400 transition-colors" title="Stop">
-                                <Square className="h-3 w-3" />
+                              <button onClick={(e) => { e.stopPropagation(); stopPlayback(); }} className="w-6 h-6 flex items-center justify-center rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors" title="Stop">
+                                <Square className="h-2.5 w-2.5" />
                               </button>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5">
                               {user?.id && (
                                 <>
                                   <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleLike(user.id, story.id); if (isCurrent) setLiked(r); }} className={`transition-colors ${isCurrent && liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
-                                    <Heart className={`h-4 w-4 ${isCurrent && liked ? 'fill-current' : ''}`} />
+                                    <Heart className={`h-3.5 w-3.5 ${isCurrent && liked ? 'fill-current' : ''}`} />
                                   </button>
                                   <button onClick={async (e) => { e.stopPropagation(); if (!user?.id) return; const r = await toggleSave(user.id, story.id); if (isCurrent) setSaved(r); }} className={`transition-colors ${isCurrent && saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
-                                    <Bookmark className={`h-4 w-4 ${isCurrent && saved ? 'fill-current' : ''}`} />
+                                    <Bookmark className={`h-3.5 w-3.5 ${isCurrent && saved ? 'fill-current' : ''}`} />
                                   </button>
                                 </>
                               )}
