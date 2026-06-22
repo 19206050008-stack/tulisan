@@ -565,7 +565,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                       return (
                         <div
                           key={story.id}
-                          className="rounded-2xl p-3 transition-transform hover:-translate-y-0.5 text-white shrink-0 w-[52%] sm:w-[40%] lg:w-auto"
+                          className="rounded-2xl p-3 transition-transform hover:-translate-y-0.5 text-white shrink-0 w-[calc(50%-0.3125rem)] sm:w-[calc(33.333%-0.5rem)] lg:w-auto"
                           style={{ backgroundColor: color }}
                         >
                           {/* Tag (Introducing) */}
