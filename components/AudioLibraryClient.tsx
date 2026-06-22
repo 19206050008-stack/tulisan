@@ -448,9 +448,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <div className="min-w-0 flex-1 text-white">
               <p className="text-[8px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
               {/* Title row — mobile shows icon-only play at right */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <h2 className="flex-1 min-w-0 text-sm md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
-                <button onClick={() => selectAndPlay(heroStory)} className="md:hidden shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform" title={heroActive ? 'Pause' : 'Play'}>
+                <button onClick={() => selectAndPlay(heroStory)} className="md:hidden shrink-0 ml-1 w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform" title={heroActive ? 'Pause' : 'Play'}>
                   {heroActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </button>
               </div>
