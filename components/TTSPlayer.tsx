@@ -216,48 +216,6 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
         </span>
       )}
 
-      <button
-        onClick={() => setShowSettings(!showSettings)}
-        className="p-1.5 rounded-full hover:bg-bg-input transition-colors ml-auto"
-        title="Pengaturan suara"
-      >
-        <Settings2 className="h-3.5 w-3.5 text-tx-muted" />
-      </button>
-
-      {showSettings && (
-        <div className="absolute right-0 top-full mt-2 z-50 p-3 rounded-xl bg-bg-card border border-border shadow-xl space-y-3 w-56">
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-tx-muted">Suara</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setGender('wanita'); genderRef.current = 'wanita'; saveTTSPrefs({ gender: 'wanita', speed: speedRef.current }); }}
-                className={`flex-1 px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-              >
-                Wanita
-              </button>
-              <button
-                onClick={() => { setGender('pria'); genderRef.current = 'pria'; saveTTSPrefs({ gender: 'pria', speed: speedRef.current }); }}
-                className={`flex-1 px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-              >
-                Pria
-              </button>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-tx-muted">Kecepatan</label>
-            <select
-              value={speed}
-              onChange={e => { const v = Number(e.target.value); setSpeed(v); speedRef.current = v; saveTTSPrefs({ gender: genderRef.current, speed: v }); }}
-              className="w-full px-2 py-1.5 text-xs rounded-lg bg-bg-input border border-border [&>option]:bg-bg-card [&>option]:text-tx"
-            >
-              <option value="0.75">Lambat</option>
-              <option value="1">Normal</option>
-              <option value="1.25">Cepat</option>
-              <option value="1.5">Sangat Cepat</option>
-            </select>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

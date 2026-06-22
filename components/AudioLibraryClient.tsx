@@ -212,19 +212,14 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     }
   }, [user, loadStoryContent, playSequence]);
 
-  // Open voice/speed popup before playing
+  // Direct play: click = play immediately. If same story playing, toggle pause.
   const selectAndPlay = useCallback((story: AudioStory) => {
-    // If clicking the currently playing story, just toggle handled elsewhere
-    setPendingStory(story);
-  }, []);
-
-  const confirmAndPlay = useCallback(() => {
-    if (pendingStory) {
-      const story = pendingStory;
-      setPendingStory(null);
-      startPlayback(story);
+    if (current?.id === story.id && playing) {
+      togglePlayPause();
+      return;
     }
-  }, [pendingStory, startPlayback]);
+    startPlayback(story);
+  }, [current?.id, playing, startPlayback]);
 
   const togglePlayPause = () => {
     if (!current) return;
@@ -598,58 +593,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       )}
 
-      {/* Voice/speed popup before playing */}
-      {pendingStory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingStory(null)}>
-          <div className="bg-bg-card rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold font-serif">{lang === 'en' ? 'Playback Settings' : 'Pengaturan Suara'}</h3>
-              <button onClick={() => setPendingStory(null)} className="p-1 rounded-full hover:bg-bg-soft"><X className="h-4 w-4" /></button>
-            </div>
-            <p className="text-xs text-tx-muted truncate">{pendingStory.title}</p>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">{lang === 'en' ? 'Voice' : 'Suara'}</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setGender('wanita'); genderRef.current = 'wanita'; saveTTSPrefs({ gender: 'wanita', speed: speedRef.current }); }}
-                  className={`flex-1 px-3 py-2 text-sm rounded-xl font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-                >
-                  {lang === 'en' ? 'Female' : 'Wanita'}
-                </button>
-                <button
-                  onClick={() => { setGender('pria'); genderRef.current = 'pria'; saveTTSPrefs({ gender: 'pria', speed: speedRef.current }); }}
-                  className={`flex-1 px-3 py-2 text-sm rounded-xl font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-                >
-                  {lang === 'en' ? 'Male' : 'Pria'}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">{lang === 'en' ? 'Speed' : 'Kecepatan'}</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[{ v: 0.75, l: lang === 'en' ? 'Slow' : 'Lambat' }, { v: 1, l: 'Normal' }, { v: 1.25, l: lang === 'en' ? 'Fast' : 'Cepat' }, { v: 1.5, l: '1.5x' }].map(opt => (
-                  <button
-                    key={opt.v}
-                    onClick={() => { setSpeed(opt.v); speedRef.current = opt.v; saveTTSPrefs({ gender: genderRef.current, speed: opt.v }); }}
-                    className={`px-2 py-2 text-xs rounded-lg font-medium transition-colors ${speed === opt.v ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-                  >
-                    {opt.l}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={confirmAndPlay}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              <Play className="h-4 w-4" /> {lang === 'en' ? 'Play' : 'Putar'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
