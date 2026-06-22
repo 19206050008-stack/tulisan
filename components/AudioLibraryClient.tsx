@@ -515,10 +515,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                 </span>
                 <span className="flex items-center gap-2 text-[10px] text-tx-muted shrink-0">
                   {isCurrent ? (
-                    <div className={`w-14 h-4 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
+                    <div className={`w-12 h-3 md:h-4 rounded overflow-hidden ${isActive ? '' : 'opacity-40'}`}>
                       <AudioVisualizer
                         audioElement={null}
-                        barCount={8}
+                        barCount={6}
                         barColor="#E65A28"
                         barGap={1}
                         active={isActive}
@@ -559,27 +559,27 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           onClick={() => selectAndPlay(story)}
                           className={`relative flex flex-col p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
-                              {i + 1}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium truncate">{story.title}</span>
-                              <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                            </span>
-                          </div>
-                          {/* Equalizer visualizer for active card */}
-                          <div className={`h-6 mt-2 rounded-md overflow-hidden ${isActive ? '' : 'opacity-0'}`}>
-                            {isCurrent && (
-                              <AudioVisualizer
-                                audioElement={null}
-                                barCount={24}
-                                barColor="#E65A28"
-                                barGap={1}
-                                active={isActive}
-                              />
-                            )}
-                          </div>
+                           <div className="flex items-center gap-3">
+                             <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
+                               {i + 1}
+                             </span>
+                             <span className="min-w-0 flex-1">
+                               <span className="block text-sm font-medium truncate">{story.title}</span>
+                               <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                             </span>
+                           </div>
+                           {/* Equalizer visualizer - compact, under title */}
+                           <div className={`h-5 md:h-6 mt-2 rounded overflow-hidden ${isActive ? '' : 'opacity-0'} transition-opacity`}>
+                             {isCurrent && (
+                               <AudioVisualizer
+                                 audioElement={null}
+                                 barCount={12}
+                                 barColor="#E65A28"
+                                 barGap={1}
+                                 active={isActive}
+                               />
+                             )}
+                           </div>
                         </button>
                       );
                     })}
@@ -600,12 +600,12 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                             <span className="block text-sm font-medium truncate">{story.title}</span>
                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
                           </span>
-                          {/* Inline equalizer for active list item */}
+                          {/* Inline equalizer for active list item - compact */}
                           {isCurrent && (
-                            <div className={`w-16 h-5 shrink-0 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
+                            <div className={`w-14 md:w-16 h-3 md:h-5 shrink-0 rounded overflow-hidden ${isActive ? '' : 'opacity-40'}`}>
                               <AudioVisualizer
                                 audioElement={null}
-                                barCount={10}
+                                barCount={6}
                                 barColor="#E65A28"
                                 barGap={1}
                                 active={isActive}
