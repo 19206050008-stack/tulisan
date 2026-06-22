@@ -371,6 +371,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const isSearching = search.trim().length > 0 || activeGenre !== 'All' || tab === 'saved';
 
   const sections = [
+    { key: 'new', title: lang === 'en' ? 'New Audio Release' : 'Rilis Audio Terbaru', icon: Music, items: byNewest.slice(0, 5) },
     { key: 'picks', title: lang === 'en' ? "Listener's Picks" : 'Pilihan Pendengar', icon: Star, items: byLikes.slice(0, 5) },
     { key: 'monthly', title: lang === 'en' ? 'Top This Month' : 'Pilihan Bulan Ini', icon: Calendar, items: byScore.slice(0, 5) },
     { key: 'weekly', title: lang === 'en' ? 'Top This Week' : 'Pilihan Minggu Ini', icon: TrendingUp, items: byNewest.slice(0, 5) },
