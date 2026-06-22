@@ -9,6 +9,7 @@ import { Share2, Heart, MessageCircle, Bookmark, Settings, X, ChevronLeft, Chevr
 import Link from 'next/link';
 import { LoginPopup } from '@/components/LoginPopup';
 import { TTSPlayer } from '@/components/TTSPlayer';
+import { AudioRequest } from '@/components/AudioRequest';
 import { countWords, calculateReadingTime } from '@/lib/tier-utils';
 import { ReadingProgress } from '@/components/ReadingProgress';
 import { ScrollToTop } from '@/components/ScrollToTop';
@@ -38,9 +39,10 @@ interface StoryReaderClientProps {
   story: any;
   chapters: any[];
   comments: any[];
+  audioApproved?: boolean;
 }
 
-export default function StoryReaderClient({ story: initialStory, chapters: initialChapters, comments: initialComments }: StoryReaderClientProps) {
+export default function StoryReaderClient({ story: initialStory, chapters: initialChapters, comments: initialComments, audioApproved = false }: StoryReaderClientProps) {
   const { id } = useParams();
   const router = useRouter();
   const textSize = useStore((s) => s.textSize);
@@ -247,21 +249,28 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
         </div>
       )}
 
-      {/* TTS Player */}
-      <div className="mb-4 relative">
-        <TTSPlayer
-          text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')}
-          lang={lang as 'id' | 'en'}
-          genre={story?.category}
-          onSentenceChange={(idx) => {
-            setTtsSentenceIdx(idx);
-            const el = document.querySelector(`[data-tts-idx="${idx}"]`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }}
-          onPlayStateChange={(p) => { setTtsPlaying(p); if (!p) setTtsSentenceIdx(-1); }}
-          registerControls={(c) => { ttsToggleRef.current = c.toggle; }}
-        />
-      </div>
+      {/* TTS Player - only shown when audio approved by admin */}
+      {audioApproved && (
+        <div className="mb-4 relative">
+          <TTSPlayer
+            text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')}
+            lang={lang as 'id' | 'en'}
+            genre={story?.category}
+            onSentenceChange={(idx) => {
+              setTtsSentenceIdx(idx);
+              const el = document.querySelector(`[data-tts-idx="${idx}"]`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+            onPlayStateChange={(p) => { setTtsPlaying(p); if (!p) setTtsSentenceIdx(-1); }}
+            registerControls={(c) => { ttsToggleRef.current = c.toggle; }}
+          />
+        </div>
+      )}
+
+      {/* Audio Request - for completed stories without approved audio */}
+      {!audioApproved && story?.is_completed && (
+        <AudioRequest storyId={id as string} />
+      )}
 
       <article className="space-y-4 md:space-y-5 relative" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }}>
         {parsedContent && isHtml(parsedContent) ? (

@@ -1,6 +1,7 @@
 // Server Component — pre-fetch story data di server
 import { notFound } from 'next/navigation';
 import { getStoryById, getChapters, getComments } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import StoryReaderClient from '@/components/StoryReaderClient';
 
 export const dynamic = 'force-dynamic';
@@ -20,11 +21,24 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
     getComments(story.id),
   ]);
 
+  // Check if audio is approved for this story
+  let audioApproved = false;
+  if (supabase) {
+    const { data: audio } = await supabase
+      .from('audio_contents')
+      .select('id')
+      .eq('story_id', story.id)
+      .eq('status', 'ready')
+      .limit(1);
+    audioApproved = !!(audio && audio.length > 0);
+  }
+
   return (
     <StoryReaderClient
       story={story}
       chapters={chapters}
       comments={comments}
+      audioApproved={audioApproved}
     />
   );
 }
