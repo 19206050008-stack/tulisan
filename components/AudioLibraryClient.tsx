@@ -447,11 +447,18 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             {/* Info */}
             <div className="min-w-0 flex-1 text-white">
               <p className="text-[8px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
-              <h2 className="text-sm md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
+              {/* Title row — mobile shows icon-only play at right */}
+              <div className="flex items-center gap-2">
+                <h2 className="flex-1 min-w-0 text-sm md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
+                <button onClick={() => selectAndPlay(heroStory)} className="md:hidden shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform" title={heroActive ? 'Pause' : 'Play'}>
+                  {heroActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                </button>
+              </div>
               <p className="hidden md:block text-xs md:text-sm text-white/70 line-clamp-2 mb-2">{heroStory.description || (lang === 'en' ? 'Listen to this story narrated by AI.' : 'Dengarkan cerita ini dengan narasi AI.')}</p>
               <div className="flex items-center gap-2 md:gap-3">
-                <button onClick={() => selectAndPlay(heroStory)} className="flex items-center gap-1 md:gap-1.5 px-2.5 md:px-4 py-1 md:py-2 rounded-full bg-white text-black text-[10px] md:text-sm font-semibold hover:scale-105 transition-transform shrink-0">
-                  {heroActive ? <Pause className="h-3 w-3 md:h-4 md:w-4" /> : <Play className="h-3 w-3 md:h-4 md:w-4" />}
+                {/* Desktop play button with label */}
+                <button onClick={() => selectAndPlay(heroStory)} className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:scale-105 transition-transform shrink-0" title={heroActive ? 'Pause' : 'Play'}>
+                  {heroActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {heroActive ? (lang === 'en' ? 'Pause' : 'Jeda') : (lang === 'en' ? 'Play' : 'Putar')}
                 </button>
                 <span className="text-[8px] md:text-xs text-white/70 truncate">{heroStory.profiles?.full_name || heroStory.profiles?.username || 'Anonim'}{heroStory.category ? ` · ${heroStory.category}` : ''}</span>
