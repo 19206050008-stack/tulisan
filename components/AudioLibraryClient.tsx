@@ -509,13 +509,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
                >
                  <span className="w-5 text-center text-xs text-tx-muted shrink-0">{i + 1}</span>
-                 <span className="min-w-0 flex-1">
+                 <div className="flex-1 min-w-0">
                    <span className="block text-sm font-medium truncate">{story.title}</span>
                    <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
-                 </span>
+                 </div>
                  {/* Equalizer - side by side */}
                  {isCurrent && isActive && (
-                   <div className="shrink-0 rounded overflow-hidden">
+                   <div className="shrink-0 rounded-md overflow-hidden" style={{ width: '48px', height: '24px' }}>
                      <AudioVisualizer
                        audioElement={null}
                        barCount={8}
@@ -559,13 +559,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                            <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
                              {i + 1}
                            </span>
-                           <span className="min-w-0 flex-1">
+                           <div className="flex-1 min-w-0">
                              <span className="block text-sm font-medium truncate">{story.title}</span>
                              <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                           </span>
+                           </div>
                            {/* Equalizer - side by side with title */}
                            {isCurrent && isActive && (
-                             <div className="shrink-0 rounded overflow-hidden">
+                             <div className="shrink-0 rounded-md overflow-hidden" style={{ width: '48px', height: '24px' }}>
                                <AudioVisualizer
                                  audioElement={null}
                                  barCount={8}
@@ -591,13 +591,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
                         >
                           <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
-                          <span className="min-w-0 flex-1">
+                          <div className="flex-1 min-w-0">
                             <span className="block text-sm font-medium truncate">{story.title}</span>
                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                          </span>
+                          </div>
                           {/* Equalizer - side by side */}
                           {isCurrent && isActive && (
-                            <div className="shrink-0 rounded overflow-hidden">
+                            <div className="shrink-0 rounded-md overflow-hidden" style={{ width: '48px', height: '24px' }}>
                               <AudioVisualizer
                                 audioElement={null}
                                 barCount={8}
