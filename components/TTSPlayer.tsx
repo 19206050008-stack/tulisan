@@ -6,6 +6,18 @@ import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'l
 interface TTSPlayerProps {
   text: string;
   lang?: 'id' | 'en';
+  genre?: string;
+}
+
+// Map story genre to Edge TTS emotion style for more immersive narration
+function genreToStyle(genre?: string): string {
+  const g = (genre || '').toLowerCase();
+  if (g.includes('horor') || g.includes('horror') || g.includes('misteri') || g.includes('mystery') || g.includes('thriller')) return 'gentle';
+  if (g.includes('komedi') || g.includes('comedy') || g.includes('humor')) return 'cheerful';
+  if (g.includes('romansa') || g.includes('romance') || g.includes('chicklit')) return 'gentle';
+  if (g.includes('aksi') || g.includes('action') || g.includes('adventure') || g.includes('petualangan')) return 'excited';
+  if (g.includes('drama') || g.includes('sejarah') || g.includes('historical')) return 'sad';
+  return 'narration-relaxed';
 }
 
 const VOICES = {
@@ -25,7 +37,7 @@ function splitIntoSentences(text: string): string[] {
   return sentences.map(s => s.trim()).filter(s => s.length > 2);
 }
 
-export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
+export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -49,14 +61,15 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
   }, [text]);
 
   const fetchEdgeAudio = useCallback(async (sentence: string): Promise<string | null> => {
-    const cacheKey = `${voice}_${speed}_${sentence}`;
+    const style = genreToStyle(genre);
+    const cacheKey = `${voice}_${speed}_${style}_${sentence}`;
     if (cacheRef.current.has(cacheKey)) return cacheRef.current.get(cacheKey)!;
 
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence, voice, rate: speed }),
+        body: JSON.stringify({ text: sentence, voice, rate: speed, style }),
       });
       if (!res.ok) throw new Error('TTS API failed');
       const blob = await res.blob();
@@ -66,7 +79,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
     } catch {
       return null;
     }
-  }, [voice, speed]);
+  }, [voice, speed, genre]);
 
   const playWithWebSpeech = useCallback((sentence: string): Promise<void> => {
     return new Promise((resolve) => {

@@ -232,7 +232,7 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
 
       {/* TTS Player */}
       <div className="mb-4 relative">
-        <TTSPlayer text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')} lang={lang as 'id' | 'en'} />
+        <TTSPlayer text={parsedContent || paragraphs.map((p: any) => p.text).join(' ')} lang={lang as 'id' | 'en'} genre={story?.category} />
       </div>
 
       <article className="space-y-4 md:space-y-5 relative" style={{ fontSize: `${Math.max(14, textSize - 2)}px`, lineHeight: 1.8 }}>
