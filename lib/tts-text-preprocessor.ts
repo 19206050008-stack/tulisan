@@ -1,168 +1,108 @@
 /**
- * Text preprocessing untuk TTS yang lebih natural
- * - Normalisasi angka ke kata
- * - Normalisasi singkatan
- * - Intonation hints berdasarkan tanda baca
+ * Preprocess text untuk TTS
+ * - Skip special characters (*, #, etc.)
+ * - Normalize chapter titles
+ * - Split into sentences
  */
 
-// Konversi angka ke kata (Indonesian)
-const ONES = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
-const TEENS = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas', 'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
-const TENS = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh', 'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
-
-function convertHundreds(num: number): string {
-  if (num === 0) return '';
-  if (num < 10) return ONES[num];
-  if (num < 20) return TEENS[num - 10];
-  if (num < 100) {
-    const tens = Math.floor(num / 10);
-    const ones = num % 10;
-    return TENS[tens] + (ones > 0 ? ' ' + ONES[ones] : '');
-  }
-  if (num < 200) return 'seratus' + (num > 100 ? ' ' + convertHundreds(num - 100) : '');
-  const hundreds = Math.floor(num / 100);
-  const remainder = num % 100;
-  return ONES[hundreds] + ' ratus' + (remainder > 0 ? ' ' + convertHundreds(remainder) : '');
-}
-
-function convertThousands(num: number): string {
-  if (num === 0) return '';
-  if (num < 1000) return convertHundreds(num);
-  if (num < 2000) return 'seribu' + (num > 1000 ? ' ' + convertThousands(num - 1000) : '');
-  const thousands = Math.floor(num / 1000);
-  const remainder = num % 1000;
-  return convertHundreds(thousands) + ' ribu' + (remainder > 0 ? ' ' + convertThousands(remainder) : '');
-}
-
-function convertMillions(num: number): string {
-  if (num === 0) return '';
-  if (num < 1000000) return convertThousands(num);
-  const millions = Math.floor(num / 1000000);
-  const remainder = num % 1000000;
-  return convertHundreds(millions) + ' juta' + (remainder > 0 ? ' ' + convertMillions(remainder) : '');
+/**
+ * Filter out text that should be skipped in TTS (special chars only)
+ */
+export function shouldSkipSegment(text: string): boolean {
+  const trimmed = text.trim();
+  
+  // Check if it's ONLY special characters without meaningful words
+  const hasWords = /[a-züöäßäéèêëàáâäïîìíõóòôùúûüçñ0-9]+/i.test(trimmed);
+  const onlySpecial = !hasWords && /[^a-zA-Z\u00C0-\u00FF\s]/.test(trimmed);
+  
+  return onlySpecial;
 }
 
 /**
- * Konversi angka ke kata (Indonesian)
- * Support hingga jutaan
+ * Detect if text is a chapter title (e.g., "Bab 1", "Chapter 1")
  */
-export function numberToWords(num: number | string): string {
-  const n = typeof num === 'string' ? parseInt(num, 10) : num;
-  if (isNaN(n)) return String(num);
-  if (n === 0) return 'nol';
-  if (n < 0) return 'minus ' + convertMillions(Math.abs(n));
-  return convertMillions(n);
-}
-
-// Singkatan umum Indonesian
-const ABBREVIATIONS: Record<string, string> = {
-  'dll': 'dan lain-lain',
-  'dsb': 'dan sebagainya',
-  'dst': 'dan seterusnya',
-  'yth': 'yang terhormat',
-  'sdr': 'saudara',
-  'sdri': 'saudari',
-  'bapak': 'bapak',
-  'ibu': 'ibu',
-  'jl': 'jalan',
-  'jln': 'jalan',
-  'no': 'nomor',
-  'thn': 'tahun',
-  'bln': 'bulan',
-  'hr': 'hari',
-  'jam': 'jam',
-  'menit': 'menit',
-  'dgn': 'dengan',
-  'utk': 'untuk',
-  'dari': 'dari',
-  'ke': 'ke',
-  'di': 'di',
-  'pd': 'pada',
-  'dlm': 'dalam',
-  'krn': 'karena',
-  'sbg': 'sebagai',
-  'tsb': 'tersebut',
-  'yg': 'yang',
-};
-
-/**
- * Normalisasi singkatan
- */
-export function normalizeAbbreviations(text: string): string {
-  let result = text;
-  for (const [abbr, full] of Object.entries(ABBREVIATIONS)) {
-    const regex = new RegExp(`\\b${abbr}\\.?\\b`, 'gi');
-    result = result.replace(regex, full);
-  }
-  return result;
+export function isChapterTitle(text: string): boolean {
+  return /\b(bab|chapter)\s+\d+/i.test(text);
 }
 
 /**
- * Normalisasi angka ke kata
- * Hanya konversi angka yang berdiri sendiri (bukan bagian dari kata)
+ * Format chapter title for natural TTS reading
+ * "Bab 1" -> "bab satu"
  */
-export function normalizeNumbers(text: string): string {
-  // Match standalone numbers (1-9999999)
-  return text.replace(/\b(\d{1,7})\b/g, (match) => {
+export function formatChapterTitleForTTS(title: string): string {
+  if (!isChapterTitle(title)) return title;
+  
+  // Convert number digits to Indonesian words in chapter context
+  return title.replace(/\b(\d+)\b/g, (match) => {
     const num = parseInt(match, 10);
-    // Skip very large numbers (keep as-is)
-    if (num > 9999999) return match;
-    // Skip years (4 digits starting with 19 or 20)
-    if (match.length === 4 && (match.startsWith('19') || match.startsWith('20'))) return match;
-    return numberToWords(num);
+    const ones = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+    const teens = ['sepuluh', 'sebelas', 'dua belas', 'tiga belas', 'empat belas', 'lima belas', 'enam belas', 'tujuh belas', 'delapan belas', 'sembilan belas'];
+    const tens = ['', '', 'dua puluh', 'tiga puluh', 'empat puluh', 'lima puluh', 'enam puluh', 'tujuh puluh', 'delapan puluh', 'sembilan puluh'];
+    
+    if (num < 10) return ones[num];
+    if (num < 20) return teens[num - 10];
+    if (num < 100) {
+      const tensDigit = Math.floor(num / 10);
+      const onesDigit = num % 10;
+      return tens[tensDigit] + (onesDigit > 0 ? ' ' + ones[onesDigit] : '');
+    }
+    return match; // Keep as digit for large numbers
   });
 }
 
 /**
- * Intonation hints berdasarkan tanda baca
- * Returns pitch adjustment (0.5-2.0) based on sentence type
+ * Clean text for TTS by removing special formatting markers
  */
-export function getIntonationForSentence(sentence: string): { pitch: number; rate: number } {
-  const trimmed = sentence.trim();
+export function cleanTextForTTS(text: string): string {
+  // Remove markdown-style formatting that shouldn't be spoken
+  let cleaned = text;
   
-  // Question - raise pitch slightly
-  if (trimmed.endsWith('?')) {
-    return { pitch: 1.15, rate: 1.0 };
-  }
+  // Remove triple asterisks, hashes, etc.
+  cleaned = cleaned.replace(/(\*{3,}|#{3,})/g, ' ');
+  // Replace multiple spaces/newlines with single space
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  // Remove URLs but keep them readable (read as "link" or full URL)
+  cleaned = cleaned.replace(/https?:\/\/[^\s]+/gi, ' situs web ');
+  // Remove email addresses
+  cleaned = cleaned.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, ' alamat email ');
   
-  // Exclamation - faster, slightly higher
-  if (trimmed.endsWith('!')) {
-    return { pitch: 1.1, rate: 1.05 };
-  }
-  
-  // Ellipsis - slower, contemplative
-  if (trimmed.endsWith('...') || trimmed.endsWith('…')) {
-    return { pitch: 0.95, rate: 0.9 };
-  }
-  
-  // Comma-heavy sentence - slightly slower for clarity
-  if ((trimmed.match(/,/g) || []).length > 3) {
-    return { pitch: 1.0, rate: 0.95 };
-  }
-  
-  // Statement - neutral
-  return { pitch: 1.0, rate: 1.0 };
+  return cleaned;
 }
 
 /**
  * Preprocess text untuk TTS
- * 1. Normalisasi singkatan
- * 2. Normalisasi angka
- * 3. Split ke kalimat
+ * 1. Skip invalid segments
+ * 2. Normalize chapter titles
+ * 3. Clean special chars
+ * 4. Split into sentences
  */
 export function preprocessTextForTTS(text: string): string[] {
   let processed = text;
   
-  // Step 1: Normalize abbreviations
+  // Step 1: Clean text first
+  processed = cleanTextForTTS(processed);
+  
+  // Step 2: Normalize abbreviations
   processed = normalizeAbbreviations(processed);
   
-  // Step 2: Normalize numbers
+  // Step 3: Normalize numbers
   processed = normalizeNumbers(processed);
   
-  // Step 3: Split into sentences (preserve punctuation)
+  // Step 4: Split into sentences
   const sentences = processed.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [processed];
   
-  return sentences
+  // Step 5: Filter out segments that should be skipped
+  const filtered = sentences
     .map(s => s.trim())
-    .filter(s => s.length > 0);
+    .filter(s => {
+      // Skip if only special chars
+      if (shouldSkipSegment(s)) return false;
+      // Skip empty strings
+      if (s.length === 0) return false;
+      return true;
+    })
+    .filter(s => s.length > 2);
+  
+  return filtered;
 }
+
