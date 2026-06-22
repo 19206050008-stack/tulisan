@@ -619,30 +619,22 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       )}
 
-      {/* Sticky now-playing bar */}
+      {/* Sticky now-playing bar — recorder style */}
       {current && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-bg-card/95 backdrop-blur border-t border-border">
-          <div className="h-1 bg-border">
-            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="max-w-6xl mx-auto px-3 md:px-4 py-2.5 flex items-center gap-3">
-            <div className="h-10 w-10 md:w-11 shrink-0 rounded-md overflow-hidden bg-bg-input/50">
-              <AudioVisualizer
-                audioElement={null}
-                barCount={6}
-                barColor="#E65A28"
-                barGap={1}
-                active={playing && !paused}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
-              <p className="text-[10px] md:text-xs text-tx-muted truncate">
-                {loading ? (lang === 'en' ? 'Loading...' : 'Memuat...') : paused ? (lang === 'en' ? 'Paused' : 'Dijeda') : `${sentenceIdx + 1}/${totalSentences}`}
-              </p>
+          <div className="max-w-6xl mx-auto px-3 md:px-4 py-3 space-y-2.5">
+            {/* Title + info */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
+                <p className="text-[10px] md:text-xs text-tx-muted truncate">
+                  {current.profiles?.full_name || current.profiles?.username || 'Anonim'}
+                  {loading ? ` · ${lang === 'en' ? 'Loading...' : 'Memuat...'}` : ''}
+                </p>
+              </div>
               {/* Current sentence with word highlighting */}
               {playing && !paused && currentSentence && currentWord && (
-                <p className="text-[10px] md:text-xs text-tx-soft truncate mt-0.5">
+                <p className="hidden md:block text-[10px] text-tx-soft truncate max-w-[40%]">
                   {currentSentence.split(' ').map((word, idx) => {
                     const isCurrentWord = word.toLowerCase().replace(/[.,!?;:]/g, '') === currentWord.toLowerCase().replace(/[.,!?;:]/g, '');
                     return (
@@ -654,52 +646,87 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              {user?.id && (
-                <>
-                  <button onClick={handleLike} className={`p-1.5 md:p-2 rounded-full transition-colors ${liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
-                    <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
-                  </button>
-                  <button onClick={handleSave} className={`p-1.5 md:p-2 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
-                    <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
-                  </button>
-                </>
-              )}
-              <button onClick={() => skipSentence(-1)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft transition-colors hidden sm:block" title="Previous">
-                <SkipBack className="h-4 w-4" />
-              </button>
-              <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity">
-                {playing && !paused ? <Pause className="h-4 w-4 md:h-5 md:w-5" /> : <Play className="h-4 w-4 md:h-5 md:w-5" />}
-              </button>
-              <button onClick={() => skipSentence(1)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft transition-colors hidden sm:block" title="Next">
-                <SkipForward className="h-4 w-4" />
-              </button>
-              <div className="relative">
-                <button onClick={() => setShowSleep(!showSleep)} className={`p-1.5 md:p-2 rounded-full transition-colors ${sleepRemaining > 0 ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Sleep timer">
-                  <Moon className="h-4 w-4" />
-                </button>
-                {sleepRemaining > 0 && (
-                  <span className="absolute -top-1 -right-1 text-[8px] bg-accent text-white rounded-full px-1 leading-tight">{formatSleep(sleepRemaining)}</span>
-                )}
-                {showSleep && (
-                  <div className="absolute bottom-full right-0 mb-2 p-2 rounded-xl bg-bg-card border border-border shadow-xl w-32 space-y-1">
-                    <p className="text-[10px] font-medium text-tx-muted px-2 py-1">{lang === 'en' ? 'Sleep timer' : 'Timer tidur'}</p>
-                    {[5, 10, 15, 30, 60].map(m => (
-                      <button key={m} onClick={() => { startSleepTimer(m); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-bg-soft transition-colors">
-                        {m} {lang === 'en' ? 'min' : 'menit'}
-                      </button>
-                    ))}
-                    {sleepRemaining > 0 && (
-                      <button onClick={() => { setSleepRemaining(0); setSleepMin(0); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        {lang === 'en' ? 'Cancel' : 'Batalkan'}
-                      </button>
-                    )}
-                  </div>
-                )}
+
+            {/* Waveform / progress area */}
+            <div className="space-y-1">
+              <div className="flex justify-center">
+                <span className="text-[10px] md:text-xs font-mono text-accent">{sentenceIdx + 1}/{totalSentences}</span>
               </div>
-              <button onClick={stopPlayback} className="p-1.5 md:p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Stop">
-                <X className="h-4 w-4" />
-              </button>
+              <div className="relative h-10 md:h-12 rounded-xl bg-bg-input overflow-hidden">
+                {/* Progress fill */}
+                <div className="absolute inset-y-0 left-0 bg-accent/10 transition-all duration-300" style={{ width: `${progress}%` }} />
+                {/* Waveform visualizer */}
+                <div className="absolute inset-0">
+                  <AudioVisualizer
+                    audioElement={null}
+                    barCount={32}
+                    barColor="#E65A28"
+                    barGap={2}
+                    active={playing && !paused}
+                  />
+                </div>
+                {/* Playhead indicator */}
+                <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${progress}%` }} />
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <button onClick={togglePlayPause} className="p-2 rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors" title={playing && !paused ? 'Pause' : 'Play'}>
+                  {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+                <button onClick={togglePlayPause} className="p-2 rounded-full bg-accent text-white hover:opacity-90 transition-opacity" title="Pause">
+                  <Pause className="h-4 w-4" />
+                </button>
+                <button onClick={stopPlayback} className="p-2 rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors" title="Stop">
+                  <Square className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => skipSentence(-1)} className="p-2 rounded-full hover:bg-bg-soft transition-colors" title="Previous">
+                  <SkipBack className="h-4 w-4" />
+                </button>
+                <button onClick={() => skipSentence(1)} className="p-2 rounded-full hover:bg-bg-soft transition-colors" title="Next">
+                  <SkipForward className="h-4 w-4" />
+                </button>
+                {user?.id && (
+                  <>
+                    <button onClick={handleLike} className={`p-2 rounded-full transition-colors ${liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
+                      <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
+                    </button>
+                    <button onClick={handleSave} className={`p-2 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
+                      <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+                    </button>
+                  </>
+                )}
+                <div className="relative">
+                  <button onClick={() => setShowSleep(!showSleep)} className={`p-2 rounded-full transition-colors ${sleepRemaining > 0 ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Sleep timer">
+                    <Moon className="h-4 w-4" />
+                  </button>
+                  {sleepRemaining > 0 && (
+                    <span className="absolute -top-1 -right-1 text-[8px] bg-accent text-white rounded-full px-1 leading-tight">{formatSleep(sleepRemaining)}</span>
+                  )}
+                  {showSleep && (
+                    <div className="absolute bottom-full right-0 mb-2 p-2 rounded-xl bg-bg-card border border-border shadow-xl w-32 space-y-1">
+                      <p className="text-[10px] font-medium text-tx-muted px-2 py-1">{lang === 'en' ? 'Sleep timer' : 'Timer tidur'}</p>
+                      {[5, 10, 15, 30, 60].map(m => (
+                        <button key={m} onClick={() => { startSleepTimer(m); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-bg-soft transition-colors">
+                          {m} {lang === 'en' ? 'min' : 'menit'}
+                        </button>
+                      ))}
+                      {sleepRemaining > 0 && (
+                        <button onClick={() => { setSleepRemaining(0); setSleepMin(0); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          {lang === 'en' ? 'Cancel' : 'Batalkan'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button onClick={stopPlayback} className="p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Close">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
