@@ -61,15 +61,14 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   }, [text]);
 
   const fetchEdgeAudio = useCallback(async (sentence: string): Promise<string | null> => {
-    const style = genreToStyle(genre);
-    const cacheKey = `${voice}_${speed}_${style}_${sentence}`;
+    const cacheKey = `${lang}_${sentence}`;
     if (cacheRef.current.has(cacheKey)) return cacheRef.current.get(cacheKey)!;
 
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence, voice, rate: speed, style }),
+        body: JSON.stringify({ text: sentence, lang }),
       });
       if (!res.ok) throw new Error('TTS API failed');
       const blob = await res.blob();
@@ -79,7 +78,7 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
     } catch {
       return null;
     }
-  }, [voice, speed, genre]);
+  }, [lang]);
 
   const playWithWebSpeech = useCallback((sentence: string): Promise<void> => {
     return new Promise((resolve) => {
