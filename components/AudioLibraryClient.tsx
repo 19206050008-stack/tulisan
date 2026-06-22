@@ -552,7 +552,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
                       const cardProgress = isCurrent ? progress : 35;
-                      const barHeights = [40,65,85,55,70,45,90,60,75,50,80,55,68,42];
                       const palette = ['#E65A28', '#2563EB', '#059669', '#7C3AED', '#DB2777'];
                       const color = palette[i % palette.length];
                       return (
@@ -570,18 +569,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           {/* Author */}
                           <p className="text-[9px] mt-0.5 mb-2.5 truncate text-white/60">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</p>
 
-                          {/* Waveform box — animated equalizer bars + flat line + playhead */}
+                          {/* Waveform box — same AudioVisualizer equalizer as elsewhere */}
                           <div className="relative bg-black/25 rounded-lg h-8 px-2 flex items-center mb-2.5 overflow-hidden">
-                            <div className={`flex items-center gap-[1.5px] h-5 shrink-0 ${isActive ? 'eq-anim' : ''}`}>
-                              {barHeights.map((h, bi) => (
-                                <span
-                                  key={bi}
-                                  className="eq-bar bg-white"
-                                  style={{ width: '2px', height: `${h}%`, borderRadius: '1px', animationDelay: `${bi * 0.07}s`, opacity: isActive ? 1 : 0.6 }}
-                                />
-                              ))}
+                            <div className="absolute inset-0 px-2 py-1.5">
+                              <AudioVisualizer audioElement={null} barCount={20} barColor="#ffffff" barGap={1} active={isActive} />
                             </div>
-                            <div className="flex-1 h-px bg-white/30 ml-[2px]" />
                             <div className="absolute top-1.5 bottom-1.5 w-0.5 bg-white transition-all duration-300" style={{ left: `${Math.min(cardProgress, 88)}%` }} />
                           </div>
 
