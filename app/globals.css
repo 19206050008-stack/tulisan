@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Prevent horizontal scroll from full-bleed pages */
+html, body {
+  overflow-x: hidden;
+}
+
 /* ==========================================================================
    TAILWIND v4 DARK MODE FIX
    Force class-based dark mode instead of prefers-color-scheme
