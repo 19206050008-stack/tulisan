@@ -6,9 +6,9 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
-import { loadTTSPrefs, pickVoice, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
+import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, pickVoice, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
-import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
 
 interface AudioStory {
   id: string;
@@ -72,15 +72,24 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     })();
   }, [user?.id]);
 
-  // Load saved TTS prefs and preload voices
+  // Load saved TTS prefs from DB (synced across devices) and preload voices
   useEffect(() => {
-    const p = loadTTSPrefs();
-    setGender(p.gender);
-    setSpeed(p.speed);
-    genderRef.current = p.gender;
-    speedRef.current = p.speed;
     preloadVoices();
-  }, []);
+    if (user?.id) {
+      loadTTSPrefsFromDB(user.id).then(p => {
+        setGender(p.gender);
+        setSpeed(p.speed);
+        genderRef.current = p.gender;
+        speedRef.current = p.speed;
+      });
+    } else {
+      const p = loadTTSPrefs();
+      setGender(p.gender);
+      setSpeed(p.speed);
+      genderRef.current = p.gender;
+      speedRef.current = p.speed;
+    }
+  }, [user?.id]);
 
   const genres = ['All', ...Array.from(new Set(stories.map(s => s.category).filter(Boolean)))] as string[];
 
@@ -410,6 +419,58 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
               <ListIcon className="h-4 w-4" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Voice settings (global per user, synced across devices) */}
+      <div className="flex items-center gap-3 mb-5 p-3 md:p-4 rounded-2xl bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 flex-wrap">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Settings2 className="h-3.5 w-3.5 text-accent" />
+          <span className="text-[10px] md:text-xs font-bold text-accent uppercase tracking-wider">{lang === 'en' ? 'Audio Settings' : 'Pengaturan Suara'}</span>
+        </div>
+        <span className="w-px h-4 bg-accent/20 shrink-0" />
+        <span className="text-[10px] md:text-xs font-medium text-tx-muted shrink-0">{lang === 'en' ? 'Voice:' : 'Suara:'}</span>
+        <div className="flex gap-1">
+          <button
+            onClick={() => {
+              setGender('wanita');
+              genderRef.current = 'wanita';
+              if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'wanita', speed: speedRef.current });
+              else saveTTSPrefs({ gender: 'wanita', speed: speedRef.current });
+            }}
+            className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white shadow-sm' : 'bg-bg-card text-tx-soft hover:bg-bg-soft border border-border'}`}
+          >
+            {lang === 'en' ? 'Female' : 'Wanita'}
+          </button>
+          <button
+            onClick={() => {
+              setGender('pria');
+              genderRef.current = 'pria';
+              if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'pria', speed: speedRef.current });
+              else saveTTSPrefs({ gender: 'pria', speed: speedRef.current });
+            }}
+            className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white shadow-sm' : 'bg-bg-card text-tx-soft hover:bg-bg-soft border border-border'}`}
+          >
+            {lang === 'en' ? 'Male' : 'Pria'}
+          </button>
+        </div>
+        <span className="w-px h-4 bg-accent/20 shrink-0" />
+        <span className="text-[10px] md:text-xs font-medium text-tx-muted shrink-0">{lang === 'en' ? 'Speed:' : 'Kecepatan:'}</span>
+        <div className="flex gap-1">
+          {[{ v: 0.75, l: '0.75x' }, { v: 1, l: '1x' }, { v: 1.25, l: '1.25x' }, { v: 1.5, l: '1.5x' }].map(opt => (
+            <button
+              key={opt.v}
+              onClick={() => {
+                setSpeed(opt.v);
+                speedRef.current = opt.v;
+                if (user?.id) saveTTSPrefsToDB(user.id, { gender: genderRef.current, speed: opt.v });
+                else saveTTSPrefs({ gender: genderRef.current, speed: opt.v });
+              }}
+              className={`px-2.5 py-1.5 rounded-lg text-[10px] md:text-xs font-medium transition-colors ${speed === opt.v ? 'bg-accent text-white shadow-sm' : 'bg-bg-card text-tx-soft hover:bg-bg-soft border border-border'}`}
+            >
+              {opt.l}
+            </button>
+          ))}
         </div>
       </div>
 

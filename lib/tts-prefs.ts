@@ -34,6 +34,43 @@ export function saveTTSPrefs(prefs: TTSPrefs) {
   } catch {}
 }
 
+// Load TTS prefs from Supabase (synced across devices)
+export async function loadTTSPrefsFromDB(userId: string): Promise<TTSPrefs> {
+  try {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return loadTTSPrefs();
+    const { data } = await supabase
+      .from('profiles')
+      .select('tts_gender, tts_speed')
+      .eq('id', userId)
+      .single();
+    if (data) {
+      const prefs: TTSPrefs = {
+        gender: data.tts_gender === 'pria' ? 'pria' : 'wanita',
+        speed: typeof data.tts_speed === 'number' && data.tts_speed > 0 ? data.tts_speed : 1,
+      };
+      // Cache to localStorage
+      saveTTSPrefs(prefs);
+      return prefs;
+    }
+  } catch {}
+  return loadTTSPrefs();
+}
+
+// Save TTS prefs to Supabase (synced across devices)
+export async function saveTTSPrefsToDB(userId: string, prefs: TTSPrefs): Promise<void> {
+  // Always save to localStorage as cache
+  saveTTSPrefs(prefs);
+  try {
+    const { supabase } = await import('@/lib/supabase/client');
+    if (!supabase) return;
+    await supabase
+      .from('profiles')
+      .update({ tts_gender: prefs.gender, tts_speed: prefs.speed })
+      .eq('id', userId);
+  } catch {}
+}
+
 // Pick a Web Speech voice for the requested gender + language.
 // Based on: https://github.com/readium/speech/blob/main/json/id.json
 //
