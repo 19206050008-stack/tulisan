@@ -34,13 +34,16 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [useEdge, setUseEdge] = useState(true);
 
+  const [sentenceList, setSentenceList] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const sentences = useRef<string[]>([]);
+  const sentencesRef = useRef<string[]>([]);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const abortRef = useRef(false);
 
   useEffect(() => {
-    sentences.current = splitIntoSentences(text);
+    const list = splitIntoSentences(text);
+    sentencesRef.current = list;
+    setSentenceList(list);
   }, [text]);
 
   const fetchEdgeAudio = useCallback(async (sentence: string): Promise<string | null> => {
@@ -78,10 +81,10 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
     abortRef.current = false;
     setPlaying(true);
 
-    for (let i = startIdx; i < sentences.current.length; i++) {
+    for (let i = startIdx; i < sentencesRef.current.length; i++) {
       if (abortRef.current) break;
       setCurrentIdx(i);
-      const sentence = sentences.current[i];
+      const sentence = sentencesRef.current[i];
 
       if (useEdge) {
         setLoading(true);
@@ -106,8 +109,8 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
       }
 
       // Prefetch next sentence
-      if (useEdge && i + 1 < sentences.current.length && !abortRef.current) {
-        fetchEdgeAudio(sentences.current[i + 1]);
+      if (useEdge && i + 1 < sentencesRef.current.length && !abortRef.current) {
+        fetchEdgeAudio(sentencesRef.current[i + 1]);
       }
     }
 
@@ -130,13 +133,13 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
     if (!playing) return;
     audioRef.current?.pause();
     speechSynthesis.cancel();
-    const next = Math.min(currentIdx + 1, sentences.current.length - 1);
+    const next = Math.min(currentIdx + 1, sentencesRef.current.length - 1);
     setCurrentIdx(next);
     playSequence(next);
   };
 
-  const progress = sentences.current.length > 0
-    ? Math.round((currentIdx / sentences.current.length) * 100)
+  const progress = sentenceList.length > 0
+    ? Math.round((currentIdx / sentenceList.length) * 100)
     : 0;
 
   return (
@@ -156,7 +159,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
               <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
             <p className="text-[9px] md:text-[10px] text-tx-muted mt-0.5 truncate">
-              {loading ? 'Memuat...' : `Kalimat ${currentIdx + 1}/${sentences.current.length}`}
+              {loading ? 'Memuat...' : `Kalimat ${currentIdx + 1}/${sentenceList.length}`}
             </p>
           </div>
           <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Skip">
@@ -167,7 +170,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
 
       {!playing && (
         <span className="text-[10px] md:text-xs text-tx-muted">
-          {sentences.current.length} kalimat
+          {sentenceList.length} kalimat
         </span>
       )}
 
