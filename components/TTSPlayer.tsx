@@ -107,6 +107,11 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
 
         if (abortRef.current) break;
 
+        // Prefetch next sentence early so it's ready (smoother transition)
+        if (i + 1 < sentencesRef.current.length) {
+          fetchEdgeAudio(sentencesRef.current[i + 1]);
+        }
+
         if (audioUrl) {
           await new Promise<void>((resolve) => {
             const audio = new Audio(audioUrl);
@@ -128,9 +133,9 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
         await new Promise(r => setTimeout(r, 150));
       }
 
-      // Prefetch next sentence
-      if (useEdge && i + 1 < sentencesRef.current.length && !abortRef.current) {
-        fetchEdgeAudio(sentencesRef.current[i + 1]);
+      // Natural pause between sentences (breath)
+      if (!abortRef.current && i + 1 < sentencesRef.current.length) {
+        await new Promise(r => setTimeout(r, 250));
       }
     }
 
