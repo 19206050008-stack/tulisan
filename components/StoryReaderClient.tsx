@@ -189,6 +189,12 @@ export default function StoryReaderClient({ story: initialStory, chapters: initi
   const displayTitle = chapters.length <= 1 ? storyTitle : (currentChapter?.title || 'Bagian 1');
   const displaySubtitle = chapters.length <= 1 ? `Bagian ${activeChapterIndex + 1}` : storyTitle;
 
+  // TTS text: for multi-chapter stories, read "Bab N Judul" before content
+  const baseTtsText = parsedContent || paragraphs.map((p: any) => p.text).join(' ');
+  const ttsText = chapters.length > 1 && currentChapter?.title
+    ? `Bab ${activeChapterIndex + 1}, ${currentChapter.title}. ${baseTtsText}`
+    : baseTtsText;
+
   return (
     <>
       <ReadingProgress />
