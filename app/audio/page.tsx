@@ -1,18 +1,14 @@
-// Server Component — pre-fetch stories with approved audio for audio library
+// Server Component — pre-fetch published stories for audio library
 import { getStories } from '@/lib/supabase';
-import { getApprovedAudioStoryIds } from '@/lib/supabase/admin';
 import AudioLibraryClient from '@/components/AudioLibraryClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AudioPage() {
-  const [stories, approvedIds] = await Promise.all([
-    getStories('published'),
-    getApprovedAudioStoryIds(),
-  ]);
+  const stories = await getStories('published');
 
-  // Only stories with admin-approved audio
-  const audioStories = (stories || []).filter((s: any) => s.title && approvedIds.has(s.id));
+  // All published stories are available as audio (TTS is client-side)
+  const audioStories = (stories || []).filter((s: any) => s.title);
 
   return <AudioLibraryClient stories={audioStories} />;
 }
