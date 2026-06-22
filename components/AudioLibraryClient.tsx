@@ -503,19 +503,19 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             const isCurrent = current?.id === story.id;
             const isActive = isCurrent && playing && !paused;
             return (
-              <button
-                key={story.id}
-                onClick={() => selectAndPlay(story)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
-              >
+               <button
+                 key={story.id}
+                 onClick={() => selectAndPlay(story)}
+                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
+               >
                  <span className="w-5 text-center text-xs text-tx-muted shrink-0">{i + 1}</span>
                  <span className="min-w-0 flex-1">
                    <span className="block text-sm font-medium truncate">{story.title}</span>
                    <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
                  </span>
-                 {/* Equalizer - side by side when active */}
-                 {isCurrent && (
-                   <div className={`shrink-0 rounded overflow-hidden transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                 {/* Equalizer - side by side */}
+                 {isCurrent && isActive && (
+                   <div className="shrink-0 rounded overflow-hidden">
                      <AudioVisualizer
                        audioElement={null}
                        barCount={8}
@@ -554,29 +554,27 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                         <button
                           key={story.id}
                           onClick={() => selectAndPlay(story)}
-                           className={`relative flex flex-col p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
+                           className={`relative flex p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
                          >
-                           <div className="flex items-center gap-3">
-                             <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
-                               {i + 1}
-                             </span>
-                             <span className="min-w-0 flex-1">
-                               <span className="block text-sm font-medium truncate">{story.title}</span>
-                               <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                             </span>
-                             {/* Equalizer - side by side with title */}
-                             {isCurrent && (
-                               <div className={`shrink-0 rounded overflow-hidden transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                                 <AudioVisualizer
-                                   audioElement={null}
-                                   barCount={8}
-                                   barColor="#E65A28"
-                                   barGap={1}
-                                   active={isActive}
-                                 />
-                               </div>
-                             )}
-                           </div>
+                           <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
+                             {i + 1}
+                           </span>
+                           <span className="min-w-0 flex-1">
+                             <span className="block text-sm font-medium truncate">{story.title}</span>
+                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                           </span>
+                           {/* Equalizer - side by side with title */}
+                           {isCurrent && isActive && (
+                             <div className="shrink-0 rounded overflow-hidden">
+                               <AudioVisualizer
+                                 audioElement={null}
+                                 barCount={8}
+                                 barColor="#E65A28"
+                                 barGap={1}
+                                 active={isActive}
+                               />
+                             </div>
+                           )}
                          </button>
                       );
                     })}
@@ -592,24 +590,24 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           onClick={() => selectAndPlay(story)}
                           className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
                         >
-                           <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
-                           <span className="min-w-0 flex-1">
-                             <span className="block text-sm font-medium truncate">{story.title}</span>
-                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                           </span>
-                           {/* Equalizer - side by side */}
-                           {isCurrent && (
-                             <div className={`shrink-0 rounded overflow-hidden transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                               <AudioVisualizer
-                                 audioElement={null}
-                                 barCount={8}
-                                 barColor="#E65A28"
-                                 barGap={1}
-                                 active={isActive}
-                               />
-                             </div>
-                           )}
-                         </button>
+                          <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium truncate">{story.title}</span>
+                            <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                          </span>
+                          {/* Equalizer - side by side */}
+                          {isCurrent && isActive && (
+                            <div className="shrink-0 rounded overflow-hidden">
+                              <AudioVisualizer
+                                audioElement={null}
+                                barCount={8}
+                                barColor="#E65A28"
+                                barGap={1}
+                                active={isActive}
+                              />
+                            </div>
+                          )}
+                        </button>
                       );
                     })}
                   </div>
