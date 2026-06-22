@@ -456,44 +456,16 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       </div>
 
-      {/* Voice settings popup */}
+      {/* Speed settings popup */}
       {showVoiceSettings && (
         <div className="mb-4 p-3 md:p-4 rounded-2xl bg-bg-card border border-border shadow-lg space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-accent">{lang === 'en' ? 'Voice Settings' : 'Pengaturan Suara'}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-accent">{lang === 'en' ? 'Playback Speed' : 'Kecepatan Baca'}</span>
             <button onClick={() => setShowVoiceSettings(false)} className="p-1 rounded-full hover:bg-bg-soft">
               <X className="h-3.5 w-3.5 text-tx-muted" />
             </button>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] md:text-xs font-medium text-tx-muted">{lang === 'en' ? 'Voice' : 'Suara'}</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setGender('wanita');
-                  genderRef.current = 'wanita';
-                  if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'wanita', speed: speedRef.current });
-                  else saveTTSPrefs({ gender: 'wanita', speed: speedRef.current });
-                }}
-                className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
-              >
-                {lang === 'en' ? 'Female' : 'Wanita'}
-              </button>
-              <button
-                onClick={() => {
-                  setGender('pria');
-                  genderRef.current = 'pria';
-                  if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'pria', speed: speedRef.current });
-                  else saveTTSPrefs({ gender: 'pria', speed: speedRef.current });
-                }}
-                className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
-              >
-                {lang === 'en' ? 'Male' : 'Pria'}
-              </button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] md:text-xs font-medium text-tx-muted">{lang === 'en' ? 'Speed' : 'Kecepatan'}</label>
             <div className="grid grid-cols-4 gap-2">
               {[{ v: 0.75, l: '0.75x' }, { v: 1, l: '1x' }, { v: 1.25, l: '1.25x' }, { v: 1.5, l: '1.5x' }].map(opt => (
                 <button
@@ -501,8 +473,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   onClick={() => {
                     setSpeed(opt.v);
                     speedRef.current = opt.v;
-                    if (user?.id) saveTTSPrefsToDB(user.id, { gender: genderRef.current, speed: opt.v });
-                    else saveTTSPrefs({ gender: genderRef.current, speed: opt.v });
+                    if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'wanita', speed: opt.v });
+                    else saveTTSPrefs({ gender: 'wanita', speed: opt.v });
                   }}
                   className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${speed === opt.v ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
                 >
@@ -511,20 +483,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
               ))}
             </div>
           </div>
-          <div className="p-2 rounded-lg bg-bg-input space-y-1">
-            <p className="text-[9px] font-medium text-tx-muted uppercase tracking-wide">
-              {lang === 'en' ? 'Browser Compatibility' : 'Kompatibilitas Browser'}
-            </p>
-            <div className="text-[9px] text-tx-soft space-y-0.5">
-              <p>🎙️ <strong>{lang === 'en' ? 'Male voice' : 'Suara pria'}</strong>: {lang === 'en' ? 'Edge (desktop/mobile), some Android devices' : 'Edge (desktop/mobile), beberapa device Android'}</p>
-              <p>🎙️ <strong>{lang === 'en' ? 'Female voice' : 'Suara wanita'}</strong>: {lang === 'en' ? 'All browsers' : 'Semua browser'}</p>
-              <p className="text-tx-muted italic">{lang === 'en' ? 'Best quality: Microsoft Edge (Neural voices)' : 'Kualitas terbaik: Microsoft Edge (suara Neural)'}</p>
-            </div>
-          </div>
           <p className="text-[9px] text-tx-muted">
             {lang === 'en'
-              ? 'Settings sync across all your devices. Voice availability depends on your browser and device.'
-              : 'Setting tersimpan di semua perangkat. Ketersediaan suara tergantung browser dan device.'}
+              ? 'Settings sync across all your devices.'
+              : 'Setting tersimpan di semua perangkat.'}
           </p>
         </div>
       )}
@@ -547,9 +509,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                 className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
               >
                 <span className="w-5 text-center text-xs text-tx-muted shrink-0">{i + 1}</span>
-                <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
-                  {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium truncate">{story.title}</span>
                   <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
@@ -608,9 +567,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                               <span className="block text-sm font-medium truncate">{story.title}</span>
                               <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
                             </span>
-                            <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
-                              {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                            </span>
                           </div>
                           {/* Equalizer visualizer for active card */}
                           <div className={`h-6 mt-2 rounded-md overflow-hidden ${isActive ? '' : 'opacity-0'}`}>
@@ -640,9 +596,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
                         >
                           <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
-                          <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
-                            {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                          </span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-medium truncate">{story.title}</span>
                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
