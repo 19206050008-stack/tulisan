@@ -9,7 +9,7 @@ import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } 
 import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 import { preprocessTextForTTS, getIntonationForSentence } from '@/lib/tts-text-preprocessor';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
-import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, X, Moon, ChevronRight, ChevronLeft, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
 
 interface AudioStory {
   id: string;
@@ -56,6 +56,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const currentIdRef = useRef<string | null>(null);
   const genderRef = useRef<TTSGender>('wanita');
   const speedRef = useRef(1);
+  const newScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollNew = (dir: number) => {
+    const el = newScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.8), behavior: 'smooth' });
+  };
 
   // Load saved story ids for "Saved" tab
   useEffect(() => {
@@ -547,7 +554,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   </Link>
                 </div>
                 {sec.key === 'new' && view === 'grid' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                  <div className="relative">
+                  <div ref={newScrollRef} className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1 lg:grid lg:grid-cols-5 lg:overflow-visible lg:mx-0 lg:px-0">
                     {sec.items.map((story, i) => {
                       const isCurrent = current?.id === story.id;
                       const isActive = isCurrent && playing && !paused;
@@ -557,7 +565,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                       return (
                         <div
                           key={story.id}
-                          className="rounded-2xl p-3 transition-transform hover:-translate-y-0.5 text-white"
+                          className="rounded-2xl p-3 transition-transform hover:-translate-y-0.5 text-white shrink-0 w-[52%] sm:w-[40%] lg:w-auto"
                           style={{ backgroundColor: color }}
                         >
                           {/* Tag (Introducing) */}
@@ -606,6 +614,14 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                         </div>
                       );
                     })}
+                  </div>
+                  {/* Scroll buttons — mobile only */}
+                  <button onClick={() => scrollNew(-1)} className="lg:hidden absolute left-0 top-1/2 -translate-y-1/2 -ml-1 w-8 h-8 flex items-center justify-center rounded-full bg-bg-card border border-border shadow-md text-tx" title="Scroll left">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => scrollNew(1)} className="lg:hidden absolute right-0 top-1/2 -translate-y-1/2 -mr-1 w-8 h-8 flex items-center justify-center rounded-full bg-bg-card border border-border shadow-md text-tx" title="Scroll right">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                   </div>
                 ) : view === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
