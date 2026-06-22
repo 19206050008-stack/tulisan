@@ -438,7 +438,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </button>
 
-          <div className="relative flex items-center gap-2.5 md:gap-6 px-9 md:px-12 py-3 md:py-6">
+          <div className="relative flex items-center gap-2.5 md:gap-6 pl-9 pr-11 md:px-12 pt-3 pb-6 md:py-6">
             {/* Cover */}
             <div className="relative w-12 h-12 md:w-32 md:h-32 shrink-0 rounded-lg md:rounded-xl overflow-hidden shadow-2xl">
               <StoryCover coverUrl={heroStory.cover_url} category={heroStory.category} title={heroStory.title} />
@@ -448,9 +448,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <div className="min-w-0 flex-1 text-white">
               <p className="text-[8px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
               {/* Title row — mobile shows icon-only play at right */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <h2 className="flex-1 min-w-0 text-sm md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
-                <button onClick={() => selectAndPlay(heroStory)} className="md:hidden shrink-0 ml-1 w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform" title={heroActive ? 'Pause' : 'Play'}>
+                <button onClick={() => selectAndPlay(heroStory)} className="md:hidden shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white text-black hover:scale-105 transition-transform" title={heroActive ? 'Pause' : 'Play'}>
                   {heroActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </button>
               </div>
@@ -467,7 +467,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           </div>
 
           {/* Dots indicator — centered */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
             {sliderStories.map((_, di) => (
               <button key={di} onClick={() => setSlide(di)} className={`h-1.5 rounded-full transition-all ${di === slide ? 'w-4 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'}`} title={`Slide ${di + 1}`} />
             ))}
