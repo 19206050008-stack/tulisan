@@ -380,68 +380,17 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   return (
     <div className="max-w-6xl mx-auto pb-32">
-      {/* Hero Card — Recorder style */}
-      <div className="mb-6 md:mb-8 rounded-2xl bg-bg-card border border-border p-5 md:p-8 space-y-4 md:space-y-6">
-        <div>
-          <p className="text-xs md:text-sm font-medium text-accent mb-2">{lang === 'en' ? 'Introducing' : 'Selamat Datang'}</p>
-          <h1 className="text-3xl md:text-5xl font-bold font-serif leading-tight">Audio<br />Cerita</h1>
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-xl bg-accent/10">
+            <Music className="h-6 w-6 text-accent" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold font-serif">Audio Cerita</h1>
+            <p className="text-sm text-tx-muted">{lang === 'en' ? 'Listen to stories narrated by AI' : 'Dengarkan cerita dengan narasi AI'}</p>
+          </div>
         </div>
-        <p className="text-sm md:text-base text-tx-soft leading-relaxed max-w-md">
-          {lang === 'en'
-            ? 'All your stories at your fingertips. Simply pick and start listening the way you like. Zero distractions.'
-            : 'Dengarkan semua cerita favoritmu. Pilih dan mulai dengarkan. Tanpa gangguan.'}
-        </p>
-
-        {/* Waveform + controls (shows when playing) */}
-        {current ? (
-          <div className="space-y-3">
-            {/* Now playing info */}
-            <p className="text-xs text-tx-muted truncate">{current.title} · {current.profiles?.full_name || current.profiles?.username || 'Anonim'}</p>
-            {/* Timestamp */}
-            <div className="flex justify-center">
-              <span className="text-xs md:text-sm font-mono text-accent">{sentenceIdx + 1}/{totalSentences}</span>
-            </div>
-            {/* Waveform bar */}
-            <div className="relative h-12 md:h-14 rounded-xl bg-bg-input overflow-hidden">
-              <div className="absolute inset-y-0 left-0 bg-accent/10 transition-all duration-300" style={{ width: `${progress}%` }} />
-              <div className="absolute inset-0">
-                <AudioVisualizer audioElement={null} barCount={40} barColor="#E65A28" barGap={2} active={playing && !paused} />
-              </div>
-              <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${progress}%` }} />
-            </div>
-            {/* Controls row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors">
-                  <Play className="h-4 w-4" />
-                </button>
-                <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity">
-                  {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </button>
-                <button onClick={stopPlayback} className="p-2.5 rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors">
-                  <Square className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {user?.id && (
-                  <>
-                    <button onClick={handleLike} className={`p-2 rounded-full transition-colors ${liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`}>
-                      <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
-                    </button>
-                    <button onClick={handleSave} className={`p-2 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`}>
-                      <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Idle waveform preview */
-          <div className="relative h-12 md:h-14 rounded-xl bg-bg-input overflow-hidden opacity-40">
-            <AudioVisualizer audioElement={null} barCount={40} barColor="#E65A28" barGap={2} active={false} />
-          </div>
-        )}
       </div>
 
       {/* Search + genre filter */}
@@ -670,111 +619,61 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       )}
 
-      {/* Sticky now-playing bar — recorder style */}
+      {/* Now-playing — floating recorder card */}
       {current && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-bg-card/95 backdrop-blur border-t border-border">
-          <div className="max-w-6xl mx-auto px-3 md:px-4 py-3 space-y-2.5">
-            {/* Title + info */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
-                <p className="text-[10px] md:text-xs text-tx-muted truncate">
-                  {current.profiles?.full_name || current.profiles?.username || 'Anonim'}
-                  {loading ? ` · ${lang === 'en' ? 'Loading...' : 'Memuat...'}` : ''}
-                </p>
-              </div>
-              {/* Current sentence with word highlighting */}
-              {playing && !paused && currentSentence && currentWord && (
-                <p className="hidden md:block text-[10px] text-tx-soft truncate max-w-[40%]">
-                  {currentSentence.split(' ').map((word, idx) => {
-                    const isCurrentWord = word.toLowerCase().replace(/[.,!?;:]/g, '') === currentWord.toLowerCase().replace(/[.,!?;:]/g, '');
-                    return (
-                      <span key={idx} className={isCurrentWord ? 'text-accent font-bold' : ''}>
-                        {word}{' '}
-                      </span>
-                    );
-                  })}
-                </p>
-              )}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-md md:max-w-lg">
+          <div className="rounded-2xl bg-bg-card border border-border shadow-2xl p-4 md:p-5 space-y-3">
+            {/* Title + author */}
+            <div className="min-w-0">
+              <p className="text-sm md:text-base font-bold font-serif truncate">{current.title}</p>
+              <p className="text-[11px] md:text-xs text-tx-muted truncate">
+                {current.profiles?.full_name || current.profiles?.username || 'Anonim'}
+                {loading ? ` · ${lang === 'en' ? 'Loading...' : 'Memuat...'}` : ''}
+              </p>
             </div>
 
-            {/* Waveform / progress area */}
-            <div className="space-y-1">
-              <div className="flex justify-center">
-                <span className="text-[10px] md:text-xs font-mono text-accent">{sentenceIdx + 1}/{totalSentences}</span>
-              </div>
-              <div className="relative h-10 md:h-12 rounded-xl bg-bg-input overflow-hidden">
-                {/* Progress fill */}
-                <div className="absolute inset-y-0 left-0 bg-accent/10 transition-all duration-300" style={{ width: `${progress}%` }} />
-                {/* Waveform visualizer */}
-                <div className="absolute inset-0">
-                  <AudioVisualizer
-                    audioElement={null}
-                    barCount={32}
-                    barColor="#E65A28"
-                    barGap={2}
-                    active={playing && !paused}
-                  />
-                </div>
-                {/* Playhead indicator */}
-                <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${progress}%` }} />
-              </div>
+            {/* Sentence progress counter */}
+            <div className="flex justify-center">
+              <span className="text-[11px] md:text-xs font-mono text-accent">{sentenceIdx + 1}/{totalSentences}</span>
             </div>
 
-            {/* Controls */}
+            {/* Waveform bar */}
+            <div className="relative h-10 md:h-12 rounded-xl bg-bg-input overflow-hidden">
+              <div className="absolute inset-y-0 left-0 bg-accent/8 transition-all duration-300" style={{ width: `${progress}%` }} />
+              <div className="absolute inset-0">
+                <AudioVisualizer audioElement={null} barCount={32} barColor="#E65A28" barGap={2} active={playing && !paused} />
+              </div>
+              <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${progress}%` }} />
+            </div>
+
+            {/* Controls row */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <button onClick={togglePlayPause} className="p-2 rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors" title={playing && !paused ? 'Pause' : 'Play'}>
-                  {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              {/* Left: Play, Pause, Stop */}
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => { if (!playing) { pausedRef.current = false; setPaused(false); playSequence(sentenceIdx); } }} className="p-2 rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors" title="Play">
+                  <Play className="h-4 w-4" />
                 </button>
-                <button onClick={togglePlayPause} className="p-2 rounded-full bg-accent text-white hover:opacity-90 transition-opacity" title="Pause">
-                  <Pause className="h-4 w-4" />
+                <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity" title={playing && !paused ? 'Pause' : 'Resume'}>
+                  {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </button>
                 <button onClick={stopPlayback} className="p-2 rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors" title="Stop">
                   <Square className="h-3.5 w-3.5" />
                 </button>
               </div>
+              {/* Right: Skip, Like, Save */}
               <div className="flex items-center gap-1">
-                <button onClick={() => skipSentence(-1)} className="p-2 rounded-full hover:bg-bg-soft transition-colors" title="Previous">
-                  <SkipBack className="h-4 w-4" />
+                <button onClick={() => skipSentence(-1)} className="p-1.5 rounded-full hover:bg-bg-soft transition-colors" title="Previous">
+                  <SkipBack className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => skipSentence(1)} className="p-2 rounded-full hover:bg-bg-soft transition-colors" title="Next">
-                  <SkipForward className="h-4 w-4" />
+                <button onClick={() => skipSentence(1)} className="p-1.5 rounded-full hover:bg-bg-soft transition-colors" title="Next">
+                  <SkipForward className="h-3.5 w-3.5" />
                 </button>
                 {user?.id && (
-                  <>
-                    <button onClick={handleLike} className={`p-2 rounded-full transition-colors ${liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`} title="Like">
-                      <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
-                    </button>
-                    <button onClick={handleSave} className={`p-2 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
-                      <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
-                    </button>
-                  </>
-                )}
-                <div className="relative">
-                  <button onClick={() => setShowSleep(!showSleep)} className={`p-2 rounded-full transition-colors ${sleepRemaining > 0 ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Sleep timer">
-                    <Moon className="h-4 w-4" />
+                  <button onClick={handleSave} className={`p-1.5 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`} title="Save">
+                    <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
                   </button>
-                  {sleepRemaining > 0 && (
-                    <span className="absolute -top-1 -right-1 text-[8px] bg-accent text-white rounded-full px-1 leading-tight">{formatSleep(sleepRemaining)}</span>
-                  )}
-                  {showSleep && (
-                    <div className="absolute bottom-full right-0 mb-2 p-2 rounded-xl bg-bg-card border border-border shadow-xl w-32 space-y-1">
-                      <p className="text-[10px] font-medium text-tx-muted px-2 py-1">{lang === 'en' ? 'Sleep timer' : 'Timer tidur'}</p>
-                      {[5, 10, 15, 30, 60].map(m => (
-                        <button key={m} onClick={() => { startSleepTimer(m); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg hover:bg-bg-soft transition-colors">
-                          {m} {lang === 'en' ? 'min' : 'menit'}
-                        </button>
-                      ))}
-                      {sleepRemaining > 0 && (
-                        <button onClick={() => { setSleepRemaining(0); setSleepMin(0); setShowSleep(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                          {lang === 'en' ? 'Cancel' : 'Batalkan'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button onClick={stopPlayback} className="p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Close">
+                )}
+                <button onClick={stopPlayback} className="p-1.5 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Close">
                   <X className="h-4 w-4" />
                 </button>
               </div>
