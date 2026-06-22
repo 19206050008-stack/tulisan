@@ -53,12 +53,19 @@ function escapeHtml(s: string) {
 }
 
 function renderInline(text: string): string {
-  let s = escapeHtml(text);
+  let s = text;
+  s = s.replace(/&/g, '&amp;');
+  s = s.replace(/<br\s*\/?>/gi, '\n');
+  s = s.replace(/<\/?(?:em|i)>/gi, '*');
+  s = s.replace(/<\/?(?:strong|b)>/gi, '**');
+  s = s.replace(/<[^>]+>/g, '');
+  s = s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, '<em>$1</em>');
   s = s.replace(/`([^`]+)`/g, '<code class="bg-bg-input px-1 py-0.5 rounded text-xs font-mono">$1</code>');
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-accent underline">$1</a>');
+  s = s.replace(/\n/g, '<br>');
   return s;
 }
 
