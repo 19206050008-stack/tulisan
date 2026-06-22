@@ -431,30 +431,30 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
 
           {/* Prev / Next buttons — edge-centered */}
-          <button onClick={prevSlide} className="absolute left-1.5 md:left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Previous">
-            <ChevronLeft className="h-4 w-4" />
+          <button onClick={prevSlide} className="absolute left-1 md:left-2 top-1/2 -translate-y-1/2 z-10 w-6 h-6 md:w-8 md:h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Previous">
+            <ChevronLeft className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </button>
-          <button onClick={nextSlide} className="absolute right-1.5 md:right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Next">
-            <ChevronRight className="h-4 w-4" />
+          <button onClick={nextSlide} className="absolute right-1 md:right-2 top-1/2 -translate-y-1/2 z-10 w-6 h-6 md:w-8 md:h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors backdrop-blur" title="Next">
+            <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </button>
 
-          <div className="relative flex items-center gap-3 md:gap-6 px-10 md:px-12 py-4 md:py-6">
+          <div className="relative flex items-center gap-2.5 md:gap-6 px-9 md:px-12 py-3 md:py-6">
             {/* Cover */}
-            <div className="relative w-16 h-16 md:w-32 md:h-32 shrink-0 rounded-xl overflow-hidden shadow-2xl">
+            <div className="relative w-12 h-12 md:w-32 md:h-32 shrink-0 rounded-lg md:rounded-xl overflow-hidden shadow-2xl">
               <StoryCover coverUrl={heroStory.cover_url} category={heroStory.category} title={heroStory.title} />
             </div>
 
             {/* Info */}
             <div className="min-w-0 flex-1 text-white">
-              <p className="text-[9px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
-              <h2 className="text-base md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
+              <p className="text-[8px] md:text-xs font-medium text-white/80 mb-0.5">{lang === 'en' ? 'Random Pick' : 'Pilihan Acak'}</p>
+              <h2 className="text-sm md:text-4xl font-extrabold font-serif leading-tight line-clamp-2 mb-1 md:mb-2">{heroStory.title}</h2>
               <p className="hidden md:block text-xs md:text-sm text-white/70 line-clamp-2 mb-2">{heroStory.description || (lang === 'en' ? 'Listen to this story narrated by AI.' : 'Dengarkan cerita ini dengan narasi AI.')}</p>
               <div className="flex items-center gap-2 md:gap-3">
-                <button onClick={() => selectAndPlay(heroStory)} className="flex items-center gap-1.5 px-3 md:px-4 py-1 md:py-2 rounded-full bg-white text-black text-[11px] md:text-sm font-semibold hover:scale-105 transition-transform shrink-0">
-                  {heroActive ? <Pause className="h-3.5 w-3.5 md:h-4 md:w-4" /> : <Play className="h-3.5 w-3.5 md:h-4 md:w-4" />}
+                <button onClick={() => selectAndPlay(heroStory)} className="flex items-center gap-1 md:gap-1.5 px-2.5 md:px-4 py-1 md:py-2 rounded-full bg-white text-black text-[10px] md:text-sm font-semibold hover:scale-105 transition-transform shrink-0">
+                  {heroActive ? <Pause className="h-3 w-3 md:h-4 md:w-4" /> : <Play className="h-3 w-3 md:h-4 md:w-4" />}
                   {heroActive ? (lang === 'en' ? 'Pause' : 'Jeda') : (lang === 'en' ? 'Play' : 'Putar')}
                 </button>
-                <span className="text-[9px] md:text-xs text-white/70 truncate">{heroStory.profiles?.full_name || heroStory.profiles?.username || 'Anonim'}{heroStory.category ? ` · ${heroStory.category}` : ''}</span>
+                <span className="text-[8px] md:text-xs text-white/70 truncate">{heroStory.profiles?.full_name || heroStory.profiles?.username || 'Anonim'}{heroStory.category ? ` · ${heroStory.category}` : ''}</span>
               </div>
             </div>
           </div>
