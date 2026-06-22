@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
+import { loadTTSPrefs, saveTTSPrefs, pickVoice, type TTSGender } from '@/lib/tts-prefs';
 
 interface TTSPlayerProps {
   text: string;
@@ -42,10 +43,9 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [voice, setVoice] = useState(VOICES[lang][0].id);
-  const [speed, setSpeed] = useState('+0%');
+  const [gender, setGender] = useState<TTSGender>('wanita');
+  const [speed, setSpeed] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
-  const [useEdge, setUseEdge] = useState(true);
 
   const [sentenceList, setSentenceList] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -53,6 +53,17 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   const cacheRef = useRef<Map<string, string>>(new Map());
   const abortRef = useRef(false);
   const pausedRef = useRef(false);
+  const genderRef = useRef<TTSGender>('wanita');
+  const speedRef = useRef(1);
+
+  // Load saved prefs once
+  useEffect(() => {
+    const p = loadTTSPrefs();
+    setGender(p.gender);
+    setSpeed(p.speed);
+    genderRef.current = p.gender;
+    speedRef.current = p.speed;
+  }, []);
 
   useEffect(() => {
     const list = splitIntoSentences(text);
@@ -84,12 +95,14 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
     return new Promise((resolve) => {
       const utterance = new SpeechSynthesisUtterance(sentence);
       utterance.lang = lang === 'id' ? 'id-ID' : 'en-US';
-      utterance.rate = speed === '+0%' ? 1 : speed === '+25%' ? 1.25 : speed === '-25%' ? 0.75 : 1;
+      utterance.rate = speedRef.current;
+      const v = pickVoice(genderRef.current, lang as 'id' | 'en');
+      if (v) utterance.voice = v;
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
       speechSynthesis.speak(utterance);
     });
-  }, [lang, speed]);
+  }, [lang]);
 
   const playSequence = useCallback(async (startIdx: number) => {
     abortRef.current = false;
@@ -100,33 +113,7 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
       setCurrentIdx(i);
       const sentence = sentencesRef.current[i];
 
-      if (useEdge) {
-        setLoading(true);
-        const audioUrl = await fetchEdgeAudio(sentence);
-        setLoading(false);
-
-        if (abortRef.current) break;
-
-        // Prefetch next sentence early so it's ready (smoother transition)
-        if (i + 1 < sentencesRef.current.length) {
-          fetchEdgeAudio(sentencesRef.current[i + 1]);
-        }
-
-        if (audioUrl) {
-          await new Promise<void>((resolve) => {
-            const audio = new Audio(audioUrl);
-            audioRef.current = audio;
-            audio.playbackRate = 1;
-            audio.onended = () => resolve();
-            audio.onerror = () => resolve();
-            audio.play().catch(() => resolve());
-          });
-        } else {
-          await playWithWebSpeech(sentence);
-        }
-      } else {
-        await playWithWebSpeech(sentence);
-      }
+      await playWithWebSpeech(sentence);
 
       // Wait while paused before moving to next sentence
       while (pausedRef.current && !abortRef.current) {
@@ -141,7 +128,7 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
 
     setPlaying(false);
     setCurrentIdx(0);
-  }, [useEdge, fetchEdgeAudio, playWithWebSpeech]);
+  }, [playWithWebSpeech]);
 
   const handlePlay = () => {
     if (playing && !paused) {
@@ -241,37 +228,33 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
         <div className="absolute right-0 top-full mt-2 z-50 p-3 rounded-xl bg-bg-card border border-border shadow-xl space-y-3 w-56">
           <div className="space-y-1">
             <label className="text-[10px] font-medium text-tx-muted">Suara</label>
-            <select
-              value={voice}
-              onChange={e => setVoice(e.target.value)}
-              className="w-full px-2 py-1.5 text-xs rounded-lg bg-bg-input border border-border [&>option]:bg-bg-card [&>option]:text-tx"
-            >
-              {VOICES[lang].map(v => (
-                <option key={v.id} value={v.id}>{v.name}</option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setGender('wanita'); genderRef.current = 'wanita'; saveTTSPrefs({ gender: 'wanita', speed: speedRef.current }); }}
+                className={`flex-1 px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
+              >
+                Wanita
+              </button>
+              <button
+                onClick={() => { setGender('pria'); genderRef.current = 'pria'; saveTTSPrefs({ gender: 'pria', speed: speedRef.current }); }}
+                className={`flex-1 px-2 py-1.5 text-xs rounded-lg font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
+              >
+                Pria
+              </button>
+            </div>
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-medium text-tx-muted">Kecepatan</label>
             <select
               value={speed}
-              onChange={e => setSpeed(e.target.value)}
+              onChange={e => { const v = Number(e.target.value); setSpeed(v); speedRef.current = v; saveTTSPrefs({ gender: genderRef.current, speed: v }); }}
               className="w-full px-2 py-1.5 text-xs rounded-lg bg-bg-input border border-border [&>option]:bg-bg-card [&>option]:text-tx"
             >
-              <option value="-25%">Lambat</option>
-              <option value="+0%">Normal</option>
-              <option value="+25%">Cepat</option>
-              <option value="+50%">Sangat Cepat</option>
+              <option value="0.75">Lambat</option>
+              <option value="1">Normal</option>
+              <option value="1.25">Cepat</option>
+              <option value="1.5">Sangat Cepat</option>
             </select>
-          </div>
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-medium text-tx-muted">Edge TTS (HD)</label>
-            <button
-              onClick={() => setUseEdge(!useEdge)}
-              className={`px-2 py-1 rounded text-[10px] font-medium ${useEdge ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
-            >
-              {useEdge ? 'ON' : 'OFF'}
-            </button>
           </div>
         </div>
       )}

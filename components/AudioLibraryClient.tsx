@@ -6,7 +6,8 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
-import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star } from 'lucide-react';
+import { loadTTSPrefs, saveTTSPrefs, pickVoice, type TTSGender } from '@/lib/tts-prefs';
+import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon } from 'lucide-react';
 
 interface AudioStory {
   id: string;
@@ -44,6 +45,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [sleepMin, setSleepMin] = useState(0);
   const [sleepRemaining, setSleepRemaining] = useState(0);
   const [showSleep, setShowSleep] = useState(false);
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [gender, setGender] = useState<TTSGender>('wanita');
+  const [speed, setSpeed] = useState(1);
+  const [pendingStory, setPendingStory] = useState<AudioStory | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
@@ -51,6 +56,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const abortRef = useRef(false);
   const pausedRef = useRef(false);
   const currentIdRef = useRef<string | null>(null);
+  const genderRef = useRef<TTSGender>('wanita');
+  const speedRef = useRef(1);
 
   // Load saved story ids for "Saved" tab
   useEffect(() => {
@@ -64,6 +71,15 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       } catch {}
     })();
   }, [user?.id]);
+
+  // Load saved TTS prefs
+  useEffect(() => {
+    const p = loadTTSPrefs();
+    setGender(p.gender);
+    setSpeed(p.speed);
+    genderRef.current = p.gender;
+    speedRef.current = p.speed;
+  }, []);
 
   const genres = ['All', ...Array.from(new Set(stories.map(s => s.category).filter(Boolean)))] as string[];
 
@@ -102,6 +118,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(sentence);
       u.lang = lang === 'id' ? 'id-ID' : 'en-US';
+      u.rate = speedRef.current;
+      const v = pickVoice(genderRef.current, lang as 'id' | 'en');
+      if (v) u.voice = v;
       u.onend = () => resolve();
       u.onerror = () => resolve();
       speechSynthesis.speak(u);
@@ -119,22 +138,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
       }
       const sentence = sentencesRef.current[i];
-      setLoading(true);
-      const url = await fetchAudio(sentence);
-      setLoading(false);
-      if (abortRef.current) break;
-      if (i + 1 < sentencesRef.current.length) fetchAudio(sentencesRef.current[i + 1]);
-      if (url) {
-        await new Promise<void>((resolve) => {
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => resolve();
-          audio.onerror = () => resolve();
-          audio.play().catch(() => resolve());
-        });
-      } else {
-        await playWithWebSpeech(sentence);
-      }
+      await playWithWebSpeech(sentence);
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
       }
@@ -171,7 +175,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     }
   }, []);
 
-  const selectAndPlay = useCallback(async (story: AudioStory) => {
+  const startPlayback = useCallback(async (story: AudioStory) => {
     // Stop current
     abortRef.current = true;
     pausedRef.current = false;
@@ -207,6 +211,20 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       setTimeout(() => playSequence(startAt), 100);
     }
   }, [user, loadStoryContent, playSequence]);
+
+  // Open voice/speed popup before playing
+  const selectAndPlay = useCallback((story: AudioStory) => {
+    // If clicking the currently playing story, just toggle handled elsewhere
+    setPendingStory(story);
+  }, []);
+
+  const confirmAndPlay = useCallback(() => {
+    if (pendingStory) {
+      const story = pendingStory;
+      setPendingStory(null);
+      startPlayback(story);
+    }
+  }, [pendingStory, startPlayback]);
 
   const togglePlayPause = () => {
     if (!current) return;
@@ -372,16 +390,32 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             </button>
           </div>
         )}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {genres.map(g => (
+        <div className="flex items-center gap-2">
+          <select
+            value={activeGenre}
+            onChange={e => setActiveGenre(e.target.value)}
+            className="flex-1 px-3 py-2 text-xs rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card [&>option]:text-tx"
+          >
+            {genres.map(g => (
+              <option key={g} value={g}>{g === 'All' ? (lang === 'en' ? 'All Genres' : 'Semua Genre') : g}</option>
+            ))}
+          </select>
+          <div className="flex rounded-xl border border-border overflow-hidden shrink-0">
             <button
-              key={g}
-              onClick={() => setActiveGenre(g)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeGenre === g ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
+              onClick={() => setView('grid')}
+              className={`p-2 transition-colors ${view === 'grid' ? 'bg-accent text-white' : 'bg-bg-input text-tx-muted hover:text-tx'}`}
+              title="Grid"
             >
-              {g}
+              <LayoutGrid className="h-4 w-4" />
             </button>
-          ))}
+            <button
+              onClick={() => setView('list')}
+              className={`p-2 transition-colors ${view === 'list' ? 'bg-accent text-white' : 'bg-bg-input text-tx-muted hover:text-tx'}`}
+              title="List"
+            >
+              <ListIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -433,28 +467,55 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                     {lang === 'en' ? 'More' : 'Lainnya'} <ChevronRight className="h-3 w-3" />
                   </Link>
                 </div>
-                <div className="divide-y divide-border">
-                  {sec.items.map((story, i) => {
-                    const isCurrent = current?.id === story.id;
-                    const isActive = isCurrent && playing && !paused;
-                    return (
-                      <button
-                        key={story.id}
-                        onClick={() => selectAndPlay(story)}
-                        className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
-                      >
-                        <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
-                        <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
-                          {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-medium truncate">{story.title}</span>
-                          <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                {view === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {sec.items.map((story, i) => {
+                      const isCurrent = current?.id === story.id;
+                      const isActive = isCurrent && playing && !paused;
+                      return (
+                        <button
+                          key={story.id}
+                          onClick={() => selectAndPlay(story)}
+                          className={`flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
+                        >
+                          <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
+                            {i + 1}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium truncate">{story.title}</span>
+                            <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                          </span>
+                          <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
+                            {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {sec.items.map((story, i) => {
+                      const isCurrent = current?.id === story.id;
+                      const isActive = isCurrent && playing && !paused;
+                      return (
+                        <button
+                          key={story.id}
+                          onClick={() => selectAndPlay(story)}
+                          className={`w-full flex items-center gap-3 px-1 py-2 text-left transition-colors rounded-lg ${isCurrent ? 'bg-accent/5' : 'hover:bg-bg-soft'}`}
+                        >
+                          <span className="w-5 text-center text-xs font-bold text-tx-muted shrink-0">{i + 1}</span>
+                          <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
+                            {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-medium truncate">{story.title}</span>
+                            <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             );
           })}
@@ -533,6 +594,59 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                 <X className="h-4 w-4" />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Voice/speed popup before playing */}
+      {pendingStory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingStory(null)}>
+          <div className="bg-bg-card rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold font-serif">{lang === 'en' ? 'Playback Settings' : 'Pengaturan Suara'}</h3>
+              <button onClick={() => setPendingStory(null)} className="p-1 rounded-full hover:bg-bg-soft"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-xs text-tx-muted truncate">{pendingStory.title}</p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">{lang === 'en' ? 'Voice' : 'Suara'}</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setGender('wanita'); genderRef.current = 'wanita'; saveTTSPrefs({ gender: 'wanita', speed: speedRef.current }); }}
+                  className={`flex-1 px-3 py-2 text-sm rounded-xl font-medium transition-colors ${gender === 'wanita' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
+                >
+                  {lang === 'en' ? 'Female' : 'Wanita'}
+                </button>
+                <button
+                  onClick={() => { setGender('pria'); genderRef.current = 'pria'; saveTTSPrefs({ gender: 'pria', speed: speedRef.current }); }}
+                  className={`flex-1 px-3 py-2 text-sm rounded-xl font-medium transition-colors ${gender === 'pria' ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
+                >
+                  {lang === 'en' ? 'Male' : 'Pria'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">{lang === 'en' ? 'Speed' : 'Kecepatan'}</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[{ v: 0.75, l: lang === 'en' ? 'Slow' : 'Lambat' }, { v: 1, l: 'Normal' }, { v: 1.25, l: lang === 'en' ? 'Fast' : 'Cepat' }, { v: 1.5, l: '1.5x' }].map(opt => (
+                  <button
+                    key={opt.v}
+                    onClick={() => { setSpeed(opt.v); speedRef.current = opt.v; saveTTSPrefs({ gender: genderRef.current, speed: opt.v }); }}
+                    className={`px-2 py-2 text-xs rounded-lg font-medium transition-colors ${speed === opt.v ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft'}`}
+                  >
+                    {opt.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={confirmAndPlay}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <Play className="h-4 w-4" /> {lang === 'en' ? 'Play' : 'Putar'}
+            </button>
           </div>
         </div>
       )}
