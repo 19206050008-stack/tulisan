@@ -1,0 +1,175 @@
+'use client';
+
+import { useRef, useEffect, useCallback } from 'react';
+
+interface AudioVisualizerProps {
+  audioElement: HTMLAudioElement | null;
+  barCount?: number;
+  barColor?: string;
+  barGap?: number;
+  className?: string;
+  active?: boolean;
+}
+
+/**
+ * Real-time audio equalizer using Web Audio API + Canvas.
+ * Based on: https://orangeable.com/javascript/equalizer-web-audio-api
+ *
+ * Requires a real HTMLAudioElement as the audio source.
+ */
+export function AudioVisualizer({
+  audioElement,
+  barCount = 16,
+  barColor = '#E65A28',
+  barGap = 2,
+  className = '',
+  active = true,
+}: AudioVisualizerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const rafRef = useRef<number>(0);
+  const connectedRef = useRef<HTMLAudioElement | null>(null);
+
+  const drawBars = useCallback(() => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !analyser || !ctx) return;
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(dataArray);
+
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const totalGap = barGap * (barCount - 1);
+    const bw = Math.max(1, (w - totalGap) / barCount);
+
+    // Use only the lower half of the frequency spectrum (more musical data)
+    const step = Math.floor(dataArray.length / 2 / barCount);
+
+    for (let i = 0; i < barCount; i++) {
+      const value = dataArray[i * step] || 0;
+      const barH = (value / 255) * h;
+      const x = i * (bw + barGap);
+      const y = h - barH;
+
+      // Gradient per bar: full color at bottom, fading at top
+      const gradient = ctx.createLinearGradient(x, h, x, y);
+      gradient.addColorStop(0, barColor);
+      gradient.addColorStop(1, barColor + '44');
+      ctx.fillStyle = gradient;
+
+      const radius = Math.min(bw / 2, 3);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + bw - radius, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + radius);
+      ctx.lineTo(x + bw, h);
+      ctx.lineTo(x, h);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    rafRef.current = requestAnimationFrame(drawBars);
+  }, [barCount, barColor, barGap]);
+
+  // Draw idle flat bars when not active
+  const drawIdle = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const totalGap = barGap * (barCount - 1);
+    const bw = Math.max(1, (w - totalGap) / barCount);
+    for (let i = 0; i < barCount; i++) {
+      const barH = Math.max(2, h * 0.08);
+      const x = i * (bw + barGap);
+      const y = h - barH;
+      ctx.fillStyle = barColor + '33';
+      ctx.fillRect(x, y, bw, barH);
+    }
+  }, [barCount, barColor, barGap]);
+
+  // Connect to audio element when it changes
+  useEffect(() => {
+    if (!audioElement || !active) {
+      drawIdle();
+      return;
+    }
+
+    // Don't reconnect to the same element
+    if (connectedRef.current === audioElement && analyserRef.current) {
+      rafRef.current = requestAnimationFrame(drawBars);
+      return () => cancelAnimationFrame(rafRef.current);
+    }
+
+    try {
+      // Create AudioContext lazily (must be after user gesture)
+      if (!ctxRef.current) {
+        ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const actx = ctxRef.current;
+
+      if (actx.state === 'suspended') {
+        actx.resume();
+      }
+
+      // Create analyser
+      const analyser = actx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.7;
+      analyserRef.current = analyser;
+
+      // Create source from audio element (only once per element)
+      let source = sourceRef.current;
+      if (connectedRef.current !== audioElement) {
+        source = actx.createMediaElementSource(audioElement);
+        sourceRef.current = source;
+        connectedRef.current = audioElement;
+      }
+
+      source!.connect(analyser);
+      analyser.connect(actx.destination);
+
+      rafRef.current = requestAnimationFrame(drawBars);
+    } catch {
+      // If connection fails (e.g., CORS, already connected), fall back to idle
+      drawIdle();
+    }
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [audioElement, active, drawBars, drawIdle]);
+
+  // Resize canvas to match container
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`w-full h-full block ${className}`}
+      style={{ imageRendering: 'auto' }}
+    />
+  );
+}

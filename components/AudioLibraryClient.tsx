@@ -6,7 +6,8 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
-import { loadTTSPrefs, saveTTSPrefs, pickVoice, type TTSGender } from '@/lib/tts-prefs';
+import { loadTTSPrefs, preloadVoices } from '@/lib/tts-prefs';
+import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon } from 'lucide-react';
 
 interface AudioStory {
@@ -46,9 +47,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [sleepRemaining, setSleepRemaining] = useState(0);
   const [showSleep, setShowSleep] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [gender, setGender] = useState<TTSGender>('wanita');
-  const [speed, setSpeed] = useState(1);
-  const [pendingStory, setPendingStory] = useState<AudioStory | null>(null);
+  const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
@@ -56,8 +55,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const abortRef = useRef(false);
   const pausedRef = useRef(false);
   const currentIdRef = useRef<string | null>(null);
-  const genderRef = useRef<TTSGender>('wanita');
-  const speedRef = useRef(1);
 
   // Load saved story ids for "Saved" tab
   useEffect(() => {
@@ -72,13 +69,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     })();
   }, [user?.id]);
 
-  // Load saved TTS prefs
+  // Load saved TTS prefs and preload voices
   useEffect(() => {
-    const p = loadTTSPrefs();
-    setGender(p.gender);
-    setSpeed(p.speed);
-    genderRef.current = p.gender;
-    speedRef.current = p.speed;
+    preloadVoices();
   }, []);
 
   const genres = ['All', ...Array.from(new Set(stories.map(s => s.category).filter(Boolean)))] as string[];
@@ -118,9 +111,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(sentence);
       u.lang = lang === 'id' ? 'id-ID' : 'en-US';
-      u.rate = speedRef.current;
-      const v = pickVoice(genderRef.current, lang as 'id' | 'en');
-      if (v) u.voice = v;
       u.onend = () => resolve();
       u.onerror = () => resolve();
       speechSynthesis.speak(u);
@@ -133,12 +123,31 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     for (let i = startIdx; i < sentencesRef.current.length; i++) {
       if (abortRef.current) break;
       setSentenceIdx(i);
-      // Save resume position per story
       if (currentIdRef.current) {
         try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
       }
       const sentence = sentencesRef.current[i];
-      await playWithWebSpeech(sentence);
+      // Prefetch next sentence
+      if (i + 1 < sentencesRef.current.length) {
+        fetchAudio(sentencesRef.current[i + 1]);
+      }
+      setLoading(true);
+      const url = await fetchAudio(sentence);
+      setLoading(false);
+      if (abortRef.current) break;
+      if (url) {
+        await new Promise<void>((resolve) => {
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          setActiveAudio(audio);
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
+      } else {
+        // Fallback to Web Speech if fetch fails
+        await playWithWebSpeech(sentence);
+      }
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
       }
@@ -146,12 +155,12 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         await new Promise(r => setTimeout(r, 250));
       }
     }
-    // Finished fully — clear resume position
     if (!abortRef.current && currentIdRef.current) {
       try { localStorage.removeItem(`audio_pos_${currentIdRef.current}`); } catch {}
     }
     setPlaying(false);
     setSentenceIdx(0);
+    setActiveAudio(null);
   }, [fetchAudio, playWithWebSpeech]);
 
   const loadStoryContent = useCallback(async (story: AudioStory) => {
@@ -208,7 +217,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         }
       } catch {}
       setSentenceIdx(startAt);
-      setTimeout(() => playSequence(startAt), 100);
+      playSequence(startAt);
     }
   }, [user, loadStoryContent, playSequence]);
 
@@ -440,7 +449,19 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}{story.category ? ` · ${story.category}` : ''}</span>
                 </span>
                 <span className="flex items-center gap-2 text-[10px] text-tx-muted shrink-0">
-                  <span className="flex items-center gap-0.5"><Volume2 className="h-3 w-3" />{story.reads_count || 0}</span>
+                  {isCurrent ? (
+                    <div className={`w-14 h-4 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
+                      <AudioVisualizer
+                        audioElement={activeAudio}
+                        barCount={8}
+                        barColor="#E65A28"
+                        barGap={1}
+                        active={isActive}
+                      />
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-0.5"><Volume2 className="h-3 w-3" />{story.reads_count || 0}</span>
+                  )}
                 </span>
               </button>
             );
@@ -471,18 +492,32 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                         <button
                           key={story.id}
                           onClick={() => selectAndPlay(story)}
-                          className={`flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
+                          className={`relative flex flex-col p-2.5 rounded-xl border text-left transition-colors overflow-hidden ${isCurrent ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/40 hover:bg-bg-soft'}`}
                         >
-                          <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
-                            {i + 1}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-sm font-medium truncate">{story.title}</span>
-                            <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
-                          </span>
-                          <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
-                            {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-accent/10 text-accent'}`}>
+                              {i + 1}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium truncate">{story.title}</span>
+                              <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
+                            </span>
+                            <span className={`p-1.5 rounded-full shrink-0 ${isActive ? 'bg-accent text-white' : 'bg-bg-input text-accent'}`}>
+                              {isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                            </span>
+                          </div>
+                          {/* Equalizer visualizer for active card */}
+                          <div className={`h-6 mt-2 rounded-md overflow-hidden ${isActive ? '' : 'opacity-0'}`}>
+                            {isCurrent && (
+                              <AudioVisualizer
+                                audioElement={activeAudio}
+                                barCount={24}
+                                barColor="#E65A28"
+                                barGap={1}
+                                active={isActive}
+                              />
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -506,6 +541,18 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                             <span className="block text-sm font-medium truncate">{story.title}</span>
                             <span className="block text-[11px] text-tx-muted truncate">{story.profiles?.full_name || story.profiles?.username || 'Anonim'}</span>
                           </span>
+                          {/* Inline equalizer for active list item */}
+                          {isCurrent && (
+                            <div className={`w-16 h-5 shrink-0 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
+                              <AudioVisualizer
+                                audioElement={activeAudio}
+                                barCount={10}
+                                barColor="#E65A28"
+                                barGap={1}
+                                active={isActive}
+                              />
+                            </div>
+                          )}
                         </button>
                       );
                     })}
@@ -524,17 +571,14 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
           <div className="max-w-6xl mx-auto px-3 md:px-4 py-2.5 flex items-center gap-3">
-            <div className="flex items-end gap-0.5 h-10 w-10 md:w-11 shrink-0 justify-center">
-              {[0, 1, 2, 3, 4].map(i => (
-                <span
-                  key={i}
-                  className="w-1 rounded-full bg-accent"
-                  style={{
-                    height: playing && !paused ? undefined : '20%',
-                    animation: playing && !paused ? `eqbar 0.9s ease-in-out ${i * 0.12}s infinite` : 'none',
-                  }}
-                />
-              ))}
+            <div className="h-10 w-10 md:w-11 shrink-0 rounded-md overflow-hidden bg-bg-input/50">
+              <AudioVisualizer
+                audioElement={activeAudio}
+                barCount={6}
+                barColor="#E65A28"
+                barGap={1}
+                active={playing && !paused}
+              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>

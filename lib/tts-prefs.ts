@@ -37,6 +37,7 @@ export function saveTTSPrefs(prefs: TTSPrefs) {
 // Pick a Web Speech voice for the requested gender + language.
 export function pickVoice(gender: TTSGender, lang: 'id' | 'en'): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+  // Always get fresh voices list (may be empty on first call until voiceschanged fires)
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
 
@@ -54,11 +55,21 @@ export function pickVoice(gender: TTSGender, lang: 'id' | 'en'): SpeechSynthesis
   if (gender === 'pria') {
     const male = pool.find(v => matches(v, maleHints));
     if (male) return male;
-    // fallback: second voice in pool (often different gender than first)
     return pool[1] || pool[0] || null;
   } else {
     const female = pool.find(v => matches(v, femaleHints));
     if (female) return female;
     return pool[0] || null;
   }
+}
+
+// Preload voices (call once on mount). Voices load asynchronously in browsers.
+export function preloadVoices(): void {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  // Trigger initial load
+  window.speechSynthesis.getVoices();
+  // Re-fetch when voices become available
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
 }

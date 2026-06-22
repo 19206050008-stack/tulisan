@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
-import { loadTTSPrefs, saveTTSPrefs, pickVoice, type TTSGender } from '@/lib/tts-prefs';
+import { loadTTSPrefs, saveTTSPrefs, pickVoice, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 
 interface TTSPlayerProps {
   text: string;
@@ -56,13 +56,14 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
   const genderRef = useRef<TTSGender>('wanita');
   const speedRef = useRef(1);
 
-  // Load saved prefs once
+  // Load saved prefs and preload voices
   useEffect(() => {
     const p = loadTTSPrefs();
     setGender(p.gender);
     setSpeed(p.speed);
     genderRef.current = p.gender;
     speedRef.current = p.speed;
+    preloadVoices();
   }, []);
 
   useEffect(() => {
