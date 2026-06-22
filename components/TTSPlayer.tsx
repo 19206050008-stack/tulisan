@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2 } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
 
 interface TTSPlayerProps {
   text: string;
@@ -29,6 +29,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [voice, setVoice] = useState(VOICES[lang][0].id);
   const [speed, setSpeed] = useState('+0%');
   const [showSettings, setShowSettings] = useState(false);
@@ -39,6 +40,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
   const sentencesRef = useRef<string[]>([]);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const abortRef = useRef(false);
+  const pausedRef = useRef(false);
 
   useEffect(() => {
     const list = splitIntoSentences(text);
@@ -97,6 +99,7 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
           await new Promise<void>((resolve) => {
             const audio = new Audio(audioUrl);
             audioRef.current = audio;
+            audio.playbackRate = 1;
             audio.onended = () => resolve();
             audio.onerror = () => resolve();
             audio.play().catch(() => resolve());
@@ -106,6 +109,11 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
         }
       } else {
         await playWithWebSpeech(sentence);
+      }
+
+      // Wait while paused before moving to next sentence
+      while (pausedRef.current && !abortRef.current) {
+        await new Promise(r => setTimeout(r, 150));
       }
 
       // Prefetch next sentence
@@ -119,14 +127,34 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
   }, [useEdge, fetchEdgeAudio, playWithWebSpeech]);
 
   const handlePlay = () => {
-    if (playing) {
-      abortRef.current = true;
+    if (playing && !paused) {
+      // Pause
+      pausedRef.current = true;
+      setPaused(true);
       audioRef.current?.pause();
-      speechSynthesis.cancel();
-      setPlaying(false);
+      speechSynthesis.pause();
+    } else if (playing && paused) {
+      // Resume
+      pausedRef.current = false;
+      setPaused(false);
+      audioRef.current?.play().catch(() => {});
+      speechSynthesis.resume();
     } else {
+      // Start
+      setPaused(false);
+      pausedRef.current = false;
       playSequence(currentIdx);
     }
+  };
+
+  const handleStop = () => {
+    abortRef.current = true;
+    pausedRef.current = false;
+    audioRef.current?.pause();
+    speechSynthesis.cancel();
+    setPlaying(false);
+    setPaused(false);
+    setCurrentIdx(0);
   };
 
   const handleSkip = () => {
@@ -146,11 +174,21 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
     <div className="flex items-center gap-2 p-2 md:p-3 rounded-xl bg-bg-soft border border-border">
       <button
         onClick={handlePlay}
-        className={`p-2 rounded-full transition-colors ${playing ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
-        title={playing ? 'Stop' : 'Dengarkan'}
+        className={`p-2 rounded-full transition-colors ${playing && !paused ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
+        title={playing && !paused ? 'Jeda' : paused ? 'Lanjutkan' : 'Dengarkan'}
       >
-        {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
       </button>
+
+      {playing && (
+        <button
+          onClick={handleStop}
+          className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+          title="Berhenti"
+        >
+          <Square className="h-4 w-4" />
+        </button>
+      )}
 
       {playing && (
         <>
@@ -159,10 +197,10 @@ export function TTSPlayer({ text, lang = 'id' }: TTSPlayerProps) {
               <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
             <p className="text-[9px] md:text-[10px] text-tx-muted mt-0.5 truncate">
-              {loading ? 'Memuat...' : `Kalimat ${currentIdx + 1}/${sentenceList.length}`}
+              {loading ? 'Memuat suara...' : paused ? 'Dijeda' : `Membaca: "${(sentenceList[currentIdx] || '').slice(0, 40)}${(sentenceList[currentIdx] || '').length > 40 ? '...' : ''}"`}
             </p>
           </div>
-          <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Skip">
+          <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Kalimat berikutnya">
             <SkipForward className="h-3.5 w-3.5" />
           </button>
         </>

@@ -17,9 +17,17 @@ function escapeXml(s: string): string {
 }
 
 function buildSSML(text: string, voice: string, rate: string, pitch: string): string {
-  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>` +
+  // Add natural micro-pauses after punctuation for more human-like rhythm
+  const escaped = escapeXml(text)
+    .replace(/([,;])\s/g, '$1<break time="180ms"/> ')
+    .replace(/([.!?])\s/g, '$1<break time="350ms"/> ')
+    .replace(/(:)\s/g, '$1<break time="250ms"/> ');
+
+  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='id-ID'>` +
     `<voice name='${voice}'>` +
-    `<prosody rate='${rate}' pitch='${pitch}'>${escapeXml(text)}</prosody>` +
+    `<mstts:express-as style='narration-relaxed' styledegree='1'>` +
+    `<prosody rate='${rate}' pitch='${pitch}' volume='+0%'>${escaped}</prosody>` +
+    `</mstts:express-as>` +
     `</voice></speak>`;
 }
 
