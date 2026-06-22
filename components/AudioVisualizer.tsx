@@ -98,11 +98,55 @@ export function AudioVisualizer({
     }
   }, [barCount, barColor, barGap]);
 
+  // Animated fallback bars (pseudo-random) when no real audio source
+  const drawAnimated = useCallback((t: number) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const totalGap = barGap * (barCount - 1);
+    const bw = Math.max(1, (w - totalGap) / barCount);
+    for (let i = 0; i < barCount; i++) {
+      // Pseudo-random wave based on bar index and time
+      const wave = Math.sin(t * 0.004 + i * 0.7) * 0.3 +
+                   Math.sin(t * 0.007 + i * 1.3) * 0.2 +
+                   Math.sin(t * 0.002 + i * 0.4) * 0.15;
+      const barH = Math.max(3, (0.35 + wave) * h);
+      const x = i * (bw + barGap);
+      const y = h - barH;
+      const gradient = ctx.createLinearGradient(x, h, x, y);
+      gradient.addColorStop(0, barColor);
+      gradient.addColorStop(1, barColor + '44');
+      ctx.fillStyle = gradient;
+      const radius = Math.min(bw / 2, 3);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + bw - radius, y);
+      ctx.quadraticCurveTo(x + bw, y, x + bw, y + radius);
+      ctx.lineTo(x + bw, h);
+      ctx.lineTo(x, h);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+    rafRef.current = requestAnimationFrame(drawAnimated);
+  }, [barCount, barColor, barGap]);
+
   // Connect to audio element when it changes
   useEffect(() => {
-    if (!audioElement || !active) {
+    if (!active) {
       drawIdle();
       return;
+    }
+
+    // No audio element — use animated fallback
+    if (!audioElement) {
+      const loop = (t: number) => drawAnimated(t);
+      rafRef.current = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(rafRef.current);
     }
 
     // Don't reconnect to the same element

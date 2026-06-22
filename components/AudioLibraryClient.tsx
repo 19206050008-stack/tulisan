@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved } from '@/lib/supabase';
-import { loadTTSPrefs, preloadVoices } from '@/lib/tts-prefs';
+import { loadTTSPrefs, pickVoice, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, Volume2, X, Moon, ChevronRight, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon } from 'lucide-react';
 
@@ -47,7 +47,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [sleepRemaining, setSleepRemaining] = useState(0);
   const [showSleep, setShowSleep] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
+  const [gender, setGender] = useState<TTSGender>('wanita');
+  const [speed, setSpeed] = useState(1);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
@@ -55,6 +56,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const abortRef = useRef(false);
   const pausedRef = useRef(false);
   const currentIdRef = useRef<string | null>(null);
+  const genderRef = useRef<TTSGender>('wanita');
+  const speedRef = useRef(1);
 
   // Load saved story ids for "Saved" tab
   useEffect(() => {
@@ -71,6 +74,11 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   // Load saved TTS prefs and preload voices
   useEffect(() => {
+    const p = loadTTSPrefs();
+    setGender(p.gender);
+    setSpeed(p.speed);
+    genderRef.current = p.gender;
+    speedRef.current = p.speed;
     preloadVoices();
   }, []);
 
@@ -111,6 +119,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     return new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(sentence);
       u.lang = lang === 'id' ? 'id-ID' : 'en-US';
+      u.rate = speedRef.current;
+      const v = pickVoice(genderRef.current, lang as 'id' | 'en');
+      if (v) u.voice = v;
       u.onend = () => resolve();
       u.onerror = () => resolve();
       speechSynthesis.speak(u);
@@ -127,27 +138,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
       }
       const sentence = sentencesRef.current[i];
-      // Prefetch next sentence
-      if (i + 1 < sentencesRef.current.length) {
-        fetchAudio(sentencesRef.current[i + 1]);
-      }
-      setLoading(true);
-      const url = await fetchAudio(sentence);
-      setLoading(false);
-      if (abortRef.current) break;
-      if (url) {
-        await new Promise<void>((resolve) => {
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          setActiveAudio(audio);
-          audio.onended = () => resolve();
-          audio.onerror = () => resolve();
-          audio.play().catch(() => resolve());
-        });
-      } else {
-        // Fallback to Web Speech if fetch fails
-        await playWithWebSpeech(sentence);
-      }
+      await playWithWebSpeech(sentence);
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
       }
@@ -160,8 +151,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     }
     setPlaying(false);
     setSentenceIdx(0);
-    setActiveAudio(null);
-  }, [fetchAudio, playWithWebSpeech]);
+  }, [playWithWebSpeech]);
 
   const loadStoryContent = useCallback(async (story: AudioStory) => {
     // Fetch chapters text via API
@@ -452,7 +442,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   {isCurrent ? (
                     <div className={`w-14 h-4 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
                       <AudioVisualizer
-                        audioElement={activeAudio}
+                        audioElement={null}
                         barCount={8}
                         barColor="#E65A28"
                         barGap={1}
@@ -510,7 +500,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           <div className={`h-6 mt-2 rounded-md overflow-hidden ${isActive ? '' : 'opacity-0'}`}>
                             {isCurrent && (
                               <AudioVisualizer
-                                audioElement={activeAudio}
+                                audioElement={null}
                                 barCount={24}
                                 barColor="#E65A28"
                                 barGap={1}
@@ -545,7 +535,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           {isCurrent && (
                             <div className={`w-16 h-5 shrink-0 rounded overflow-hidden ${isActive ? '' : 'opacity-30'}`}>
                               <AudioVisualizer
-                                audioElement={activeAudio}
+                                audioElement={null}
                                 barCount={10}
                                 barColor="#E65A28"
                                 barGap={1}
@@ -573,7 +563,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           <div className="max-w-6xl mx-auto px-3 md:px-4 py-2.5 flex items-center gap-3">
             <div className="h-10 w-10 md:w-11 shrink-0 rounded-md overflow-hidden bg-bg-input/50">
               <AudioVisualizer
-                audioElement={activeAudio}
+                audioElement={null}
                 barCount={6}
                 barColor="#E65A28"
                 barGap={1}

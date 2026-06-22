@@ -35,9 +35,16 @@ export function saveTTSPrefs(prefs: TTSPrefs) {
 }
 
 // Pick a Web Speech voice for the requested gender + language.
+// Based on: https://github.com/readium/speech/blob/main/json/id.json
+//
+// Best voices (free, no API key):
+//   Edge:     Microsoft Gadis (female, veryHigh) / Microsoft Ardi (male, veryHigh)
+//   Chrome:   Google Bahasa Indonesia (female, high) — has 14s bug
+//   Android:  Google BI 1-4 (high quality, 2 female + 2 male)
+//   macOS:    Damayanti (female, low-normal)
+//   Windows:  Andika (female, normal)
 export function pickVoice(gender: TTSGender, lang: 'id' | 'en'): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
-  // Always get fresh voices list (may be empty on first call until voiceschanged fires)
   const voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) return null;
 
@@ -45,21 +52,47 @@ export function pickVoice(gender: TTSGender, lang: 'id' | 'en'): SpeechSynthesis
   const langVoices = voices.filter(v => v.lang.toLowerCase().startsWith(wantLang));
   const pool = langVoices.length > 0 ? langVoices : voices;
 
-  // Heuristic gender detection by common voice-name keywords
-  const maleHints = ['male', 'pria', 'ardi', 'guy', 'david', 'mark', 'rama', 'andika', 'budi'];
-  const femaleHints = ['female', 'wanita', 'gadis', 'jenny', 'zira', 'siti', 'damayanti', 'maya'];
+  // Priority voices for Indonesian (based on Readium speech data)
+  const PRIORITIES: { match: (name: string) => boolean; gender: TTSGender }[] = [
+    // Edge Neural voices (veryHigh quality)
+    { match: n => n.includes('Gadis') && n.includes('Online'), gender: 'wanita' },
+    { match: n => n.includes('Ardi') && n.includes('Online'), gender: 'pria' },
+    // Chrome Desktop
+    { match: n => n === 'Google Bahasa Indonesia', gender: 'wanita' },
+    // Android/ChromeOS (high quality)
+    { match: n => /id-id-x-idc/.test(n.toLowerCase()), gender: 'wanita' },
+    { match: n => /id-id-x-idd/.test(n.toLowerCase()), gender: 'wanita' },
+    { match: n => /id-id-x-ide/.test(n.toLowerCase()), gender: 'pria' },
+    { match: n => /id-id-x-dfz/.test(n.toLowerCase()), gender: 'pria' },
+    // Windows
+    { match: n => n.includes('Andika'), gender: 'wanita' },
+    // macOS/iOS
+    { match: n => n.includes('Damayanti'), gender: 'wanita' },
+  ];
+
+  // Try priority voices first (exact gender match, then any gender)
+  for (const prio of PRIORITIES) {
+    if (prio.gender !== gender) continue;
+    const found = pool.find(v => prio.match(v.name));
+    if (found) return found;
+  }
+  // Fallback: any priority voice regardless of gender
+  for (const prio of PRIORITIES) {
+    const found = pool.find(v => prio.match(v.name));
+    if (found) return found;
+  }
+
+  // Heuristic fallback
+  const maleHints = ['male', 'pria', 'ardi', 'guy', 'david', 'mark', 'rama', 'andika', 'budi', 'ide', 'dfz'];
+  const femaleHints = ['female', 'wanita', 'gadis', 'jenny', 'zira', 'siti', 'damayanti', 'maya', 'idc', 'idd'];
 
   const matches = (v: SpeechSynthesisVoice, hints: string[]) =>
     hints.some(h => v.name.toLowerCase().includes(h));
 
   if (gender === 'pria') {
-    const male = pool.find(v => matches(v, maleHints));
-    if (male) return male;
-    return pool[1] || pool[0] || null;
+    return pool.find(v => matches(v, maleHints)) || pool[1] || pool[0] || null;
   } else {
-    const female = pool.find(v => matches(v, femaleHints));
-    if (female) return female;
-    return pool[0] || null;
+    return pool.find(v => matches(v, femaleHints)) || pool[0] || null;
   }
 }
 
