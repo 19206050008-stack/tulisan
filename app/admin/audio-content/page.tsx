@@ -27,6 +27,8 @@ export default function AdminAudioPage() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title' | 'author'>('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const perPage = 10;
 
   useEffect(() => {
     if (role !== 'admin') return;
@@ -198,7 +200,7 @@ export default function AdminAudioPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredStories.map((story) => (
+          {filteredStories.slice((page - 1) * perPage, page * perPage).map((story) => (
             <AudioStoryCard
               key={story.id}
               story={story}
@@ -207,6 +209,27 @@ export default function AdminAudioPage() {
               onDelete={handleDeleteAudio}
             />
           ))}
+          {filteredStories.length > perPage && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 text-xs rounded-lg border border-border disabled:opacity-40 hover:bg-bg-soft transition-colors"
+              >
+                Sebelumnya
+              </button>
+              <span className="text-xs text-tx-muted px-2">
+                Hal {page} / {Math.ceil(filteredStories.length / perPage)}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(Math.ceil(filteredStories.length / perPage), p + 1))}
+                disabled={page >= Math.ceil(filteredStories.length / perPage)}
+                className="px-3 py-1.5 text-xs rounded-lg border border-border disabled:opacity-40 hover:bg-bg-soft transition-colors"
+              >
+                Selanjutnya
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
