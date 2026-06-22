@@ -488,7 +488,7 @@ export default function NanaChatPage() {
   if (role === 'guest') return null;
 
   return (
-    <div className="h-[calc(100vh-4rem)] -my-8 flex bg-bg" style={{ marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', width: '100vw' }}>
+    <div className="h-[calc(100vh-4rem)] -my-8 -mx-4 flex bg-bg overflow-hidden" style={{ width: 'calc(100% + 2rem)' }}>
       {/* Mobile overlay */}
       {showSidebar && (
         <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setShowSidebar(false)} />
