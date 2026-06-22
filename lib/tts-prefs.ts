@@ -72,65 +72,69 @@ export async function saveTTSPrefsToDB(userId: string, prefs: TTSPrefs): Promise
 }
 
 // Pick a Web Speech voice for the requested gender + language.
-// Based on: https://github.com/readium/speech/blob/main/json/id.json
+// Uses pitch adjustment to simulate male/female when only one voice is available.
+// Works on ALL browsers (Chrome, Firefox, Safari, Edge) - 100% free, no API key.
 //
-// Best voices (free, no API key):
-//   Edge:     Microsoft Gadis (female, veryHigh) / Microsoft Ardi (male, veryHigh)
-//   Chrome:   Google Bahasa Indonesia (female, high) — has 14s bug
-//   Android:  Google BI 1-4 (high quality, 2 female + 2 male)
-//   macOS:    Damayanti (female, low-normal)
-//   Windows:  Andika (female, normal)
-export function pickVoice(gender: TTSGender, lang: 'id' | 'en'): SpeechSynthesisVoice | null {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return null;
+// Priority voices (best quality when available):
+//   Edge:     Microsoft Gadis (female) / Microsoft Ardi (male)
+//   Chrome:   Google Bahasa Indonesia (female)
+//   Android:  Google BI 1-4
+//   macOS:    Damayanti
+//   Windows:  Andika
+export interface VoiceSelection {
+  voice: SpeechSynthesisVoice | null;
+  pitch: number;
+}
+
+export function pickVoiceWithPitch(gender: TTSGender, lang: 'id' | 'en'): VoiceSelection {
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
+    return { voice: null, pitch: gender === 'pria' ? 0.7 : 1.1 };
+  }
+
   const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) return null;
+  if (!voices || voices.length === 0) {
+    return { voice: null, pitch: gender === 'pria' ? 0.7 : 1.1 };
+  }
 
   const wantLang = lang === 'id' ? 'id' : 'en';
   const langVoices = voices.filter(v => v.lang.toLowerCase().startsWith(wantLang));
   const pool = langVoices.length > 0 ? langVoices : voices;
 
-  // Priority voices for Indonesian (based on Readium speech data)
-  const PRIORITIES: { match: (name: string) => boolean; gender: TTSGender }[] = [
-    // Edge Neural voices (veryHigh quality)
-    { match: n => n.includes('Gadis') && n.includes('Online'), gender: 'wanita' },
-    { match: n => n.includes('Ardi') && n.includes('Online'), gender: 'pria' },
+  // Priority voices for Indonesian
+  const PRIORITIES: { match: (name: string) => boolean; gender: TTSGender; pitch: number }[] = [
+    // Edge Neural voices (veryHigh quality, native gender)
+    { match: n => n.includes('Gadis') && n.includes('Online'), gender: 'wanita', pitch: 1.0 },
+    { match: n => n.includes('Ardi') && n.includes('Online'), gender: 'pria', pitch: 1.0 },
     // Chrome Desktop
-    { match: n => n === 'Google Bahasa Indonesia', gender: 'wanita' },
-    // Android/ChromeOS (high quality)
-    { match: n => /id-id-x-idc/.test(n.toLowerCase()), gender: 'wanita' },
-    { match: n => /id-id-x-idd/.test(n.toLowerCase()), gender: 'wanita' },
-    { match: n => /id-id-x-ide/.test(n.toLowerCase()), gender: 'pria' },
-    { match: n => /id-id-x-dfz/.test(n.toLowerCase()), gender: 'pria' },
+    { match: n => n === 'Google Bahasa Indonesia', gender: 'wanita', pitch: 1.0 },
+    // Android/ChromeOS
+    { match: n => /id-id-x-idc/.test(n.toLowerCase()), gender: 'wanita', pitch: 1.0 },
+    { match: n => /id-id-x-idd/.test(n.toLowerCase()), gender: 'wanita', pitch: 1.0 },
+    { match: n => /id-id-x-ide/.test(n.toLowerCase()), gender: 'pria', pitch: 1.0 },
+    { match: n => /id-id-x-dfz/.test(n.toLowerCase()), gender: 'pria', pitch: 1.0 },
     // Windows
-    { match: n => n.includes('Andika'), gender: 'wanita' },
+    { match: n => n.includes('Andika'), gender: 'wanita', pitch: 1.0 },
     // macOS/iOS
-    { match: n => n.includes('Damayanti'), gender: 'wanita' },
+    { match: n => n.includes('Damayanti'), gender: 'wanita', pitch: 1.0 },
   ];
 
-  // Try priority voices first (exact gender match, then any gender)
+  // Try to find exact gender match from priority list
   for (const prio of PRIORITIES) {
     if (prio.gender !== gender) continue;
     const found = pool.find(v => prio.match(v.name));
-    if (found) return found;
-  }
-  // Fallback: any priority voice regardless of gender
-  for (const prio of PRIORITIES) {
-    const found = pool.find(v => prio.match(v.name));
-    if (found) return found;
+    if (found) return { voice: found, pitch: prio.pitch };
   }
 
-  // Heuristic fallback
-  const maleHints = ['male', 'pria', 'ardi', 'guy', 'david', 'mark', 'rama', 'andika', 'budi', 'ide', 'dfz'];
-  const femaleHints = ['female', 'wanita', 'gadis', 'jenny', 'zira', 'siti', 'damayanti', 'maya', 'idc', 'idd'];
-
-  const matches = (v: SpeechSynthesisVoice, hints: string[]) =>
-    hints.some(h => v.name.toLowerCase().includes(h));
-
-  if (gender === 'pria') {
-    return pool.find(v => matches(v, maleHints)) || pool[1] || pool[0] || null;
-  } else {
-    return pool.find(v => matches(v, femaleHints)) || pool[0] || null;
+  // Find any Indonesian voice
+  const anyIDVoice = pool[0];
+  if (anyIDVoice) {
+    // Adjust pitch based on desired gender
+    const pitch = gender === 'pria' ? 0.7 : 1.1;
+    return { voice: anyIDVoice, pitch };
   }
+
+  // Fallback: no voices found
+  return { voice: null, pitch: gender === 'pria' ? 0.7 : 1.1 };
 }
 
 // Preload voices (call once on mount). Voices load asynchronously in browsers.

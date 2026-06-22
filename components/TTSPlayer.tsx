@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
-import { loadTTSPrefs, saveTTSPrefs, pickVoice, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
+import { loadTTSPrefs, saveTTSPrefs, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
 
 interface TTSPlayerProps {
   text: string;
@@ -97,8 +97,9 @@ export function TTSPlayer({ text, lang = 'id', genre }: TTSPlayerProps) {
       const utterance = new SpeechSynthesisUtterance(sentence);
       utterance.lang = lang === 'id' ? 'id-ID' : 'en-US';
       utterance.rate = speedRef.current;
-      const v = pickVoice(genderRef.current, lang as 'id' | 'en');
-      if (v) utterance.voice = v;
+      const { voice, pitch } = pickVoiceWithPitch(genderRef.current, lang as 'id' | 'en');
+      if (voice) utterance.voice = voice;
+      utterance.pitch = pitch;
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
       speechSynthesis.speak(utterance);
