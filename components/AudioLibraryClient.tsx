@@ -380,17 +380,68 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   return (
     <div className="max-w-6xl mx-auto pb-32">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl bg-accent/10">
-            <Music className="h-6 w-6 text-accent" />
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-serif">Audio Cerita</h1>
-            <p className="text-sm text-tx-muted">{lang === 'en' ? 'Listen to stories narrated by AI' : 'Dengarkan cerita dengan narasi AI'}</p>
-          </div>
+      {/* Hero Card — Recorder style */}
+      <div className="mb-6 md:mb-8 rounded-2xl bg-bg-card border border-border p-5 md:p-8 space-y-4 md:space-y-6">
+        <div>
+          <p className="text-xs md:text-sm font-medium text-accent mb-2">{lang === 'en' ? 'Introducing' : 'Selamat Datang'}</p>
+          <h1 className="text-3xl md:text-5xl font-bold font-serif leading-tight">Audio<br />Cerita</h1>
         </div>
+        <p className="text-sm md:text-base text-tx-soft leading-relaxed max-w-md">
+          {lang === 'en'
+            ? 'All your stories at your fingertips. Simply pick and start listening the way you like. Zero distractions.'
+            : 'Dengarkan semua cerita favoritmu. Pilih dan mulai dengarkan. Tanpa gangguan.'}
+        </p>
+
+        {/* Waveform + controls (shows when playing) */}
+        {current ? (
+          <div className="space-y-3">
+            {/* Now playing info */}
+            <p className="text-xs text-tx-muted truncate">{current.title} · {current.profiles?.full_name || current.profiles?.username || 'Anonim'}</p>
+            {/* Timestamp */}
+            <div className="flex justify-center">
+              <span className="text-xs md:text-sm font-mono text-accent">{sentenceIdx + 1}/{totalSentences}</span>
+            </div>
+            {/* Waveform bar */}
+            <div className="relative h-12 md:h-14 rounded-xl bg-bg-input overflow-hidden">
+              <div className="absolute inset-y-0 left-0 bg-accent/10 transition-all duration-300" style={{ width: `${progress}%` }} />
+              <div className="absolute inset-0">
+                <AudioVisualizer audioElement={null} barCount={40} barColor="#E65A28" barGap={2} active={playing && !paused} />
+              </div>
+              <div className="absolute top-0 bottom-0 w-0.5 bg-accent transition-all duration-300" style={{ left: `${progress}%` }} />
+            </div>
+            {/* Controls row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-bg-input border border-border hover:border-accent/40 transition-colors">
+                  <Play className="h-4 w-4" />
+                </button>
+                <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity">
+                  {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+                <button onClick={stopPlayback} className="p-2.5 rounded-full bg-bg-input border border-border hover:border-red-400 transition-colors">
+                  <Square className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {user?.id && (
+                  <>
+                    <button onClick={handleLike} className={`p-2 rounded-full transition-colors ${liked ? 'text-red-500' : 'text-tx-muted hover:text-tx'}`}>
+                      <Heart className={`h-4 w-4 ${liked ? 'fill-current' : ''}`} />
+                    </button>
+                    <button onClick={handleSave} className={`p-2 rounded-full transition-colors ${saved ? 'text-accent' : 'text-tx-muted hover:text-tx'}`}>
+                      <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Idle waveform preview */
+          <div className="relative h-12 md:h-14 rounded-xl bg-bg-input overflow-hidden opacity-40">
+            <AudioVisualizer audioElement={null} barCount={40} barColor="#E65A28" barGap={2} active={false} />
+          </div>
+        )}
       </div>
 
       {/* Search + genre filter */}
