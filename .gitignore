@@ -35,3 +35,7 @@ coverage/
 
 # Vercel
 .vercel
+
+# Python
+__pycache__/
+*.pyc
