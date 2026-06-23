@@ -1,17 +1,20 @@
-# Indonesian TTS Server (Microsoft Edge TTS)
+# Hybrid Indonesian TTS Server (Edge TTS + sherpa-onnx)
 
-Self-hosted, no API key, no model download. Powers the `/api/tts` route in the
-Next.js app. Sangat ringan (~50-100MB RAM) — cocok untuk Railway free/Hobby.
+Self-hosted, no API key. Powers the `/api/tts` route in the Next.js app.
+Menggabungkan dua engine dalam satu API:
 
-## Kenapa terpisah?
+1. **Microsoft Edge TTS** (online, kualitas tinggi, tanpa API key)
+   - `gadis` → id-ID-GadisNeural (Indonesia, wanita)
+   - `ardi`  → id-ID-ArdiNeural (Indonesia, pria)
+   - `yasmin`→ ms-MY-YasminNeural (Melayu, wanita)
+   - `osman` → ms-MY-OsmanNeural (Melayu, pria)
+   Output: MP3.
 
-`edge-tts` memanggil layanan neural voice Microsoft Edge. Dipisah sebagai
-service kecil agar gampang di-host dan dipanggil Next.js lewat env `LOCAL_TTS_URL`.
-
-## Suara Indonesia
-
-- `gadis` → `id-ID-GadisNeural` (wanita)
-- `ardi`  → `id-ID-ArdiNeural` (pria)
+2. **sherpa-onnx** (offline, ONNX/onnxruntime, tanpa torch, RAM rendah)
+   - `indo-piper` → Piper Indonesia
+   - Logat daerah (Meta MMS): `jawa`, `sunda`, `minang`, `bali`, `bugis`,
+     `ngaju` (Kalimantan), `aceh`, `madura`
+   Model ~30-40MB/voice, diunduh saat build, dimuat lazy + LRU cache. Output: WAV.
 
 ## Jalankan dengan Docker (disarankan)
 
@@ -27,6 +30,7 @@ docker run -p 8080:8080 ditulis-tts
 cd tts-server
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+python download_models.py
 uvicorn app:app --host 0.0.0.0 --port 8080
 ```
 
@@ -34,33 +38,38 @@ uvicorn app:app --host 0.0.0.0 --port 8080
 
 ```bash
 curl http://localhost:8080/health
-curl -X POST http://localhost:8080/speak \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Halo dunia, ini contoh suara.","speaker":"gadis"}' \
-  -o out.mp3
+# Edge (mp3):
+curl -X POST http://localhost:8080/speak -H "Content-Type: application/json" \
+  -d '{"text":"Halo dunia","speaker":"gadis"}' -o gadis.mp3
+# Logat daerah (wav):
+curl -X POST http://localhost:8080/speak -H "Content-Type: application/json" \
+  -d '{"text":"Sugeng enjing","speaker":"jawa"}' -o jawa.wav
 ```
 
-Output adalah MP3 (`audio/mpeg`).
+`GET /health` mengembalikan daftar voice yang benar-benar tersedia (voice MMS
+yang gagal diunduh otomatis disembunyikan).
 
 ## Sambungkan ke Next.js
 
-Set di `.env.local` (dan di host produksi):
+`.env.local` (dan host produksi):
 
 ```
 LOCAL_TTS_URL=http://localhost:8080
 ```
 
-Route `/api/tts` memakai server ini (tanpa fallback).
+Route `/api/tts` memakai server ini (tanpa fallback). Halaman `/tts-demo`
+mengambil daftar voice dari `GET /api/tts` lalu menampilkannya per grup.
 
 ## Deploy ke Railway
 
-1. **New** → **Deploy from GitHub repo** → pilih repo.
-2. Di **Settings** service:
+1. **New** → **Deploy from GitHub repo**.
+2. **Settings** service:
    - **Root Directory**: `tts-server`
    - **Builder**: Dockerfile (otomatis via `railway.json`)
-3. Build cepat (tanpa torch / tanpa unduh model). RAM kecil sudah cukup.
-4. **Settings → Networking → Generate Domain** untuk dapat URL publik.
-5. Uji `https://<domain>/health` → `{ "ok": true, "voices": ["ardi","wibowo","gadis","juminten"] }`.
+3. Build mengunduh model ONNX kecil (tanpa torch). RAM saat jalan rendah karena
+   model dimuat lazy + LRU cache (maks 3 model di memori).
+4. **Settings → Networking → Generate Domain** untuk URL publik.
+5. Uji `https://<domain>/health`.
 
 ### Sambungkan ke Vercel
 
@@ -70,7 +79,6 @@ Route `/api/tts` memakai server ini (tanpa fallback).
 LOCAL_TTS_URL = https://<domain-railway-anda>.up.railway.app
 ```
 
-Redeploy Vercel. Halaman `/tts-demo` memanggil server Railway ini.
-
-> Railway otomatis menyuntik `PORT`; Dockerfile sudah listen ke `$PORT`.
-> Tidak ada API key yang diperlukan.
+> Railway otomatis menyuntik `PORT`; Dockerfile listen ke `$PORT`. Tanpa API key.
+> Catatan: voice Edge (Indonesia/Melayu) butuh koneksi keluar ke Microsoft;
+> voice daerah (MMS/Piper) sepenuhnya offline di server.

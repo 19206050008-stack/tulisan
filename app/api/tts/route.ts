@@ -15,6 +15,24 @@ interface TTSBody {
   text?: string;
   speaker?: string;
   voice?: string;
+  rate?: string;
+  pitch?: string;
+  speed?: number;
+}
+
+// GET -> list available voices from the TTS server (/health).
+export async function GET() {
+  if (!LOCAL_TTS_URL) {
+    return NextResponse.json({ ok: false, voices: [] }, { status: 200 });
+  }
+  try {
+    const res = await fetch(`${LOCAL_TTS_URL.replace(/\/$/, '')}/health`, { cache: 'no-store' });
+    if (!res.ok) return NextResponse.json({ ok: false, voices: [] }, { status: 200 });
+    const data = await res.json();
+    return NextResponse.json(data, { status: 200 });
+  } catch {
+    return NextResponse.json({ ok: false, voices: [] }, { status: 200 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -37,7 +55,13 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${LOCAL_TTS_URL.replace(/\/$/, '')}/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, speaker: body.speaker || body.voice || 'gadis' }),
+      body: JSON.stringify({
+        text,
+        speaker: body.speaker || body.voice || 'gadis',
+        ...(body.rate ? { rate: body.rate } : {}),
+        ...(body.pitch ? { pitch: body.pitch } : {}),
+        ...(body.speed ? { speed: body.speed } : {}),
+      }),
     });
 
     if (!res.ok) {

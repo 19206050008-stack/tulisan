@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
 
-// Indonesian Edge TTS voices
-const VOICES: { id: string; label: string }[] = [
-  { id: 'gadis', label: 'Gadis (Wanita)' },
-  { id: 'ardi', label: 'Ardi (Pria)' },
+interface Voice { id: string; label: string; group: string }
+
+// Fallback list (used if the server's /health is unavailable).
+const FALLBACK_VOICES: Voice[] = [
+  { id: 'gadis', label: 'Gadis — Indonesia (Wanita)', group: 'Indonesia' },
+  { id: 'ardi', label: 'Ardi — Indonesia (Pria)', group: 'Indonesia' },
 ];
 
 export default function TTSDemoPage() {
   const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
+  const [voices, setVoices] = useState<Voice[]>(FALLBACK_VOICES);
   const [voice, setVoice] = useState('gadis');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -18,6 +21,21 @@ export default function TTSDemoPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetch('/api/tts')
+      .then(r => r.json())
+      .then(d => {
+        if (Array.isArray(d?.voices) && d.voices.length) {
+          setVoices(d.voices);
+          if (!d.voices.some((v: Voice) => v.id === voice)) setVoice(d.voices[0].id);
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const groups = Array.from(new Set(voices.map(v => v.group)));
 
   const generate = async () => {
     setError(null);
@@ -83,15 +101,22 @@ export default function TTSDemoPage() {
 
       {/* Voice */}
       <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Pilihan Suara</label>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {VOICES.map(v => (
-          <button
-            key={v.id}
-            onClick={() => setVoice(v.id)}
-            className={`px-3 py-2 rounded-xl border text-center text-xs transition-colors ${voice === v.id ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-card hover:border-accent/40'}`}
-          >
-            {v.label}
-          </button>
+      <div className="space-y-3">
+        {groups.map(group => (
+          <div key={group}>
+            <p className="text-[11px] uppercase tracking-wide text-tx-muted mb-1.5">{group}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {voices.filter(v => v.group === group).map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => setVoice(v.id)}
+                  className={`px-3 py-2 rounded-xl border text-center text-xs transition-colors ${voice === v.id ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-card hover:border-accent/40'}`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 
