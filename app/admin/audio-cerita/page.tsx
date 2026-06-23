@@ -111,7 +111,8 @@ export default function AdminAudioCeritaPage() {
           const label = `Bab ${i + 1}/${valid.length}`;
           setProgress({ phase: label, done: 0, total: 0 });
           const blob = await renderTextToAudio(chapterText(ch), voice, format, (d, t) =>
-            setProgress({ phase: label, done: d, total: t }));
+            setProgress({ phase: label, done: d, total: t }),
+            (msg) => setProgress({ phase: `${label} · ${msg}`, done: 0, total: 0 }));
           const fname = `${String(i + 1).padStart(2, '0')}-${sanitizeFilename(ch.title || `Bab ${i + 1}`)}.${format}`;
           zip.file(fname, blob);
         }
@@ -123,7 +124,8 @@ export default function AdminAudioCeritaPage() {
           ? valid.map((c: any) => chapterText(c)).join('\n\n')
           : (dl.description || dl.title);
         const blob = await renderTextToAudio(text, voice, format, (d, t) =>
-          setProgress({ phase: 'Membuat audio', done: d, total: t }));
+          setProgress({ phase: 'Membuat audio', done: d, total: t }),
+          (msg) => setProgress({ phase: msg, done: 0, total: 0 }));
         downloadBlob(blob, `${sanitizeFilename(dl.title)}-${voice}.${format}`);
       }
       setDl(null);

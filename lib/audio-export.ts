@@ -11,7 +11,7 @@ export type AudioFormat = 'wav' | 'mp3';
 
 // Potong teks (HTML dibersihkan) jadi beberapa chunk <= maxLen karakter,
 // memotong di batas kalimat agar natural & di bawah limit /api/tts (5000).
-export function textToChunks(rawText: string, maxLen = 3500): string[] {
+export function textToChunks(rawText: string, maxLen = 2000): string[] {
   const sentences = preprocessTextForTTS(rawText || '');
   const chunks: string[] = [];
   let cur = '';
@@ -27,18 +27,57 @@ export function textToChunks(rawText: string, maxLen = 3500): string[] {
   return chunks;
 }
 
-// Hasilkan audio satu chunk via /api/tts.
-export async function synthChunk(text: string, speaker: string): Promise<Blob> {
-  const res = await fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, speaker }),
-  });
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({} as any));
-    throw new Error(j.error || `TTS gagal (${res.status})`);
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// Bangunkan server TTS (Railway free tier bisa "tidur" -> 502 cold start).
+// Polling GET /api/tts sampai server sehat, maksimum ~beberapa kali coba.
+export async function warmUpTTS(onStatus?: (msg: string) => void): Promise<void> {
+  for (let attempt = 1; attempt <= 8; attempt++) {
+    try {
+      const res = await fetch('/api/tts', { method: 'GET', cache: 'no-store' });
+      if (res.ok) {
+        const j = await res.json().catch(() => ({} as any));
+        if (j && j.ok !== false) return;
+      }
+    } catch {
+      // ignore, keep trying
+    }
+    onStatus?.(`Membangunkan server TTS… (${attempt})`);
+    await delay(2500);
   }
-  return await res.blob();
+}
+
+// Hasilkan audio satu chunk via /api/tts, dengan retry untuk error transien
+// (502/503/504 cold start atau timeout sementara di server gratis).
+export async function synthChunk(text: string, speaker: string, retries = 5): Promise<Blob> {
+  let lastErr: Error | null = null;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, speaker }),
+      });
+      if (res.ok) return await res.blob();
+
+      // Error gateway/transien -> tunggu lalu coba lagi.
+      if ([429, 500, 502, 503, 504].includes(res.status) && attempt < retries) {
+        await delay(2000 * attempt);
+        continue;
+      }
+      const j = await res.json().catch(() => ({} as any));
+      throw new Error(j.error || `TTS gagal (${res.status})`);
+    } catch (e: any) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+      if (attempt < retries) {
+        await delay(2000 * attempt);
+        continue;
+      }
+    }
+  }
+  throw lastErr || new Error('TTS gagal');
 }
 
 let _ctx: AudioContext | null = null;
@@ -127,9 +166,12 @@ export async function renderTextToAudio(
   speaker: string,
   format: AudioFormat,
   onProgress?: (done: number, total: number) => void,
+  onStatus?: (msg: string) => void,
 ): Promise<Blob> {
   const chunks = textToChunks(rawText);
   if (chunks.length === 0) throw new Error('Teks kosong');
+  // Pastikan server bangun dulu agar tidak gagal di chunk pertama.
+  await warmUpTTS(onStatus);
   const blobs: Blob[] = [];
   for (let i = 0; i < chunks.length; i++) {
     blobs.push(await synthChunk(chunks[i], speaker));
