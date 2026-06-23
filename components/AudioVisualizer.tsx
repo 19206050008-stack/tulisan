@@ -75,16 +75,16 @@ export function AudioVisualizer({
       const x = i * (bw + barGap);
       const y = h - barH;
 
-      // Vertical gradient: solid base brightening to a luminous tip.
+      // Vertical gradient: solid base brightening to a soft (not stark) tip.
       const gradient = ctx.createLinearGradient(x, h, x, y);
-      gradient.addColorStop(0, barColor + '66');
-      gradient.addColorStop(0.55, barColor);
-      gradient.addColorStop(1, '#ffffff');
+      gradient.addColorStop(0, barColor + '55');
+      gradient.addColorStop(0.6, barColor);
+      gradient.addColorStop(1, '#cbd5e1');
       ctx.fillStyle = gradient;
 
-      // Soft glow for the "indah" look.
-      ctx.shadowColor = barColor;
-      ctx.shadowBlur = 6;
+      // Subtle glow for the "indah" look.
+      ctx.shadowColor = barColor + '88';
+      ctx.shadowBlur = 4;
 
       const radius = Math.min(bw / 2, 3);
       ctx.beginPath();
@@ -114,12 +114,17 @@ export function AudioVisualizer({
     const totalGap = barGap * (barCount - 1);
     const bw = Math.max(1, (w - totalGap) / barCount);
     for (let i = 0; i < barCount; i++) {
-      // Deterministic varied heights so it looks like a frozen equalizer
-      const wave = Math.sin(i * 0.9) * 0.3 + Math.sin(i * 0.45) * 0.2;
-      const barH = Math.max(2, (0.4 + wave) * h);
+      // Smooth, symmetric bell-ish shape so it looks like a tidy equalizer.
+      const center = (barCount - 1) / 2;
+      const dist = Math.abs(i - center) / (center || 1);
+      const shape = 0.25 + (1 - dist) * 0.45;
+      const barH = Math.max(2, shape * h);
       const x = i * (bw + barGap);
       const y = h - barH;
-      ctx.fillStyle = barColor + '99';
+      const gradient = ctx.createLinearGradient(x, h, x, y);
+      gradient.addColorStop(0, barColor + '33');
+      gradient.addColorStop(1, barColor + '77');
+      ctx.fillStyle = gradient;
       const radius = Math.min(bw / 2, 3);
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -134,7 +139,7 @@ export function AudioVisualizer({
     }
   }, [barCount, barColor, barGap]);
 
-  // Animated fallback bars (pseudo-random) when no real audio source
+  // Animated fallback bars (smooth pseudo-wave) when no real audio source
   const drawAnimated = useCallback((t: number) => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -145,17 +150,19 @@ export function AudioVisualizer({
     const totalGap = barGap * (barCount - 1);
     const bw = Math.max(1, (w - totalGap) / barCount);
     for (let i = 0; i < barCount; i++) {
-      // Pseudo-random wave based on bar index and time
-      const wave = Math.sin(t * 0.004 + i * 0.7) * 0.3 +
-                   Math.sin(t * 0.007 + i * 1.3) * 0.2 +
-                   Math.sin(t * 0.002 + i * 0.4) * 0.15;
-      const barH = Math.max(3, (0.35 + wave) * h);
+      // Gentle, flowing wave — softer and slower than before.
+      const wave = Math.sin(t * 0.0026 + i * 0.55) * 0.28 +
+                   Math.sin(t * 0.0041 + i * 0.9) * 0.16;
+      const barH = Math.max(2.5, (0.4 + wave) * h);
       const x = i * (bw + barGap);
       const y = h - barH;
       const gradient = ctx.createLinearGradient(x, h, x, y);
-      gradient.addColorStop(0, barColor);
-      gradient.addColorStop(1, barColor + '44');
+      gradient.addColorStop(0, barColor + '55');
+      gradient.addColorStop(0.6, barColor);
+      gradient.addColorStop(1, '#cbd5e1');
       ctx.fillStyle = gradient;
+      ctx.shadowColor = barColor + '66';
+      ctx.shadowBlur = 3;
       const radius = Math.min(bw / 2, 3);
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -168,6 +175,7 @@ export function AudioVisualizer({
       ctx.closePath();
       ctx.fill();
     }
+    ctx.shadowBlur = 0;
     rafRef.current = requestAnimationFrame(drawAnimated);
   }, [barCount, barColor, barGap]);
 
