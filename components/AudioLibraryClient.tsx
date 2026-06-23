@@ -9,7 +9,7 @@ import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved, g
 import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, TTS_VOICES, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
 import { preprocessTextForTTS } from '@/lib/tts-text-preprocessor';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
-import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, X, Moon, ChevronRight, ChevronLeft, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, X, Moon, ChevronRight, ChevronLeft, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2, Loader2 } from 'lucide-react';
 
 interface AudioStory {
   id: string;
@@ -199,14 +199,18 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     return new Promise(async (resolve) => {
       const a = audioRef.current;
       const url = await fetchAudio(sentence);
-      if (!url || !a || abortRef.current) { resolve(); return; }
+      if (!url || !a || abortRef.current) { setLoading(false); resolve(); return; }
+      const onPlaying = () => { setLoading(false); a.removeEventListener('playing', onPlaying); };
       const done = () => {
         a.removeEventListener('ended', done);
         a.removeEventListener('error', done);
+        a.removeEventListener('playing', onPlaying);
+        setLoading(false);
         if (resolveRef.current === done) resolveRef.current = null;
         resolve();
       };
       resolveRef.current = done;
+      a.addEventListener('playing', onPlaying);
       a.addEventListener('ended', done);
       a.addEventListener('error', done);
       a.src = url;
@@ -292,7 +296,6 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     }
 
     const ok = await loadStoryContent(story);
-    setLoading(false);
     if (ok) {
       // Resume from saved position if available
       let startAt = 0;
@@ -304,9 +307,17 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         }
       } catch {}
       setSentenceIdx(startAt);
+      // Prefetch the first two sentences in parallel to cut the initial gap.
+      // playSequence keeps `loading` true until the first audio actually plays.
+      const s0 = sentencesRef.current[startAt];
+      const s1 = sentencesRef.current[startAt + 1];
+      if (s0) fetchAudio(s0);
+      if (s1) fetchAudio(s1);
       playSequence(startAt);
+    } else {
+      setLoading(false);
     }
-  }, [user, loadStoryContent, playSequence, setupAnalyser]);
+  }, [user, loadStoryContent, playSequence, setupAnalyser, fetchAudio]);
 
   // Direct play: click = play immediately. If same story playing, toggle pause.
   const selectAndPlay = useCallback((story: AudioStory) => {
@@ -331,6 +342,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     } else if (current) {
       setPaused(false);
       pausedRef.current = false;
+      setLoading(true);
       playSequence(sentenceIdx);
     }
   };
@@ -374,6 +386,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   };
 
   useEffect(() => {
+    // Warm up the TTS server early (wakes a sleeping Railway container) so the
+    // first "Play" doesn't pay the cold-start cost.
+    fetch('/api/tts', { method: 'GET', cache: 'no-store' }).catch(() => {});
     return () => {
       abortRef.current = true;
       resolveRef.current?.();
@@ -864,7 +879,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
             <div className="min-w-0 flex-1">
               <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
               <p className="text-[10px] md:text-xs text-tx-muted truncate">
-                {loading ? (lang === 'en' ? 'Loading...' : 'Memuat...') : paused ? (lang === 'en' ? 'Paused' : 'Dijeda') : `${sentenceIdx + 1}/${totalSentences}`}
+                {loading ? (lang === 'en' ? 'Preparing voice…' : 'Menyiapkan suara…') : paused ? (lang === 'en' ? 'Paused' : 'Dijeda') : `${sentenceIdx + 1}/${totalSentences}`}
               </p>
               {/* Current sentence with word highlighting */}
               {playing && !paused && currentSentence && currentWord && (
@@ -895,8 +910,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
               <button onClick={() => skipSentence(-1)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft transition-colors hidden sm:block" title="Previous">
                 <SkipBack className="h-4 w-4" />
               </button>
-              <button onClick={togglePlayPause} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity" title={playing && !paused ? 'Pause' : 'Play'}>
-                {playing && !paused ? <Pause className="h-4 w-4 md:h-5 md:w-5" /> : <Play className="h-4 w-4 md:h-5 md:w-5" />}
+              <button onClick={togglePlayPause} disabled={loading} className="p-2.5 rounded-full bg-accent text-white hover:opacity-90 transition-opacity disabled:opacity-70" title={loading ? 'Menyiapkan...' : playing && !paused ? 'Pause' : 'Play'}>
+                {loading ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : playing && !paused ? <Pause className="h-4 w-4 md:h-5 md:w-5" /> : <Play className="h-4 w-4 md:h-5 md:w-5" />}
               </button>
               <button onClick={() => skipSentence(1)} className="p-1.5 md:p-2 rounded-full hover:bg-bg-soft transition-colors hidden sm:block" title="Next">
                 <SkipForward className="h-4 w-4" />
