@@ -11,6 +11,23 @@ const FALLBACK_VOICES: Voice[] = [
   { id: 'budi', label: 'Budi — Pria', group: 'Indonesia' },
 ];
 
+// Contoh teks untuk menguji emosi lewat tanda baca + expression tags.
+interface Example { id: string; label: string; text: string }
+const EXAMPLES: Example[] = [
+  { id: 'senang', label: '😄 Senang', text: '"Akhirnya kita sampai!" seru Maya gembira sambil melompat kecil.' },
+  { id: 'sedih', label: '😢 Sedih', text: 'Ia menunduk… lalu berbisik pelan, "Aku merindukanmu, Ibu."' },
+  { id: 'tegang', label: '😨 Tegang', text: 'Pintu itu berderit pelan… Sesuatu—entah apa—bergerak di kegelapan.' },
+  { id: 'marah', label: '😠 Marah', text: '"Cukup! Jangan pernah ucapkan itu lagi," katanya, suaranya bergetar menahan amarah.' },
+  { id: 'penasaran', label: '🤔 Penasaran', text: 'Siapa yang berani masuk hutan terlarang itu? Tidak ada seorang pun yang tahu.' },
+  { id: 'tawa', label: '😂 Tawa (tag)', text: '"Kau benar-benar lucu," katanya. <laugh> "Aku sampai tak bisa berhenti."' },
+  { id: 'lega', label: '😌 Lega (tag)', text: '<breath> Malam akhirnya reda. <sigh> Semuanya sudah berakhir sekarang.' },
+  {
+    id: 'dongeng',
+    label: '📖 Dongeng (paragraf)',
+    text: 'Pada zaman dahulu, di sebuah desa kecil di kaki gunung, hiduplah seorang gadis bernama Sari. Setiap pagi ia menyusuri ladang sambil bernyanyi. "Selamat pagi, dunia!" serunya riang. Namun suatu hari, langit mendadak gelap… Angin berembus kencang, dan dari balik hutan terdengar suara aneh—seperti bisikan. Sari menahan napas. "Siapa di sana?" tanyanya pelan, suaranya gemetar.',
+  },
+];
+
 export default function TTSDemoPage() {
   const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
   const [voices, setVoices] = useState<Voice[]>(FALLBACK_VOICES);
@@ -98,6 +115,21 @@ export default function TTSDemoPage() {
         className="w-full px-4 py-3 rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent text-sm resize-y"
       />
       <p className="text-[10px] text-tx-muted mt-1 text-right">{text.length}/5000</p>
+
+      {/* Contoh teks emosi */}
+      <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-2">Contoh teks (emosi)</label>
+      <div className="flex flex-wrap gap-2">
+        {EXAMPLES.map(ex => (
+          <button
+            key={ex.id}
+            onClick={() => setText(ex.text)}
+            className="px-3 py-1.5 rounded-full border border-border bg-bg-card text-xs hover:border-accent/40 transition-colors"
+          >
+            {ex.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-tx-muted mt-1.5">Emosi dibentuk dari tanda baca (… — ? !) + tag <code>&lt;laugh&gt;</code>/<code>&lt;sigh&gt;</code>/<code>&lt;breath&gt;</code>. Klik contoh, lalu pilih suara dan dengarkan.</p>
 
       {/* Voice */}
       <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Pilihan Suara</label>
