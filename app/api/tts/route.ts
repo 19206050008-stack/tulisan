@@ -15,7 +15,6 @@ interface TTSBody {
   text?: string;
   speaker?: string;
   voice?: string;
-  emotion?: string;
   rate?: string;
   pitch?: string;
   speed?: number;
@@ -59,7 +58,6 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         text,
         speaker: body.speaker || body.voice || 'gadis',
-        ...(body.emotion ? { emotion: body.emotion } : {}),
         ...(body.rate ? { rate: body.rate } : {}),
         ...(body.pitch ? { pitch: body.pitch } : {}),
         ...(body.speed ? { speed: body.speed } : {}),
