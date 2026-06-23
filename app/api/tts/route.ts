@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text,
-        speaker: body.speaker || body.voice || 'gadis',
+        speaker: body.speaker || body.voice || 'sari',
         ...(body.rate ? { rate: body.rate } : {}),
         ...(body.pitch ? { pitch: body.pitch } : {}),
         ...(body.speed ? { speed: body.speed } : {}),

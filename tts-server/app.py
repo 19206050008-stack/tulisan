@@ -29,26 +29,29 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 MODELS_DIR = os.environ.get("MODELS_DIR", "models")
-DEFAULT_SPEAKER = os.environ.get("DEFAULT_SPEAKER", "gadis")
+DEFAULT_SPEAKER = os.environ.get("DEFAULT_SPEAKER", "sari")
 
 SUPERTONIC_DIR = "sherpa-onnx-supertonic-3-tts-int8-2026-05-11"
 
-# id -> (edge voice, label, group)
-EDGE_VOICES = {
-    "gadis": ("id-ID-GadisNeural", "Gadis — Indonesia (Wanita)", "Indonesia"),
-    "ardi":  ("id-ID-ArdiNeural",  "Ardi — Indonesia (Pria)",    "Indonesia"),
-}
+# Edge TTS voices (disabled — diganti suara neural Supertonic atas permintaan).
+EDGE_VOICES: dict = {}
 
-# VITS (Piper) voices. id -> (model folder, label, group)
-LOCAL_VOICES = {
-    "indo-piper": ("vits-piper-id_ID-news_tts-medium", "Piper — Indonesia", "Indonesia"),
-}
+# VITS (Piper) voices — dinonaktifkan (kurang natural).
+LOCAL_VOICES: dict = {}
 
-# SupertonicTTS Indonesian speakers (single model, 10 speakers).
-# id -> (sid, label, group)
+# SupertonicTTS Indonesian voices (1 model, 10 speaker: 5 wanita + 5 pria).
+# id -> (sid, label, group). Asumsi urutan: sid 0-4 = wanita (F1-F5), 5-9 = pria (M1-M5).
 SUPERTONIC_VOICES = {
-    f"neural-{i + 1}": (i, f"Neural {i + 1} — Indonesia", "Natural (Neural)")
-    for i in range(10)
+    "sari":  (0, "Sari — Wanita",  "Indonesia"),
+    "dewi":  (1, "Dewi — Wanita",  "Indonesia"),
+    "ayu":   (2, "Ayu — Wanita",   "Indonesia"),
+    "rina":  (3, "Rina — Wanita",  "Indonesia"),
+    "maya":  (4, "Maya — Wanita",  "Indonesia"),
+    "budi":  (5, "Budi — Pria",    "Indonesia"),
+    "agus":  (6, "Agus — Pria",    "Indonesia"),
+    "bayu":  (7, "Bayu — Pria",    "Indonesia"),
+    "dimas": (8, "Dimas — Pria",   "Indonesia"),
+    "andi":  (9, "Andi — Pria",    "Indonesia"),
 }
 
 app = FastAPI(title="Indonesian TTS (Edge + sherpa-onnx)")

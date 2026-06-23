@@ -7,14 +7,14 @@ interface Voice { id: string; label: string; group: string }
 
 // Fallback list (used if the server's /health is unavailable).
 const FALLBACK_VOICES: Voice[] = [
-  { id: 'gadis', label: 'Gadis — Indonesia (Wanita)', group: 'Indonesia' },
-  { id: 'ardi', label: 'Ardi — Indonesia (Pria)', group: 'Indonesia' },
+  { id: 'sari', label: 'Sari — Wanita', group: 'Indonesia' },
+  { id: 'budi', label: 'Budi — Pria', group: 'Indonesia' },
 ];
 
 export default function TTSDemoPage() {
   const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
   const [voices, setVoices] = useState<Voice[]>(FALLBACK_VOICES);
-  const [voice, setVoice] = useState('gadis');
+  const [voice, setVoice] = useState('sari');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
