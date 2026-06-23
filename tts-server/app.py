@@ -21,11 +21,17 @@ from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+# Limit CPU threads to keep memory/CPU spikes down on small instances.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 MODEL_DIR = os.environ.get("MODEL_DIR", ".")
 CHECKPOINT = os.path.join(MODEL_DIR, "checkpoint.pth")
 CONFIG = os.path.join(MODEL_DIR, "config.json")
 SPEAKERS = os.path.join(MODEL_DIR, "speakers.pth")
 DEFAULT_SPEAKER = os.environ.get("DEFAULT_SPEAKER", "wibowo")
+# Lighter grapheme->phoneme neural net for OOV words ("LSTM" vs heavy "BERT").
+G2P_MODEL = os.environ.get("G2P_MODEL", "LSTM")
 
 app = FastAPI(title="Indonesian TTS (Coqui VITS)")
 
@@ -45,6 +51,11 @@ def _ensure_loaded():
             return _synth, _g2p
         from TTS.utils.synthesizer import Synthesizer
         from g2p_id import G2p
+        try:
+            import torch
+            torch.set_num_threads(1)
+        except Exception:
+            pass
         use_cuda = os.environ.get("USE_CUDA", "0") == "1"
         synth = Synthesizer(
             tts_checkpoint=CHECKPOINT,
@@ -52,7 +63,7 @@ def _ensure_loaded():
             tts_speakers_file=SPEAKERS,
             use_cuda=use_cuda,
         )
-        g2p = G2p()
+        g2p = G2p(model_type=G2P_MODEL)
         _synth, _g2p = synth, g2p
         _load_error = None
         return _synth, _g2p
