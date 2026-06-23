@@ -1,20 +1,18 @@
-# Hybrid Indonesian TTS Server (Edge TTS + sherpa-onnx)
+# Indonesian TTS Server (Edge TTS + sherpa-onnx)
 
 Self-hosted, no API key. Powers the `/api/tts` route in the Next.js app.
-Menggabungkan dua engine dalam satu API:
+Menggabungkan beberapa engine dalam satu API:
 
 1. **Microsoft Edge TTS** (online, kualitas tinggi, tanpa API key)
    - `gadis` → id-ID-GadisNeural (Indonesia, wanita)
    - `ardi`  → id-ID-ArdiNeural (Indonesia, pria)
-   - `yasmin`→ ms-MY-YasminNeural (Melayu, wanita)
-   - `osman` → ms-MY-OsmanNeural (Melayu, pria)
    Output: MP3.
 
 2. **sherpa-onnx** (offline, ONNX/onnxruntime, tanpa torch, RAM rendah)
-   - `indo-piper` → Piper Indonesia
-   - Logat daerah (Meta MMS): `jawa`, `sunda`, `minang`, `bali`, `bugis`,
-     `ngaju` (Kalimantan), `aceh`, `madura`
-   Model ~30-40MB/voice, diunduh saat build, dimuat lazy + LRU cache. Output: WAV.
+   - `indo-piper` → Piper Indonesia (VITS).
+   - `neural-1` … `neural-10` → **SupertonicTTS 3** (10 suara Indonesia,
+     `sid` 0-9, `lang=id`). Satu model int8 ringan, banyak suara.
+   Model diunduh saat build, dimuat lazy. Output: WAV.
 
 ## Jalankan dengan Docker (disarankan)
 

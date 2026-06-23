@@ -16,17 +16,10 @@ import urllib.request
 BASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
 MODELS_DIR = os.environ.get("MODELS_DIR", "models")
 
-# Archive base names (without .tar.bz2). MMS = regional accents; Piper = Indonesian.
+# Archive base names (without .tar.bz2).
 ARCHIVES = [
-    "vits-piper-id_ID-news_tts-medium",  # Indonesia (Piper)
-    "vits-mms-jav",  # Jawa
-    "vits-mms-sun",  # Sunda
-    "vits-mms-min",  # Minang
-    "vits-mms-ban",  # Bali
-    "vits-mms-bug",  # Bugis
-    "vits-mms-nij",  # Ngaju (Kalimantan)
-    "vits-mms-ace",  # Aceh
-    "vits-mms-mad",  # Madura
+    "vits-piper-id_ID-news_tts-medium",            # Piper Indonesia (VITS)
+    "sherpa-onnx-supertonic-3-tts-int8-2026-05-11", # SupertonicTTS (10 suara id)
 ]
 
 os.makedirs(MODELS_DIR, exist_ok=True)

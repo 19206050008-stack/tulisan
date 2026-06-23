@@ -1,22 +1,17 @@
 """
-Hybrid Indonesian TTS microservice.
+Indonesian TTS microservice (free, no API key).
 
-Two engines combined behind one API:
-
-1) Microsoft Edge TTS (online, high quality, no API key)
-   - id-ID-GadisNeural / id-ID-ArdiNeural  (Indonesia)
-   Output: MP3.
-
-2) sherpa-onnx (offline, ONNX/onnxruntime, no torch, low RAM)
-   - Piper Indonesian + Meta MMS regional voices (Jawa, Sunda, Minang, Bali,
-     Bugis, Ngaju/Kalimantan, Aceh, Madura). Models are downloaded at build
-     time (see download_models.py) and loaded lazily with a small LRU cache.
+Engines:
+1) Microsoft Edge TTS (online) — id-ID Gadis/Ardi. Output: MP3.
+2) sherpa-onnx (offline, ONNX, no torch, low RAM):
+   - Piper id_ID (1 voice). VITS.
+   - SupertonicTTS 3 (multi-speaker) — 10 Indonesian voices (sid 0-9, lang=id).
    Output: WAV.
 
 Endpoints:
   GET  /health  -> { ok, voices: [ {id,label,group}, ... ] }
   POST /speak   -> audio/mpeg (edge) or audio/wav (local)
-                   body: { "text": "...", "speaker": "jawa",
+                   body: { "text": "...", "speaker": "neural-1",
                            "rate": "+0%", "pitch": "+0Hz", "speed": 1.0 }
 """
 
@@ -36,30 +31,32 @@ from pydantic import BaseModel
 MODELS_DIR = os.environ.get("MODELS_DIR", "models")
 DEFAULT_SPEAKER = os.environ.get("DEFAULT_SPEAKER", "gadis")
 
+SUPERTONIC_DIR = "sherpa-onnx-supertonic-3-tts-int8-2026-05-11"
+
 # id -> (edge voice, label, group)
 EDGE_VOICES = {
-    "gadis":  ("id-ID-GadisNeural",  "Gadis — Indonesia (Wanita)", "Indonesia"),
-    "ardi":   ("id-ID-ArdiNeural",   "Ardi — Indonesia (Pria)",    "Indonesia"),
+    "gadis": ("id-ID-GadisNeural", "Gadis — Indonesia (Wanita)", "Indonesia"),
+    "ardi":  ("id-ID-ArdiNeural",  "Ardi — Indonesia (Pria)",    "Indonesia"),
 }
 
-# id -> (model folder, label, group)
+# VITS (Piper) voices. id -> (model folder, label, group)
 LOCAL_VOICES = {
-    "indo-piper": ("vits-piper-id_ID-news_tts-medium", "Indonesia (Piper)", "Indonesia"),
-    "jawa":   ("vits-mms-jav", "Jawa",               "Daerah"),
-    "sunda":  ("vits-mms-sun", "Sunda",              "Daerah"),
-    "minang": ("vits-mms-min", "Minang",             "Daerah"),
-    "bali":   ("vits-mms-ban", "Bali",               "Daerah"),
-    "bugis":  ("vits-mms-bug", "Bugis",              "Daerah"),
-    "ngaju":  ("vits-mms-nij", "Ngaju (Kalimantan)", "Daerah"),
-    "aceh":   ("vits-mms-ace", "Aceh",               "Daerah"),
-    "madura": ("vits-mms-mad", "Madura",             "Daerah"),
+    "indo-piper": ("vits-piper-id_ID-news_tts-medium", "Piper — Indonesia", "Indonesia"),
 }
 
-app = FastAPI(title="Hybrid Indonesian TTS (Edge + sherpa-onnx)")
+# SupertonicTTS Indonesian speakers (single model, 10 speakers).
+# id -> (sid, label, group)
+SUPERTONIC_VOICES = {
+    f"neural-{i + 1}": (i, f"Neural {i + 1} — Indonesia", "Natural (Neural)")
+    for i in range(10)
+}
 
-# --- lazy-loaded local model cache (LRU, capped to keep RAM low) ------------
+app = FastAPI(title="Indonesian TTS (Edge + sherpa-onnx)")
+
+# --- lazy model caches -------------------------------------------------------
 _CACHE_MAX = 3
 _local_cache: "OrderedDict[str, object]" = OrderedDict()
+_supertonic = None
 _cache_lock = threading.Lock()
 
 
@@ -67,8 +64,12 @@ def _local_available(folder: str) -> bool:
     return os.path.isdir(os.path.join(MODELS_DIR, folder))
 
 
+def _supertonic_available() -> bool:
+    d = os.path.join(MODELS_DIR, SUPERTONIC_DIR)
+    return os.path.isfile(os.path.join(d, "tts.json"))
+
+
 def _resolve_model(folder: str):
-    """Find .onnx, tokens.txt and optional espeak-ng-data inside a model dir."""
     path = os.path.join(MODELS_DIR, folder)
     onnx = None
     for f in sorted(os.listdir(path)):
@@ -87,7 +88,7 @@ def _get_local_tts(folder: str):
             _local_cache.move_to_end(folder)
             return _local_cache[folder]
 
-    import sherpa_onnx  # lazy import so /health works even if unavailable
+    import sherpa_onnx
 
     onnx, tokens, data_dir = _resolve_model(folder)
     if not onnx or not os.path.exists(tokens):
@@ -96,14 +97,9 @@ def _get_local_tts(folder: str):
     config = sherpa_onnx.OfflineTtsConfig(
         model=sherpa_onnx.OfflineTtsModelConfig(
             vits=sherpa_onnx.OfflineTtsVitsModelConfig(
-                model=onnx,
-                tokens=tokens,
-                lexicon="",
-                data_dir=data_dir,
+                model=onnx, tokens=tokens, lexicon="", data_dir=data_dir,
             ),
-            provider="cpu",
-            num_threads=1,
-            debug=False,
+            provider="cpu", num_threads=1, debug=False,
         ),
         max_num_sentences=1,
     )
@@ -115,6 +111,33 @@ def _get_local_tts(folder: str):
         while len(_local_cache) > _CACHE_MAX:
             _local_cache.popitem(last=False)
     return tts
+
+
+def _get_supertonic():
+    global _supertonic
+    if _supertonic is not None:
+        return _supertonic
+    with _cache_lock:
+        if _supertonic is not None:
+            return _supertonic
+        import sherpa_onnx
+        d = os.path.join(MODELS_DIR, SUPERTONIC_DIR)
+        cfg = sherpa_onnx.OfflineTtsConfig(
+            model=sherpa_onnx.OfflineTtsModelConfig(
+                supertonic=sherpa_onnx.OfflineTtsSupertonicModelConfig(
+                    duration_predictor=os.path.join(d, "duration_predictor.int8.onnx"),
+                    text_encoder=os.path.join(d, "text_encoder.int8.onnx"),
+                    vector_estimator=os.path.join(d, "vector_estimator.int8.onnx"),
+                    vocoder=os.path.join(d, "vocoder.int8.onnx"),
+                    tts_json=os.path.join(d, "tts.json"),
+                    unicode_indexer=os.path.join(d, "unicode_indexer.bin"),
+                    voice_style=os.path.join(d, "voice.bin"),
+                ),
+                provider="cpu", num_threads=2, debug=False,
+            ),
+        )
+        _supertonic = sherpa_onnx.OfflineTts(cfg)
+        return _supertonic
 
 
 def _samples_to_wav(samples, sample_rate: int) -> bytes:
@@ -171,6 +194,9 @@ def _voice_list():
     for vid, (folder, label, group) in LOCAL_VOICES.items():
         if _local_available(folder):
             out.append({"id": vid, "label": label, "group": group})
+    if _supertonic_available():
+        for vid, (_sid, label, group) in SUPERTONIC_VOICES.items():
+            out.append({"id": vid, "label": label, "group": group})
     return out
 
 
@@ -188,6 +214,7 @@ def speak(req: SpeakRequest):
         return JSONResponse({"error": "Teks terlalu panjang (maks 5000)"}, status_code=400)
 
     speaker = (req.speaker or DEFAULT_SPEAKER).lower()
+    speed = float(req.speed) if req.speed else 1.0
 
     # Edge voices (MP3)
     if speaker in EDGE_VOICES:
@@ -202,12 +229,32 @@ def speak(req: SpeakRequest):
             return JSONResponse({"error": "Audio kosong"}, status_code=503)
         return Response(content=audio, media_type="audio/mpeg")
 
-    # Local sherpa-onnx voices (WAV)
+    # SupertonicTTS voices (WAV) — 10 Indonesian speakers
+    if speaker in SUPERTONIC_VOICES:
+        if not _supertonic_available():
+            return JSONResponse({"error": f"Suara '{speaker}' tidak tersedia"}, status_code=404)
+        sid = SUPERTONIC_VOICES[speaker][0]
+        try:
+            import sherpa_onnx
+            tts = _get_supertonic()
+            gen = sherpa_onnx.GenerationConfig()
+            gen.sid = sid
+            gen.num_steps = 8
+            gen.speed = speed
+            gen.extra["lang"] = "id"
+            out = tts.generate(text, gen)
+        except Exception as e:  # noqa: BLE001
+            return JSONResponse({"error": f"Gagal membuat audio: {e}"}, status_code=503)
+        if out is None or len(out.samples) == 0:
+            return JSONResponse({"error": "Audio kosong"}, status_code=503)
+        wav = _samples_to_wav(out.samples, out.sample_rate)
+        return Response(content=wav, media_type="audio/wav")
+
+    # VITS / Piper voices (WAV)
     if speaker in LOCAL_VOICES:
         folder = LOCAL_VOICES[speaker][0]
         if not _local_available(folder):
             return JSONResponse({"error": f"Suara '{speaker}' tidak tersedia"}, status_code=404)
-        speed = float(req.speed) if req.speed else 1.0
         try:
             tts = _get_local_tts(folder)
             out = tts.generate(text, sid=0, speed=speed)
