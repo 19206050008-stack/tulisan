@@ -133,9 +133,30 @@ def _samples_to_wav(samples, sample_rate: int) -> bytes:
     return buf.getvalue()
 
 
+# --- emotion presets ---------------------------------------------------------
+# Edge TTS gratis tidak punya style emosi, jadi emosi diperkirakan lewat
+# prosodi (rate, volume, pitch). Untuk voice lokal (sherpa) hanya 'speed'.
+# id -> (rate, volume, pitch, speed_lokal, label)
+EMOTIONS = {
+    "netral":   ("+0%",  "+0%",  "+0Hz",  1.00, "Netral"),
+    "senang":   ("+10%", "+0%",  "+22Hz", 1.10, "Senang"),
+    "marah":    ("+16%", "+28%", "+16Hz", 1.15, "Marah"),
+    "sedih":    ("-16%", "+0%",  "-22Hz", 0.90, "Sedih"),
+    "nangis":   ("-26%", "-6%",  "-32Hz", 0.82, "Nangis"),
+    "ketawa":   ("+18%", "+12%", "+38Hz", 1.16, "Ketawa"),
+    "semangat": ("+20%", "+16%", "+26Hz", 1.16, "Semangat"),
+    "takut":    ("+22%", "+0%",  "+28Hz", 1.14, "Takut"),
+}
+DEFAULT_EMOTION = "netral"
+
+
+def _emotion(name: str | None):
+    return EMOTIONS.get((name or DEFAULT_EMOTION).lower(), EMOTIONS[DEFAULT_EMOTION])
+
+
 # --- edge-tts ----------------------------------------------------------------
-async def _edge_once(text: str, voice: str, rate: str, pitch: str) -> bytes:
-    communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
+async def _edge_once(text: str, voice: str, rate: str, volume: str, pitch: str) -> bytes:
+    communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch)
     chunks = bytearray()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
@@ -143,11 +164,11 @@ async def _edge_once(text: str, voice: str, rate: str, pitch: str) -> bytes:
     return bytes(chunks)
 
 
-async def _edge_tts(text: str, voice: str, rate: str, pitch: str) -> bytes:
+async def _edge_tts(text: str, voice: str, rate: str, volume: str, pitch: str) -> bytes:
     last_err = None
     for _ in range(3):
         try:
-            audio = await _edge_once(text, voice, rate, pitch)
+            audio = await _edge_once(text, voice, rate, volume, pitch)
             if audio:
                 return audio
         except Exception as e:  # noqa: BLE001
@@ -162,6 +183,7 @@ async def _edge_tts(text: str, voice: str, rate: str, pitch: str) -> bytes:
 class SpeakRequest(BaseModel):
     text: str
     speaker: str | None = None
+    emotion: str | None = None
     rate: str | None = None
     pitch: str | None = None
     speed: float | None = None
@@ -177,9 +199,13 @@ def _voice_list():
     return out
 
 
+def _emotion_list():
+    return [{"id": k, "label": v[4]} for k, v in EMOTIONS.items()]
+
+
 @app.get("/health")
 def health():
-    return {"ok": True, "voices": _voice_list()}
+    return {"ok": True, "voices": _voice_list(), "emotions": _emotion_list()}
 
 
 @app.post("/speak")
@@ -191,26 +217,28 @@ def speak(req: SpeakRequest):
         return JSONResponse({"error": "Teks terlalu panjang (maks 5000)"}, status_code=400)
 
     speaker = (req.speaker or DEFAULT_SPEAKER).lower()
+    e_rate, e_volume, e_pitch, e_speed, _ = _emotion(req.emotion)
 
-    # Edge voices (MP3)
+    # Edge voices (MP3) — emotion via prosody (rate/volume/pitch)
     if speaker in EDGE_VOICES:
         voice = EDGE_VOICES[speaker][0]
-        rate = req.rate or "+0%"
-        pitch = req.pitch or "+0Hz"
+        rate = req.rate or e_rate
+        pitch = req.pitch or e_pitch
+        volume = e_volume
         try:
-            audio = asyncio.run(_edge_tts(text, voice, rate, pitch))
+            audio = asyncio.run(_edge_tts(text, voice, rate, volume, pitch))
         except Exception as e:  # noqa: BLE001
             return JSONResponse({"error": f"Gagal membuat audio: {e}"}, status_code=503)
         if not audio:
             return JSONResponse({"error": "Audio kosong"}, status_code=503)
         return Response(content=audio, media_type="audio/mpeg")
 
-    # Local sherpa-onnx voices (WAV)
+    # Local sherpa-onnx voices (WAV) — emotion approximated via speed only
     if speaker in LOCAL_VOICES:
         folder = LOCAL_VOICES[speaker][0]
         if not _local_available(folder):
             return JSONResponse({"error": f"Suara '{speaker}' tidak tersedia"}, status_code=404)
-        speed = float(req.speed) if req.speed else 1.0
+        speed = float(req.speed) if req.speed else e_speed
         try:
             tts = _get_local_tts(folder)
             out = tts.generate(text, sid=0, speed=speed)

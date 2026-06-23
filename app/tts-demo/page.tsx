@@ -4,17 +4,26 @@ import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
 
 interface Voice { id: string; label: string; group: string }
+interface Emotion { id: string; label: string }
 
 // Fallback list (used if the server's /health is unavailable).
 const FALLBACK_VOICES: Voice[] = [
   { id: 'gadis', label: 'Gadis — Indonesia (Wanita)', group: 'Indonesia' },
   { id: 'ardi', label: 'Ardi — Indonesia (Pria)', group: 'Indonesia' },
 ];
+const FALLBACK_EMOTIONS: Emotion[] = [
+  { id: 'netral', label: 'Netral' },
+  { id: 'senang', label: 'Senang' },
+  { id: 'marah', label: 'Marah' },
+  { id: 'sedih', label: 'Sedih' },
+];
 
 export default function TTSDemoPage() {
   const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
   const [voices, setVoices] = useState<Voice[]>(FALLBACK_VOICES);
   const [voice, setVoice] = useState('gadis');
+  const [emotions, setEmotions] = useState<Emotion[]>(FALLBACK_EMOTIONS);
+  const [emotion, setEmotion] = useState('netral');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +38,9 @@ export default function TTSDemoPage() {
         if (Array.isArray(d?.voices) && d.voices.length) {
           setVoices(d.voices);
           if (!d.voices.some((v: Voice) => v.id === voice)) setVoice(d.voices[0].id);
+        }
+        if (Array.isArray(d?.emotions) && d.emotions.length) {
+          setEmotions(d.emotions);
         }
       })
       .catch(() => {});
@@ -46,7 +58,7 @@ export default function TTSDemoPage() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice }),
+        body: JSON.stringify({ text, voice, emotion }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -119,6 +131,21 @@ export default function TTSDemoPage() {
           </div>
         ))}
       </div>
+
+      {/* Emotion */}
+      <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-4">Emosi</label>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {emotions.map(em => (
+          <button
+            key={em.id}
+            onClick={() => setEmotion(em.id)}
+            className={`px-3 py-2 rounded-xl border text-center text-xs transition-colors ${emotion === em.id ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-card hover:border-accent/40'}`}
+          >
+            {em.label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-tx-muted mt-1.5">Emosi diterapkan lewat prosodi (nada, kecepatan, volume). Senang/marah/sedih paling terasa; nangis/ketawa adalah pendekatan, bukan vokal asli.</p>
 
       <div className="flex items-center gap-3 mt-5">
         <button
