@@ -51,6 +51,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
   const [showSettings, setShowSettings] = useState(false);
 
   const [sentenceList, setSentenceList] = useState<string[]>([]);
+  const [wordIdx, setWordIdx] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const sentencesRef = useRef<string[]>([]);
   const cacheRef = useRef<Map<string, string>>(new Map());
@@ -104,15 +105,27 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
       const a = audioRef.current;
       const url = await fetchEdgeAudio(sentence);
       if (!url || !a || abortRef.current) { resolve(); return; }
+      const words = sentence.split(/\s+/).filter(Boolean);
+      setWordIdx(0);
+      // Karaoke: approximate active word from audio progress.
+      const onTime = () => {
+        const dur = a.duration;
+        if (dur && isFinite(dur) && words.length) {
+          const ratio = Math.min(1, a.currentTime / dur);
+          setWordIdx(Math.min(words.length - 1, Math.floor(ratio * words.length)));
+        }
+      };
       const done = () => {
         a.removeEventListener('ended', done);
         a.removeEventListener('error', done);
+        a.removeEventListener('timeupdate', onTime);
         if (resolveRef.current === done) resolveRef.current = null;
         resolve();
       };
       resolveRef.current = done;
       a.addEventListener('ended', done);
       a.addEventListener('error', done);
+      a.addEventListener('timeupdate', onTime);
       a.src = url;
       a.playbackRate = speedRef.current || 1;
       a.play().catch(() => done());
@@ -197,47 +210,80 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
   const progress = sentenceList.length > 0
     ? Math.round((currentIdx / sentenceList.length) * 100)
     : 0;
+  const lyricStart = Math.max(0, currentIdx - 1);
+  const lyricWindow = sentenceList.slice(lyricStart, currentIdx + 4);
 
   return (
-    <div className="flex items-center gap-2 p-2 md:p-3 rounded-xl bg-bg-soft border border-border">
-      <button
-        onClick={handlePlay}
-        className={`p-2 rounded-full transition-colors ${playing && !paused ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
-        title={playing && !paused ? 'Jeda' : paused ? 'Lanjutkan' : 'Dengarkan'}
-      >
-        {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-      </button>
-
-      {playing && (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 p-2 md:p-3 rounded-xl bg-bg-soft border border-border">
         <button
-          onClick={handleStop}
-          className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-          title="Berhenti"
+          onClick={handlePlay}
+          className={`p-2 rounded-full transition-colors ${playing && !paused ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
+          title={playing && !paused ? 'Jeda' : paused ? 'Lanjutkan' : 'Dengarkan'}
         >
-          <Square className="h-4 w-4" />
+          {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </button>
-      )}
 
-      {playing && (
-        <>
-          <div className="flex-1 min-w-0">
-            <div className="h-1.5 rounded-full bg-border overflow-hidden">
-              <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-[9px] md:text-[10px] text-tx-muted mt-0.5 truncate">
-              {loading ? 'Memuat suara...' : paused ? 'Dijeda' : `Membaca: "${(sentenceList[currentIdx] || '').slice(0, 40)}${(sentenceList[currentIdx] || '').length > 40 ? '...' : ''}"`}
-            </p>
-          </div>
-          <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Kalimat berikutnya">
-            <SkipForward className="h-3.5 w-3.5" />
+        {playing && (
+          <button
+            onClick={handleStop}
+            className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+            title="Berhenti"
+          >
+            <Square className="h-4 w-4" />
           </button>
-        </>
-      )}
+        )}
 
-      {!playing && (
-        <span className="text-[10px] md:text-xs text-tx-muted">
-          {sentenceList.length} kalimat
-        </span>
+        {playing ? (
+          <>
+            <div className="flex-1 min-w-0">
+              <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+              </div>
+              <p className="text-[9px] md:text-[10px] text-tx-muted mt-0.5">
+                {loading ? 'Memuat suara...' : paused ? 'Dijeda' : `Kalimat ${currentIdx + 1} / ${sentenceList.length}`}
+              </p>
+            </div>
+            <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Kalimat berikutnya">
+              <SkipForward className="h-3.5 w-3.5" />
+            </button>
+          </>
+        ) : (
+          <span className="text-[10px] md:text-xs text-tx-muted">
+            {sentenceList.length} kalimat
+          </span>
+        )}
+      </div>
+
+      {/* Karaoke lyrics — kata yang dibaca ter-highlight, auto berpindah ke bawah */}
+      {playing && (
+        <div className="rounded-xl bg-bg-soft border border-border px-3 py-3 md:px-4 md:py-4 overflow-hidden">
+          <div className="space-y-2">
+            {lyricWindow.map((s, k) => {
+              const idx = lyricStart + k;
+              if (idx !== currentIdx) {
+                return (
+                  <p key={idx} className={`text-sm leading-relaxed transition-opacity ${idx < currentIdx ? 'opacity-30' : 'opacity-50'}`}>
+                    {s}
+                  </p>
+                );
+              }
+              const words = s.split(/\s+/).filter(Boolean);
+              return (
+                <p key={idx} className="text-base md:text-lg font-medium leading-relaxed">
+                  {words.map((w, wi) => (
+                    <span
+                      key={wi}
+                      className={`transition-colors ${wi === wordIdx ? 'bg-accent text-white rounded px-1' : wi < wordIdx ? 'text-accent' : 'text-tx-soft'}`}
+                    >
+                      {w}{' '}
+                    </span>
+                  ))}
+                </p>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       <audio ref={audioRef} className="hidden" />
