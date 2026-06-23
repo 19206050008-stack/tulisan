@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Text-to-Speech proxy via TokenRouter (OpenAI-compatible endpoint).
+// MiniMax Text-to-Speech (T2A v2) — direct API.
 // Keeps the API key server-side. Returns audio/mpeg (mp3).
 //
-// Verified: TokenRouter exposes the OpenAI-compatible route:
-//   POST {base}/audio/speech  with { model, input, voice, speed, response_format }
-//   Response: raw binary audio (audio/mpeg)
-// (The MiniMax-native /t2a_v2 path returns 404 on TokenRouter.)
+// Verified endpoint: POST https://api.minimax.io/v1/t2a_v2
+//   Headers: Authorization: Bearer {MINIMAX_API_KEY}
+//   Body: { model, text, stream:false, voice_setting, audio_setting, language_boost }
+//   Response (success): { data: { audio: "<hex mp3>" }, base_resp: { status_code: 0 } }
+//   Response (error):   { base_resp: { status_code, status_msg } }
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = process.env.TOKENROUTER_BASE_URL || 'https://api.tokenrouter.com/v1';
-const API_KEY = process.env.TOKENROUTER_API_KEY || '';
+const BASE_URL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1';
+const API_KEY = process.env.MINIMAX_API_KEY || '';
 const SPEECH_MODEL = 'speech-2.8-hd';
 
 interface TTSBody {
@@ -20,13 +21,14 @@ interface TTSBody {
   voiceId?: string;
   speed?: number;
   pitch?: number;
+  vol?: number;
   emotion?: string;
   languageBoost?: string;
 }
 
 export async function POST(req: NextRequest) {
   if (!API_KEY) {
-    return NextResponse.json({ error: 'TTS belum dikonfigurasi (TOKENROUTER_API_KEY kosong).' }, { status: 500 });
+    return NextResponse.json({ error: 'TTS belum dikonfigurasi (MINIMAX_API_KEY kosong).' }, { status: 500 });
   }
 
   let body: TTSBody;
@@ -40,21 +42,30 @@ export async function POST(req: NextRequest) {
   if (!text) return NextResponse.json({ error: 'Teks wajib diisi' }, { status: 400 });
   if (text.length > 5000) return NextResponse.json({ error: 'Teks terlalu panjang (maks 5000 karakter)' }, { status: 400 });
 
-  // OpenAI-compatible payload. Extra fields (emotion/pitch/language_boost) are
-  // passed best-effort; TokenRouter ignores unknown fields.
-  const payload: Record<string, unknown> = {
-    model: SPEECH_MODEL,
-    input: text,
-    voice: body.voiceId || 'Wise_Woman',
+  const voiceSetting: Record<string, unknown> = {
+    voice_id: body.voiceId || 'Wise_Woman',
     speed: typeof body.speed === 'number' ? body.speed : 1,
-    response_format: 'mp3',
+    vol: typeof body.vol === 'number' ? body.vol : 1,
+    pitch: typeof body.pitch === 'number' ? body.pitch : 0,
+  };
+  if (body.emotion && body.emotion !== 'neutral') voiceSetting.emotion = body.emotion;
+
+  const payload = {
+    model: SPEECH_MODEL,
+    text,
+    stream: false,
+    voice_setting: voiceSetting,
+    audio_setting: {
+      sample_rate: 32000,
+      bitrate: 128000,
+      format: 'mp3',
+      channel: 1,
+    },
     language_boost: body.languageBoost || 'Indonesian',
   };
-  if (body.emotion && body.emotion !== 'neutral') payload.emotion = body.emotion;
-  if (typeof body.pitch === 'number' && body.pitch !== 0) payload.pitch = body.pitch;
 
   try {
-    const res = await fetch(`${BASE_URL}/audio/speech`, {
+    const res = await fetch(`${BASE_URL}/t2a_v2`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${API_KEY}`,
@@ -63,31 +74,29 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
     });
 
-    const contentType = res.headers.get('content-type') || '';
-
     if (!res.ok) {
-      // Error responses are JSON
       const errText = await res.text().catch(() => '');
-      let msg = errText.slice(0, 300);
-      try {
-        const j = JSON.parse(errText);
-        msg = j?.error?.message || j?.message || msg;
-      } catch {}
-      return NextResponse.json({ error: `Upstream ${res.status}: ${msg}` }, { status: 502 });
+      return NextResponse.json({ error: `Upstream ${res.status}: ${errText.slice(0, 300)}` }, { status: 502 });
     }
 
-    // If upstream returned JSON despite ok status, surface it as an error
-    if (contentType.includes('application/json')) {
-      const j = await res.json().catch(() => null);
-      const msg = j?.error?.message || j?.message || 'Respon tidak berisi audio';
-      return NextResponse.json({ error: msg }, { status: 502 });
+    const json = await res.json();
+
+    const code = json?.base_resp?.status_code;
+    if (code !== undefined && code !== 0) {
+      const msg = json?.base_resp?.status_msg || 'TTS error';
+      // Friendly message for common cases
+      const friendly = code === 1008
+        ? 'Saldo akun MiniMax tidak cukup (insufficient balance). Top up kredit di platform.minimax.io.'
+        : `MiniMax error ${code}: ${msg}`;
+      return NextResponse.json({ error: friendly }, { status: 402 });
     }
 
-    const audioBuffer = Buffer.from(await res.arrayBuffer());
-    if (audioBuffer.byteLength === 0) {
-      return NextResponse.json({ error: 'Audio kosong dari server TTS' }, { status: 502 });
+    const audioHex: string | undefined = json?.data?.audio;
+    if (!audioHex) {
+      return NextResponse.json({ error: 'Audio tidak ditemukan pada respons TTS' }, { status: 502 });
     }
 
+    const audioBuffer = Buffer.from(audioHex, 'hex');
     return new NextResponse(audioBuffer, {
       status: 200,
       headers: {
