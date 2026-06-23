@@ -192,25 +192,25 @@ export default function WritePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <button onClick={() => step === 2 ? setStep(1) : router.push('/my-stories')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-accent transition-colors">
-          <ArrowLeft className="h-4 w-4" /> {step === 2 ? 'Kembali ke Detail' : translations[lang].myStories.title}
+      <div className="flex items-center justify-between gap-2">
+        <button onClick={() => step === 2 ? setStep(1) : router.push('/my-stories')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-accent transition-colors shrink-0">
+          <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">{step === 2 ? 'Kembali ke Detail' : translations[lang].myStories.title}</span>
         </button>
         {step === 2 && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-border hover:bg-bg-soft transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-full border border-border hover:bg-bg-soft transition-colors disabled:opacity-50"
             >
-              <Save className="h-4 w-4" /> {saving ? t.saving : t.saveDraft}
+              <Save className="h-4 w-4" /> <span className="hidden sm:inline">{saving ? t.saving : t.saveDraft}</span>
             </button>
             <button
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-accent text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-full bg-accent text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              <Send className="h-4 w-4" /> {t.publish}
+              <Send className="h-4 w-4" /> <span className="hidden sm:inline">{t.publish}</span>
             </button>
           </div>
         )}
