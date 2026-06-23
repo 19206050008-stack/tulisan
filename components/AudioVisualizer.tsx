@@ -4,6 +4,13 @@ import { useRef, useEffect, useCallback } from 'react';
 
 interface AudioVisualizerProps {
   audioElement: HTMLAudioElement | null;
+  /**
+   * Optional shared AnalyserNode. When provided, the visualizer reads
+   * real-time frequency data from it directly and does NOT create its own
+   * AudioContext/MediaElementSource. This lets multiple visualizers share a
+   * single source (an audio element can only be connected to one source).
+   */
+  analyser?: AnalyserNode | null;
   barCount?: number;
   barColor?: string;
   barGap?: number;
@@ -19,6 +26,7 @@ interface AudioVisualizerProps {
  */
 export function AudioVisualizer({
   audioElement,
+  analyser: sharedAnalyser = null,
   barCount = 16,
   barColor = '#E65A28',
   barGap = 2,
@@ -48,20 +56,35 @@ export function AudioVisualizer({
     const totalGap = barGap * (barCount - 1);
     const bw = Math.max(1, (w - totalGap) / barCount);
 
-    // Use only the lower half of the frequency spectrum (more musical data)
-    const step = Math.floor(dataArray.length / 2 / barCount);
+    // Use only the lower-mid portion of the spectrum (most voice energy).
+    const usable = Math.floor(dataArray.length * 0.7);
+    const step = Math.max(1, Math.floor(usable / barCount));
 
     for (let i = 0; i < barCount; i++) {
-      const value = dataArray[i * step] || 0;
-      const barH = (value / 255) * h;
+      // Average a small window of bins for smoother, prettier bars.
+      let sum = 0;
+      let cnt = 0;
+      for (let j = 0; j < step; j++) {
+        sum += dataArray[i * step + j] || 0;
+        cnt++;
+      }
+      const value = cnt ? sum / cnt : 0;
+      // Ease the value a touch so quiet parts still show a little life.
+      const norm = Math.pow(value / 255, 0.85);
+      const barH = Math.max(1.5, norm * h);
       const x = i * (bw + barGap);
       const y = h - barH;
 
-      // Gradient per bar: full color at bottom, fading at top
+      // Vertical gradient: solid base brightening to a luminous tip.
       const gradient = ctx.createLinearGradient(x, h, x, y);
-      gradient.addColorStop(0, barColor);
-      gradient.addColorStop(1, barColor + '44');
+      gradient.addColorStop(0, barColor + '66');
+      gradient.addColorStop(0.55, barColor);
+      gradient.addColorStop(1, '#ffffff');
       ctx.fillStyle = gradient;
+
+      // Soft glow for the "indah" look.
+      ctx.shadowColor = barColor;
+      ctx.shadowBlur = 6;
 
       const radius = Math.min(bw / 2, 3);
       ctx.beginPath();
@@ -75,6 +98,7 @@ export function AudioVisualizer({
       ctx.closePath();
       ctx.fill();
     }
+    ctx.shadowBlur = 0;
 
     rafRef.current = requestAnimationFrame(drawBars);
   }, [barCount, barColor, barGap]);
@@ -155,6 +179,14 @@ export function AudioVisualizer({
       return () => cancelAnimationFrame(rafRef.current);
     }
 
+    // Preferred path: a shared analyser was provided. Just read from it.
+    // Do NOT create our own AudioContext/source (the element can only have one).
+    if (sharedAnalyser) {
+      analyserRef.current = sharedAnalyser;
+      rafRef.current = requestAnimationFrame(drawBars);
+      return () => cancelAnimationFrame(rafRef.current);
+    }
+
     // No audio element — use animated fallback
     if (!audioElement) {
       const loop = (t: number) => drawAnimated(t);
@@ -203,7 +235,7 @@ export function AudioVisualizer({
     }
 
     return () => cancelAnimationFrame(rafRef.current);
-  }, [audioElement, active, drawBars, drawIdle]);
+  }, [audioElement, active, drawBars, drawIdle, drawAnimated, sharedAnalyser]);
 
   // Resize canvas to match container
   useEffect(() => {

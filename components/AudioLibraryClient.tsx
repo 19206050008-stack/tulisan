@@ -64,6 +64,39 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const resolveRef = useRef<(() => void) | null>(null);
   const newScrollRef = useRef<HTMLDivElement>(null);
 
+  // Web Audio graph for the real-time equalizer. Created ONCE on first play
+  // (a user gesture) and shared by every AudioVisualizer instance.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+
+  // Lazily wire up AudioContext -> source -> analyser -> destination.
+  // createMediaElementSource can only be called once per <audio> element, so
+  // we guard with sourceRef and reuse the same analyser for all visualizers.
+  const setupAnalyser = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const actx = audioCtxRef.current;
+      if (actx.state === 'suspended') actx.resume();
+      if (!sourceRef.current) {
+        const src = actx.createMediaElementSource(a);
+        const an = actx.createAnalyser();
+        an.fftSize = 256;
+        an.smoothingTimeConstant = 0.75;
+        src.connect(an);
+        an.connect(actx.destination);
+        sourceRef.current = src;
+        setAnalyser(an);
+      }
+    } catch {
+      // Ignore — falls back to animated bars when no analyser is available.
+    }
+  }, []);
+
   const scrollNew = (dir: number) => {
     const el = newScrollRef.current;
     if (!el) return;
@@ -243,6 +276,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     audioRef.current?.pause();
     cacheRef.current.clear();
 
+    // Set up the shared Web Audio analyser on this user gesture.
+    setupAnalyser();
+
     setCurrent(story);
     currentIdRef.current = story.id;
     setPaused(false);
@@ -270,7 +306,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       setSentenceIdx(startAt);
       playSequence(startAt);
     }
-  }, [user, loadStoryContent, playSequence]);
+  }, [user, loadStoryContent, playSequence, setupAnalyser]);
 
   // Direct play: click = play immediately. If same story playing, toggle pause.
   const selectAndPlay = useCallback((story: AudioStory) => {
@@ -283,6 +319,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   const togglePlayPause = () => {
     if (!current) return;
+    setupAnalyser();
     if (playing && !paused) {
       pausedRef.current = true;
       setPaused(true);
@@ -341,6 +378,9 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       abortRef.current = true;
       resolveRef.current?.();
       audioRef.current?.pause();
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
+      sourceRef.current = null;
     };
   }, []);
 
@@ -638,6 +678,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                    <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
                      <AudioVisualizer
                        audioElement={null}
+                       analyser={analyser}
                        barCount={6}
                        barColor="#E65A28"
                        barGap={1}
@@ -693,7 +734,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           <div className="relative bg-black/25 rounded-lg h-6 lg:h-8 px-1.5 lg:px-2 flex items-center mb-2 lg:mb-2.5 overflow-hidden">
                             {/* Desktop: equalizer */}
                             <div className="hidden lg:block absolute inset-0 px-2 py-1.5">
-                              <AudioVisualizer audioElement={null} barCount={20} barColor={isActive ? '#ffffff' : '#d1d5db'} barGap={1} active={isActive} />
+                              <AudioVisualizer audioElement={null} analyser={analyser} barCount={20} barColor={isActive ? '#ffffff' : '#d1d5db'} barGap={1} active={isActive} />
                             </div>
                             {/* Mobile: line loader */}
                             <div className="lg:hidden relative w-full h-0.5 rounded-full bg-white/25">
@@ -761,7 +802,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                           </div>
                           {isCurrent && isActive && (
                             <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
-                              <AudioVisualizer audioElement={null} barCount={6} barColor="#E65A28" barGap={1} active={isActive} />
+                              <AudioVisualizer audioElement={null} analyser={analyser} barCount={6} barColor="#E65A28" barGap={1} active={isActive} />
                             </div>
                           )}
                         </button>
@@ -789,6 +830,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                             <div className="shrink-0 ml-auto overflow-hidden" style={{ width: '40px', height: '20px' }}>
                               <AudioVisualizer
                                 audioElement={null}
+                                analyser={analyser}
                                 barCount={6}
                                 barColor="#E65A28"
                                 barGap={1}
@@ -817,7 +859,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           <div className="max-w-6xl mx-auto px-3 md:px-4 py-2.5 flex items-center gap-3">
             {/* Left: equalizer + title/author */}
             <div className="h-10 w-10 md:w-11 shrink-0 rounded-md overflow-hidden bg-bg-input/50">
-              <AudioVisualizer audioElement={null} barCount={6} barColor="#E65A28" barGap={1} active={playing && !paused} />
+              <AudioVisualizer audioElement={null} analyser={analyser} barCount={6} barColor="#E65A28" barGap={1} active={playing && !paused} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs md:text-sm font-medium truncate">{current.title}</p>
