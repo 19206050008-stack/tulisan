@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 
 const BASE_URL = process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1';
 const API_KEY = process.env.MINIMAX_API_KEY || '';
+const GROUP_ID = process.env.MINIMAX_GROUP_ID || '';
 const SPEECH_MODEL = 'speech-2.8-hd';
 
 interface TTSBody {
@@ -65,7 +66,10 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const res = await fetch(`${BASE_URL}/t2a_v2`, {
+    const url = GROUP_ID
+      ? `${BASE_URL}/t2a_v2?GroupId=${encodeURIComponent(GROUP_ID)}`
+      : `${BASE_URL}/t2a_v2`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${API_KEY}`,
@@ -86,7 +90,7 @@ export async function POST(req: NextRequest) {
       const msg = json?.base_resp?.status_msg || 'TTS error';
       // Friendly message for common cases
       const friendly = code === 1008
-        ? 'Saldo akun MiniMax tidak cukup (insufficient balance). Top up kredit di platform.minimax.io.'
+        ? 'Saldo Developer API MiniMax kosong. Catatan: kredit di tool web minimax.io/audio TERPISAH dari saldo API. Top up di platform.minimax.io > Account > Billing.'
         : `MiniMax error ${code}: ${msg}`;
       return NextResponse.json({ error: friendly }, { status: 402 });
     }
