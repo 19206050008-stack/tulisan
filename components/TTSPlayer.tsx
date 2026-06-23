@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
 import { loadTTSPrefs, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
+import { decodeHtmlEntities } from '@/lib/tts-text-preprocessor';
 
 interface TTSPlayerProps {
   text: string;
@@ -36,7 +37,11 @@ const VOICES = {
 };
 
 function splitIntoSentences(text: string): string[] {
-  const cleaned = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  // Strip HTML tags, then decode entities so "&quot;" etc. aren't read aloud.
+  // Decode twice to catch double-encoded entities (&amp;quot;).
+  let cleaned = text.replace(/<[^>]+>/g, ' ');
+  cleaned = decodeHtmlEntities(decodeHtmlEntities(cleaned));
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
   const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
   return sentences.map(s => s.trim()).filter(s => s.length > 2);
 }

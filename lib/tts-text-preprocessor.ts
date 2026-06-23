@@ -115,12 +115,46 @@ export function formatChapterTitleForTTS(title: string): string {
 }
 
 /**
+ * Decode HTML entities so the TTS doesn't literally read things like
+ * "quot", "amp", or "#39". Works without the DOM (safe on the server).
+ */
+export function decodeHtmlEntities(text: string): string {
+  if (!text) return text;
+  const named: Record<string, string> = {
+    quot: '"', apos: "'", amp: '&', lt: '<', gt: '>', nbsp: ' ',
+    hellip: '…', mdash: '—', ndash: '–', laquo: '«', raquo: '»',
+    ldquo: '“', rdquo: '”', lsquo: '‘', rsquo: '’', deg: '°',
+    copy: '©', reg: '®', trade: '™', eacute: 'é', egrave: 'è',
+  };
+  return text
+    // Numeric (decimal) entities: &#39;
+    .replace(/&#(\d+);/g, (_, n) => {
+      const code = parseInt(n, 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    })
+    // Numeric (hex) entities: &#x27;
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => {
+      const code = parseInt(h, 16);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+    })
+    // Named entities: &quot; &amp; ...
+    .replace(/&([a-zA-Z]+);/g, (m, name) => {
+      const key = name.toLowerCase();
+      return key in named ? named[key] : m;
+    });
+}
+
+/**
  * Clean text for TTS by removing special formatting markers
  */
 export function cleanTextForTTS(text: string): string {
   // Remove markdown-style formatting that shouldn't be spoken
   let cleaned = text;
-  
+
+  // Decode HTML entities FIRST (&quot; -> ", &amp; -> &, &#39; -> ')
+  // Run twice to catch double-encoded entities (e.g. &amp;quot;).
+  cleaned = decodeHtmlEntities(decodeHtmlEntities(cleaned));
+
   // Remove triple asterisks, hashes, etc.
   cleaned = cleaned.replace(/(\*{3,}|#{3,})/g, ' ');
   // Replace multiple spaces/newlines with single space
@@ -129,7 +163,7 @@ export function cleanTextForTTS(text: string): string {
   cleaned = cleaned.replace(/https?:\/\/[^\s]+/gi, ' situs web ');
   // Remove email addresses
   cleaned = cleaned.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, ' alamat email ');
-  
+
   return cleaned;
 }
 
