@@ -5,15 +5,36 @@
 
 export type TTSGender = 'wanita' | 'pria';
 
+// 10 suara natural (SupertonicTTS) — id harus cocok dengan backend tts-server.
+export interface TTSVoiceOption { id: string; label: string; gender: TTSGender }
+export const TTS_VOICES: TTSVoiceOption[] = [
+  { id: 'sari',  label: 'Sari',  gender: 'wanita' },
+  { id: 'dewi',  label: 'Dewi',  gender: 'wanita' },
+  { id: 'ayu',   label: 'Ayu',   gender: 'wanita' },
+  { id: 'rina',  label: 'Rina',  gender: 'wanita' },
+  { id: 'maya',  label: 'Maya',  gender: 'wanita' },
+  { id: 'budi',  label: 'Budi',  gender: 'pria' },
+  { id: 'agus',  label: 'Agus',  gender: 'pria' },
+  { id: 'bayu',  label: 'Bayu',  gender: 'pria' },
+  { id: 'dimas', label: 'Dimas', gender: 'pria' },
+  { id: 'andi',  label: 'Andi',  gender: 'pria' },
+];
+export const DEFAULT_VOICE = 'sari';
+
+function validVoice(v: any): string {
+  return TTS_VOICES.some(x => x.id === v) ? v : DEFAULT_VOICE;
+}
+
 export interface TTSPrefs {
   gender: TTSGender;
   speed: number; // 0.75 | 1 | 1.25 | 1.5
+  voice: string; // salah satu TTS_VOICES id
 }
 
 const KEY = 'tts_prefs_v1';
 
 export function loadTTSPrefs(): TTSPrefs {
-  if (typeof window === 'undefined') return { gender: 'wanita', speed: 1 };
+  if (typeof window === 'undefined') return { gender: 'wanita', speed: 1, voice: DEFAULT_VOICE };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
@@ -21,10 +42,11 @@ export function loadTTSPrefs(): TTSPrefs {
       return {
         gender: p.gender === 'pria' ? 'pria' : 'wanita',
         speed: typeof p.speed === 'number' ? p.speed : 1,
+        voice: validVoice(p.voice),
       };
     }
   } catch {}
-  return { gender: 'wanita', speed: 1 };
+  return { gender: 'wanita', speed: 1, voice: DEFAULT_VOICE };
 }
 
 export function saveTTSPrefs(prefs: TTSPrefs) {
@@ -41,15 +63,15 @@ export async function loadTTSPrefsFromDB(userId: string): Promise<TTSPrefs> {
     if (!supabase) return loadTTSPrefs();
     const { data } = await supabase
       .from('profiles')
-      .select('tts_gender, tts_speed')
+      .select('tts_gender, tts_speed, tts_voice')
       .eq('id', userId)
       .single();
     if (data) {
       const prefs: TTSPrefs = {
         gender: data.tts_gender === 'pria' ? 'pria' : 'wanita',
         speed: typeof data.tts_speed === 'number' && data.tts_speed > 0 ? data.tts_speed : 1,
+        voice: validVoice(data.tts_voice),
       };
-      // Cache to localStorage
       saveTTSPrefs(prefs);
       return prefs;
     }
@@ -59,14 +81,13 @@ export async function loadTTSPrefsFromDB(userId: string): Promise<TTSPrefs> {
 
 // Save TTS prefs to Supabase (synced across devices)
 export async function saveTTSPrefsToDB(userId: string, prefs: TTSPrefs): Promise<void> {
-  // Always save to localStorage as cache
   saveTTSPrefs(prefs);
   try {
     const { supabase } = await import('@/lib/supabase/client');
     if (!supabase) return;
     await supabase
       .from('profiles')
-      .update({ tts_gender: prefs.gender, tts_speed: prefs.speed })
+      .update({ tts_gender: prefs.gender, tts_speed: prefs.speed, tts_voice: prefs.voice })
       .eq('id', userId);
   } catch {}
 }

@@ -6,8 +6,8 @@ import { useStore } from '@/lib/store';
 import { StoryCover } from '@/components/StoryCover';
 import { getGenreGradient } from '@/lib/genre-colors';
 import { toggleLike, isLiked as checkLiked, toggleSave, isSaved as checkSaved, getLikedStoryIds } from '@/lib/supabase';
-import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
-import { preprocessTextForTTS, getIntonationForSentence } from '@/lib/tts-text-preprocessor';
+import { loadTTSPrefs, saveTTSPrefs, saveTTSPrefsToDB, loadTTSPrefsFromDB, TTS_VOICES, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
+import { preprocessTextForTTS } from '@/lib/tts-text-preprocessor';
 import { AudioVisualizer } from '@/components/AudioVisualizer';
 import { Play, Pause, SkipForward, SkipBack, Square, Heart, Bookmark, Search, Music, X, Moon, ChevronRight, ChevronLeft, TrendingUp, Calendar, Flame, Star, LayoutGrid, List as ListIcon, Settings2 } from 'lucide-react';
 
@@ -47,6 +47,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const [sliderStories, setSliderStories] = useState<AudioStory[]>([]);
   const [gender, setGender] = useState<TTSGender>('wanita');
   const [speed, setSpeed] = useState(1);
+  const [voice, setVoice] = useState(DEFAULT_VOICE);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [currentWord, setCurrentWord] = useState('');
   const [currentSentence, setCurrentSentence] = useState('');
@@ -59,6 +60,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const currentIdRef = useRef<string | null>(null);
   const genderRef = useRef<TTSGender>('wanita');
   const speedRef = useRef(1);
+  const voiceRef = useRef(DEFAULT_VOICE);
+  const resolveRef = useRef<(() => void) | null>(null);
   const newScrollRef = useRef<HTMLDivElement>(null);
 
   const scrollNew = (dir: number) => {
@@ -102,22 +105,25 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     })();
   }, [user?.id]);
 
-  // Load saved TTS prefs from DB (synced across devices) and preload voices
+  // Load saved TTS prefs from DB (synced across devices)
   useEffect(() => {
-    preloadVoices();
     if (user?.id) {
       loadTTSPrefsFromDB(user.id).then(p => {
         setGender(p.gender);
         setSpeed(p.speed);
+        setVoice(p.voice);
         genderRef.current = p.gender;
         speedRef.current = p.speed;
+        voiceRef.current = p.voice;
       });
     } else {
       const p = loadTTSPrefs();
       setGender(p.gender);
       setSpeed(p.speed);
+      setVoice(p.voice);
       genderRef.current = p.gender;
       speedRef.current = p.speed;
+      voiceRef.current = p.voice;
     }
   }, [user?.id]);
 
@@ -136,13 +142,14 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   });
 
   const fetchAudio = useCallback(async (sentence: string): Promise<string | null> => {
-    const key = `${lang}_${sentence}`;
+    const sp = voiceRef.current;
+    const key = `${sp}_${sentence}`;
     if (cacheRef.current.has(key)) return cacheRef.current.get(key)!;
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence, lang }),
+        body: JSON.stringify({ text: sentence, speaker: sp }),
       });
       if (!res.ok) throw new Error('TTS failed');
       const blob = await res.blob();
@@ -152,41 +159,28 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     } catch {
       return null;
     }
-  }, [lang]);
+  }, []);
 
-  const playWithWebSpeech = useCallback((sentence: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const u = new SpeechSynthesisUtterance(sentence);
-      u.lang = lang === 'id' ? 'id-ID' : 'en-US';
-      
-      // Get base voice and pitch from gender preference
-      const { voice, pitch: basePitch } = pickVoiceWithPitch(genderRef.current, lang as 'id' | 'en');
-      if (voice) u.voice = voice;
-      
-      // Apply intonation based on sentence punctuation
-      const intonation = getIntonationForSentence(sentence);
-      u.pitch = basePitch * intonation.pitch;
-      u.rate = speedRef.current * intonation.rate;
-      
-      // Word boundary event for highlighting
-      u.onboundary = (event) => {
-        if (event.name === 'word') {
-          const word = sentence.substr(event.charIndex, event.charLength);
-          setCurrentWord(word);
-        }
-      };
-      
-      u.onend = () => {
-        setCurrentWord('');
+  // Play one sentence using the self-hosted neural TTS (Supertonic) via <audio>.
+  const playWithServerTTS = useCallback((sentence: string): Promise<void> => {
+    return new Promise(async (resolve) => {
+      const a = audioRef.current;
+      const url = await fetchAudio(sentence);
+      if (!url || !a || abortRef.current) { resolve(); return; }
+      const done = () => {
+        a.removeEventListener('ended', done);
+        a.removeEventListener('error', done);
+        if (resolveRef.current === done) resolveRef.current = null;
         resolve();
       };
-      u.onerror = () => {
-        setCurrentWord('');
-        resolve();
-      };
-      speechSynthesis.speak(u);
+      resolveRef.current = done;
+      a.addEventListener('ended', done);
+      a.addEventListener('error', done);
+      a.src = url;
+      a.playbackRate = speedRef.current || 1;
+      a.play().catch(() => done());
     });
-  }, [lang]);
+  }, [fetchAudio]);
 
   const playSequence = useCallback(async (startIdx: number) => {
     abortRef.current = false;
@@ -199,12 +193,15 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       if (currentIdRef.current) {
         try { localStorage.setItem(`audio_pos_${currentIdRef.current}`, String(i)); } catch {}
       }
-      await playWithWebSpeech(sentence);
+      // Prefetch next sentence to reduce gaps.
+      const next = sentencesRef.current[i + 1];
+      if (next) fetchAudio(next);
+      await playWithServerTTS(sentence);
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
       }
       if (!abortRef.current && i + 1 < sentencesRef.current.length) {
-        await new Promise(r => setTimeout(r, 250));
+        await new Promise(r => setTimeout(r, 150));
       }
     }
     if (!abortRef.current && currentIdRef.current) {
@@ -214,7 +211,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     setSentenceIdx(0);
     setCurrentSentence('');
     setCurrentWord('');
-  }, [playWithWebSpeech]);
+  }, [playWithServerTTS, fetchAudio]);
 
   const loadStoryContent = useCallback(async (story: AudioStory) => {
     // Fetch chapters text via API
@@ -242,8 +239,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
     // Stop current
     abortRef.current = true;
     pausedRef.current = false;
+    resolveRef.current?.();
     audioRef.current?.pause();
-    speechSynthesis.cancel();
     cacheRef.current.clear();
 
     setCurrent(story);
@@ -290,12 +287,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       pausedRef.current = true;
       setPaused(true);
       audioRef.current?.pause();
-      speechSynthesis.pause();
     } else if (playing && paused) {
       pausedRef.current = false;
       setPaused(false);
       audioRef.current?.play().catch(() => {});
-      speechSynthesis.resume();
     } else if (current) {
       setPaused(false);
       pausedRef.current = false;
@@ -306,8 +301,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   const stopPlayback = () => {
     abortRef.current = true;
     pausedRef.current = false;
-    audioRef.current?.pause();
-    speechSynthesis.cancel();
+    resolveRef.current?.();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeAttribute('src'); }
     setPlaying(false);
     setPaused(false);
     setCurrent(null);
@@ -318,11 +313,13 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
 
   const skipSentence = (dir: number) => {
     if (!current) return;
+    abortRef.current = true;
+    resolveRef.current?.();
     audioRef.current?.pause();
-    speechSynthesis.cancel();
     const next = Math.max(0, Math.min(sentenceIdx + dir, sentencesRef.current.length - 1));
     setSentenceIdx(next);
-    playSequence(next);
+    // Let the old loop break first, then start fresh from the new index.
+    setTimeout(() => playSequence(next), 0);
   };
 
   const handleLike = async () => {
@@ -342,8 +339,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
   useEffect(() => {
     return () => {
       abortRef.current = true;
+      resolveRef.current?.();
       audioRef.current?.pause();
-      speechSynthesis.cancel();
     };
   }, []);
 
@@ -356,8 +353,8 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           // Time's up — stop playback
           abortRef.current = true;
           pausedRef.current = false;
+          resolveRef.current?.();
           audioRef.current?.pause();
-          speechSynthesis.cancel();
           setPlaying(false);
           setPaused(false);
           setCurrentSentence('');
@@ -550,12 +547,43 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       {showVoiceSettings && (
         <div className="mb-4 p-3 md:p-4 rounded-2xl bg-bg-card border border-border shadow-lg space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-accent">{lang === 'en' ? 'Playback Speed' : 'Kecepatan Baca'}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-accent">{lang === 'en' ? 'Voice Settings' : 'Pengaturan Suara'}</span>
             <button onClick={() => setShowVoiceSettings(false)} className="p-1 rounded-full hover:bg-bg-soft">
               <X className="h-3.5 w-3.5 text-tx-muted" />
             </button>
           </div>
+
+          {/* Voice picker (10 suara natural) */}
           <div className="space-y-2">
+            <span className="text-[11px] font-medium text-tx-soft">{lang === 'en' ? 'Narrator voice' : 'Suara Narator'}</span>
+            {(['wanita', 'pria'] as const).map(g => (
+              <div key={g}>
+                <p className="text-[10px] uppercase tracking-wide text-tx-muted mb-1">{g === 'wanita' ? 'Wanita' : 'Pria'}</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {TTS_VOICES.filter(v => v.gender === g).map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        setVoice(v.id);
+                        voiceRef.current = v.id;
+                        setGender(v.gender);
+                        genderRef.current = v.gender;
+                        const prefs = { gender: v.gender, speed: speedRef.current, voice: v.id };
+                        if (user?.id) saveTTSPrefsToDB(user.id, prefs); else saveTTSPrefs(prefs);
+                      }}
+                      className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${voice === v.id ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Playback speed */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-medium text-tx-soft">{lang === 'en' ? 'Playback speed' : 'Kecepatan Baca'}</span>
             <div className="grid grid-cols-4 gap-2">
               {[{ v: 0.75, l: '0.75x' }, { v: 1, l: '1x' }, { v: 1.25, l: '1.25x' }, { v: 1.5, l: '1.5x' }].map(opt => (
                 <button
@@ -563,8 +591,10 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   onClick={() => {
                     setSpeed(opt.v);
                     speedRef.current = opt.v;
-                    if (user?.id) saveTTSPrefsToDB(user.id, { gender: 'wanita', speed: opt.v });
-                    else saveTTSPrefs({ gender: 'wanita', speed: opt.v });
+                    if (audioRef.current) audioRef.current.playbackRate = opt.v;
+                    const g = TTS_VOICES.find(x => x.id === voiceRef.current)?.gender || 'wanita';
+                    const prefs = { gender: g, speed: opt.v, voice: voiceRef.current };
+                    if (user?.id) saveTTSPrefsToDB(user.id, prefs); else saveTTSPrefs(prefs);
                   }}
                   className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors ${speed === opt.v ? 'bg-accent text-white' : 'bg-bg-input text-tx-soft hover:bg-bg-soft'}`}
                 >
@@ -860,6 +890,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
         </div>
       )}
 
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
-import { loadTTSPrefs, saveTTSPrefs, pickVoiceWithPitch, preloadVoices, type TTSGender } from '@/lib/tts-prefs';
+import { loadTTSPrefs, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
 
 interface TTSPlayerProps {
   text: string;
@@ -58,15 +58,17 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
   const pausedRef = useRef(false);
   const genderRef = useRef<TTSGender>('wanita');
   const speedRef = useRef(1);
+  const voiceRef = useRef(DEFAULT_VOICE);
+  const resolveRef = useRef<(() => void) | null>(null);
 
-  // Load saved prefs and preload voices
+  // Load saved prefs (voice picked on the Audio page; synced via localStorage/DB)
   useEffect(() => {
     const p = loadTTSPrefs();
     setGender(p.gender);
     setSpeed(p.speed);
     genderRef.current = p.gender;
     speedRef.current = p.speed;
-    preloadVoices();
+    voiceRef.current = p.voice;
   }, []);
 
   useEffect(() => {
@@ -76,14 +78,15 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
   }, [text]);
 
   const fetchEdgeAudio = useCallback(async (sentence: string): Promise<string | null> => {
-    const cacheKey = `${lang}_${sentence}`;
+    const sp = voiceRef.current;
+    const cacheKey = `${sp}_${sentence}`;
     if (cacheRef.current.has(cacheKey)) return cacheRef.current.get(cacheKey)!;
 
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sentence, lang }),
+        body: JSON.stringify({ text: sentence, speaker: sp }),
       });
       if (!res.ok) throw new Error('TTS API failed');
       const blob = await res.blob();
@@ -93,21 +96,28 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
     } catch {
       return null;
     }
-  }, [lang]);
+  }, []);
 
-  const playWithWebSpeech = useCallback((sentence: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(sentence);
-      utterance.lang = lang === 'id' ? 'id-ID' : 'en-US';
-      utterance.rate = speedRef.current;
-      const { voice, pitch } = pickVoiceWithPitch(genderRef.current, lang as 'id' | 'en');
-      if (voice) utterance.voice = voice;
-      utterance.pitch = pitch;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      speechSynthesis.speak(utterance);
+  // Play one sentence using the self-hosted neural TTS (Supertonic) via <audio>.
+  const playWithServerTTS = useCallback((sentence: string): Promise<void> => {
+    return new Promise(async (resolve) => {
+      const a = audioRef.current;
+      const url = await fetchEdgeAudio(sentence);
+      if (!url || !a || abortRef.current) { resolve(); return; }
+      const done = () => {
+        a.removeEventListener('ended', done);
+        a.removeEventListener('error', done);
+        if (resolveRef.current === done) resolveRef.current = null;
+        resolve();
+      };
+      resolveRef.current = done;
+      a.addEventListener('ended', done);
+      a.addEventListener('error', done);
+      a.src = url;
+      a.playbackRate = speedRef.current || 1;
+      a.play().catch(() => done());
     });
-  }, [lang]);
+  }, [fetchEdgeAudio]);
 
   const playSequence = useCallback(async (startIdx: number) => {
     abortRef.current = false;
@@ -120,7 +130,9 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
       const sentence = sentencesRef.current[i];
       onSentenceChange?.(i, sentence);
 
-      await playWithWebSpeech(sentence);
+      const next = sentencesRef.current[i + 1];
+      if (next) fetchEdgeAudio(next);
+      await playWithServerTTS(sentence);
 
       // Wait while paused before moving to next sentence
       while (pausedRef.current && !abortRef.current) {
@@ -129,14 +141,14 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
 
       // Natural pause between sentences (breath)
       if (!abortRef.current && i + 1 < sentencesRef.current.length) {
-        await new Promise(r => setTimeout(r, 250));
+        await new Promise(r => setTimeout(r, 150));
       }
     }
 
     setPlaying(false);
     setCurrentIdx(0);
     onPlayStateChange?.(false);
-  }, [playWithWebSpeech, onPlayStateChange, onSentenceChange]);
+  }, [playWithServerTTS, fetchEdgeAudio, onPlayStateChange, onSentenceChange]);
 
   const handlePlay = () => {
     if (playing && !paused) {
@@ -144,13 +156,11 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
       pausedRef.current = true;
       setPaused(true);
       audioRef.current?.pause();
-      speechSynthesis.pause();
     } else if (playing && paused) {
       // Resume
       pausedRef.current = false;
       setPaused(false);
       audioRef.current?.play().catch(() => {});
-      speechSynthesis.resume();
     } else {
       // Start
       setPaused(false);
@@ -167,8 +177,8 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
   const handleStop = () => {
     abortRef.current = true;
     pausedRef.current = false;
-    audioRef.current?.pause();
-    speechSynthesis.cancel();
+    resolveRef.current?.();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeAttribute('src'); }
     setPlaying(false);
     setPaused(false);
     setCurrentIdx(0);
@@ -176,11 +186,12 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
 
   const handleSkip = () => {
     if (!playing) return;
+    abortRef.current = true;
+    resolveRef.current?.();
     audioRef.current?.pause();
-    speechSynthesis.cancel();
     const next = Math.min(currentIdx + 1, sentencesRef.current.length - 1);
     setCurrentIdx(next);
-    playSequence(next);
+    setTimeout(() => playSequence(next), 0);
   };
 
   const progress = sentenceList.length > 0
@@ -229,6 +240,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
         </span>
       )}
 
+      <audio ref={audioRef} className="hidden" />
     </div>
   );
 }
