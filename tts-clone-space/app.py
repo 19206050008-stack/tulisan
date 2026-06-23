@@ -125,7 +125,7 @@ with gr.Blocks(title="F5-TTS Indonesia") as demo:
         txt = gr.Textbox(label="Teks untuk dibacakan", lines=5)
         btn = gr.Button("Hasilkan suara", variant="primary")
         out = gr.Audio(label="Hasil")
-        btn.click(infer, [voice, txt], out, api_name="/infer")
+        btn.click(infer, [voice, txt], out, api_name="infer")
 
     with gr.Tab("Unggah referensi"):
         ref = gr.Audio(label="Suara referensi (wav/mp3, ~6-12 dtk)", type="filepath")
@@ -133,6 +133,6 @@ with gr.Blocks(title="F5-TTS Indonesia") as demo:
         txt2 = gr.Textbox(label="Teks untuk dibacakan", lines=5)
         btn2 = gr.Button("Hasilkan suara", variant="primary")
         out2 = gr.Audio(label="Hasil")
-        btn2.click(infer_upload, [ref, txt2, ref_txt], out2, api_name="/infer_upload")
+        btn2.click(infer_upload, [ref, txt2, ref_txt], out2, api_name="infer_upload")
 
 demo.queue().launch()
