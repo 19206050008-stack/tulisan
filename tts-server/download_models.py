@@ -1,4 +1,8 @@
-"""Download the Wikidepia Indonesian TTS v1.2 model files into ./models."""
+"""Download the Wikidepia Indonesian TTS v1.2 model files into the working dir.
+
+Files are saved at the working directory root (NOT a models/ subfolder) because
+the model's config.json references speakers.pth via a relative path that resolves
+to the current working directory (e.g. /app/speakers.pth)."""
 import os
 import urllib.request
 
@@ -9,13 +13,11 @@ FILES = {
     "speakers.pth": f"{BASE}/speakers.pth",
 }
 
-os.makedirs("models", exist_ok=True)
 for name, url in FILES.items():
-    dest = os.path.join("models", name)
-    if os.path.exists(dest):
+    if os.path.exists(name):
         print(f"skip {name} (exists)")
         continue
     print(f"downloading {name} <- {url}")
-    urllib.request.urlretrieve(url, dest)
-    print(f"  saved {dest} ({os.path.getsize(dest)} bytes)")
+    urllib.request.urlretrieve(url, name)
+    print(f"  saved {name} ({os.path.getsize(name)} bytes)")
 print("done")

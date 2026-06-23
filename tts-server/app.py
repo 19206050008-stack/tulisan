@@ -24,7 +24,7 @@ from pydantic import BaseModel
 from TTS.utils.synthesizer import Synthesizer
 from g2p_id import G2p
 
-MODEL_DIR = os.environ.get("MODEL_DIR", "models")
+MODEL_DIR = os.environ.get("MODEL_DIR", ".")
 CHECKPOINT = os.path.join(MODEL_DIR, "checkpoint.pth")
 CONFIG = os.path.join(MODEL_DIR, "config.json")
 SPEAKERS = os.path.join(MODEL_DIR, "speakers.pth")
