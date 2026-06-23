@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useStore } from '@/lib/store';
-import { LayoutDashboard, Users, BookOpen, MessageSquare, Sliders, Image, Tag, Flag, Settings, Globe, FileText, Megaphone, Newspaper, Shield, Sparkles, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, MessageSquare, Sliders, Image, Tag, Flag, Settings, Globe, FileText, Megaphone, Newspaper, Shield, Sparkles, Menu, X, Headphones } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/stories', label: 'Stories', icon: BookOpen },
+  { href: '/admin/audio-cerita', label: 'Audio Cerita', icon: Headphones },
   { href: '/admin/comments', label: 'Comments', icon: MessageSquare },
   { href: '/admin/moderation', label: 'Moderation', icon: Shield },
   { href: '/admin/slider', label: 'Hero Slider', icon: Image },
