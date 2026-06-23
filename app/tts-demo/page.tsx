@@ -2,12 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
-import { F5_VOICES, f5Available, isF5Voice, generateF5 } from '@/lib/f5tts';
 
 interface Voice { id: string; label: string; group: string }
-
-const F5_GROUP = 'Natural (F5)';
-const f5AsVoices: Voice[] = F5_VOICES.map(v => ({ id: v.id, label: v.label, group: F5_GROUP }));
 
 // Fallback list (used if the server's /health is unavailable).
 const FALLBACK_VOICES: Voice[] = [
@@ -27,17 +23,15 @@ export default function TTSDemoPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const f5 = f5Available() ? f5AsVoices : [];
     fetch('/api/tts')
       .then(r => r.json())
       .then(d => {
-        const server: Voice[] = Array.isArray(d?.voices) ? d.voices : [];
-        const merged = [...server, ...f5];
-        if (merged.length) setVoices(merged);
+        if (Array.isArray(d?.voices) && d.voices.length) {
+          setVoices(d.voices);
+          if (!d.voices.some((v: Voice) => v.id === voice)) setVoice(d.voices[0].id);
+        }
       })
-      .catch(() => {
-        if (f5.length) setVoices([...FALLBACK_VOICES, ...f5]);
-      });
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -49,22 +43,16 @@ export default function TTSDemoPage() {
     setLoading(true);
     setPlaying(false);
     try {
-      let blob: Blob;
-      if (isF5Voice(voice)) {
-        // Suara natural F5: panggil Space HF langsung dari browser (bisa 1-4 menit).
-        blob = await generateF5(voice, text);
-      } else {
-        const res = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voice }),
-        });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error(j.error || `Gagal (${res.status})`);
-        }
-        blob = await res.blob();
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, voice }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Gagal (${res.status})`);
       }
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(url);
@@ -139,7 +127,7 @@ export default function TTSDemoPage() {
           className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
-          {loading ? (isF5Voice(voice) ? 'Membuat narasi natural...' : 'Membuat audio...') : 'Bacakan'}
+          {loading ? 'Membuat audio...' : 'Bacakan'}
         </button>
 
         {audioUrl && !loading && (
@@ -148,18 +136,12 @@ export default function TTSDemoPage() {
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {playing ? 'Jeda' : 'Putar'}
             </button>
-            <a href={audioUrl} download="tts.wav" className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-bg-input border border-border text-sm font-medium hover:border-accent/40 transition-colors">
+            <a href={audioUrl} download="tts.mp3" className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-bg-input border border-border text-sm font-medium hover:border-accent/40 transition-colors">
               <Download className="h-4 w-4" /> Unduh
             </a>
           </>
         )}
       </div>
-
-      {isF5Voice(voice) && (
-        <p className="mt-2 text-[11px] text-tx-muted">
-          Suara natural diproses di server gratis (CPU) — bisa <strong>1–4 menit</strong>. Mohon tunggu, jangan tutup halaman.
-        </p>
-      )}
 
       {error && <p className="mt-3 text-xs text-red-500">{error}</p>}
 

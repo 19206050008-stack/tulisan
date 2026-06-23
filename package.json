@@ -10,7 +10,6 @@
     "clean": "next clean"
   },
   "dependencies": {
-    "@gradio/client": "^2.3.0",
     "@supabase/supabase-js": "^2.108.1",
     "@tiptap/extension-character-count": "2.11.7",
     "@tiptap/extension-link": "2.11.7",

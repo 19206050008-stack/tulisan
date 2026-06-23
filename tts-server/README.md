@@ -82,11 +82,3 @@ LOCAL_TTS_URL = https://<domain-railway-anda>.up.railway.app
 > Railway otomatis menyuntik `PORT`; Dockerfile listen ke `$PORT`. Tanpa API key.
 > Catatan: voice Edge (Indonesia/Melayu) butuh koneksi keluar ke Microsoft;
 > voice daerah (MMS/Piper) sepenuhnya offline di server.
-
-## Suara kustom (hasil training sendiri)
-
-Lihat folder `tts-training/` untuk melatih suara VITS Anda sendiri lalu
-mengekspornya ke ONNX. Setelah dapat arsip `custom-<nama>.tar.bz2` (berisi
-`model.onnx` + `tokens.txt`), tempel URL-nya di `CUSTOM_MODELS` pada
-`download_models.py` (atau set env `CUSTOM_TTS_MODELS`). Saat build, model
-diunduh dan **otomatis** muncul sebagai voice grup "Kustom" — tanpa ubah kode.

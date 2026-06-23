@@ -164,34 +164,11 @@ class SpeakRequest(BaseModel):
     speed: float | None = None
 
 
-def _discover_custom():
-    """Auto-register any model folder named 'custom-*' placed in MODELS_DIR.
-
-    Drop a trained model at models/custom-<name>/ (model.onnx + tokens.txt) and
-    it appears automatically as a voice in group 'Kustom' — no code change."""
-    out = {}
-    if not os.path.isdir(MODELS_DIR):
-        return out
-    for f in sorted(os.listdir(MODELS_DIR)):
-        full = os.path.join(MODELS_DIR, f)
-        if f.startswith("custom-") and os.path.isdir(full):
-            vid = f[len("custom-"):] or f
-            label = vid.replace("-", " ").replace("_", " ").strip().title()
-            out[vid] = (f, f"{label} (Kustom)", "Kustom")
-    return out
-
-
-def _all_local_voices():
-    merged = dict(LOCAL_VOICES)
-    merged.update(_discover_custom())
-    return merged
-
-
 def _voice_list():
     out = []
     for vid, (_v, label, group) in EDGE_VOICES.items():
         out.append({"id": vid, "label": label, "group": group})
-    for vid, (folder, label, group) in _all_local_voices().items():
+    for vid, (folder, label, group) in LOCAL_VOICES.items():
         if _local_available(folder):
             out.append({"id": vid, "label": label, "group": group})
     return out
@@ -226,9 +203,8 @@ def speak(req: SpeakRequest):
         return Response(content=audio, media_type="audio/mpeg")
 
     # Local sherpa-onnx voices (WAV)
-    local_voices = _all_local_voices()
-    if speaker in local_voices:
-        folder = local_voices[speaker][0]
+    if speaker in LOCAL_VOICES:
+        folder = LOCAL_VOICES[speaker][0]
         if not _local_available(folder):
             return JSONResponse({"error": f"Suara '{speaker}' tidak tersedia"}, status_code=404)
         speed = float(req.speed) if req.speed else 1.0
