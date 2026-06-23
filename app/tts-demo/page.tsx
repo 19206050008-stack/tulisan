@@ -3,34 +3,47 @@
 import { useState, useRef } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
 
-// MiniMax system voices (work with language_boost "Indonesian")
-const VOICES: { id: string; label: string; gender: string }[] = [
-  { id: 'Wise_Woman', label: 'Wise Woman', gender: 'Wanita' },
-  { id: 'Calm_Woman', label: 'Calm Woman', gender: 'Wanita' },
-  { id: 'Lively_Girl', label: 'Lively Girl', gender: 'Wanita' },
-  { id: 'Lovely_Girl', label: 'Lovely Girl', gender: 'Wanita' },
-  { id: 'Sweet_Girl_2', label: 'Sweet Girl', gender: 'Wanita' },
-  { id: 'Inspirational_girl', label: 'Inspirational Girl', gender: 'Wanita' },
-  { id: 'Exuberant_Girl', label: 'Exuberant Girl', gender: 'Wanita' },
-  { id: 'Friendly_Person', label: 'Friendly Person', gender: 'Netral' },
-  { id: 'Deep_Voice_Man', label: 'Deep Voice Man', gender: 'Pria' },
-  { id: 'Casual_Guy', label: 'Casual Guy', gender: 'Pria' },
-  { id: 'Patient_Man', label: 'Patient Man', gender: 'Pria' },
-  { id: 'Determined_Man', label: 'Determined Man', gender: 'Pria' },
-  { id: 'Decent_Boy', label: 'Decent Boy', gender: 'Pria' },
-  { id: 'Elegant_Man', label: 'Elegant Man', gender: 'Pria' },
-  { id: 'Imposing_Manner', label: 'Imposing Manner', gender: 'Pria' },
-  { id: 'Young_Knight', label: 'Young Knight', gender: 'Pria' },
+// Pollinations TTS voices (ElevenLabs-backed)
+const VOICES: { id: string; label: string }[] = [
+  { id: 'nova', label: 'Nova' },
+  { id: 'alloy', label: 'Alloy' },
+  { id: 'echo', label: 'Echo' },
+  { id: 'fable', label: 'Fable' },
+  { id: 'onyx', label: 'Onyx' },
+  { id: 'shimmer', label: 'Shimmer' },
+  { id: 'ash', label: 'Ash' },
+  { id: 'ballad', label: 'Ballad' },
+  { id: 'coral', label: 'Coral' },
+  { id: 'sage', label: 'Sage' },
+  { id: 'verse', label: 'Verse' },
+  { id: 'rachel', label: 'Rachel' },
+  { id: 'bella', label: 'Bella' },
+  { id: 'charlotte', label: 'Charlotte' },
+  { id: 'sarah', label: 'Sarah' },
+  { id: 'emily', label: 'Emily' },
+  { id: 'lily', label: 'Lily' },
+  { id: 'matilda', label: 'Matilda' },
+  { id: 'adam', label: 'Adam' },
+  { id: 'antoni', label: 'Antoni' },
+  { id: 'josh', label: 'Josh' },
+  { id: 'daniel', label: 'Daniel' },
+  { id: 'charlie', label: 'Charlie' },
+  { id: 'james', label: 'James' },
+  { id: 'george', label: 'George' },
+  { id: 'brian', label: 'Brian' },
 ];
 
-const EMOTIONS = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised'];
+const MODELS: { id: string; label: string }[] = [
+  { id: 'eleven-multilingual-v2', label: 'Multilingual v2 (terbaik utk Indonesia)' },
+  { id: 'elevenflash', label: 'Flash v2.5 (cepat)' },
+  { id: 'elevenlabs', label: 'ElevenLabs v3 (ekspresif)' },
+  { id: 'qwen-tts', label: 'Qwen3-TTS Flash' },
+];
 
 export default function TTSDemoPage() {
-  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI dari MiniMax.');
-  const [voiceId, setVoiceId] = useState('Wise_Woman');
-  const [speed, setSpeed] = useState(1);
-  const [pitch, setPitch] = useState(0);
-  const [emotion, setEmotion] = useState('neutral');
+  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI dari Pollinations.');
+  const [voice, setVoice] = useState('nova');
+  const [model, setModel] = useState('eleven-multilingual-v2');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +57,10 @@ export default function TTSDemoPage() {
     setLoading(true);
     setPlaying(false);
     try {
-      const res = await fetch('/api/minimax-tts', {
+      const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voiceId, speed, pitch, emotion, languageBoost: 'Indonesian' }),
+        body: JSON.stringify({ text, voice, model }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -55,10 +68,8 @@ export default function TTSDemoPage() {
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      // Revoke previous url
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(url);
-      // Auto-play
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.src = url;
@@ -81,18 +92,16 @@ export default function TTSDemoPage() {
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
-      {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <div className="p-2.5 rounded-xl bg-accent/10">
           <Volume2 className="h-6 w-6 text-accent" />
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-serif">Text to Speech</h1>
-          <p className="text-sm text-tx-muted">Baca teks dengan suara AI MiniMax (speech-2.8-hd)</p>
+          <p className="text-sm text-tx-muted">Baca teks dengan suara AI Pollinations</p>
         </div>
       </div>
 
-      {/* Text input */}
       <label className="block text-xs font-medium text-tx-soft mb-1.5">Teks</label>
       <textarea
         value={text}
@@ -104,40 +113,26 @@ export default function TTSDemoPage() {
       />
       <p className="text-[10px] text-tx-muted mt-1 text-right">{text.length}/5000</p>
 
-      {/* Voice selection */}
+      {/* Model */}
+      <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Model</label>
+      <select value={model} onChange={e => setModel(e.target.value)} className="w-full px-3 py-2 text-sm rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card">
+        {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+      </select>
+
+      {/* Voice */}
       <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Pilihan Suara</label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {VOICES.map(v => (
           <button
             key={v.id}
-            onClick={() => setVoiceId(v.id)}
-            className={`px-3 py-2 rounded-xl border text-left text-xs transition-colors ${voiceId === v.id ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-card hover:border-accent/40'}`}
+            onClick={() => setVoice(v.id)}
+            className={`px-3 py-2 rounded-xl border text-center text-xs transition-colors ${voice === v.id ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-bg-card hover:border-accent/40'}`}
           >
-            <span className="block font-medium truncate">{v.label}</span>
-            <span className="block text-[10px] text-tx-muted">{v.gender}</span>
+            {v.label}
           </button>
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-        <div>
-          <label className="block text-xs font-medium text-tx-soft mb-1.5">Kecepatan: {speed.toFixed(2)}x</label>
-          <input type="range" min={0.5} max={2} step={0.05} value={speed} onChange={e => setSpeed(parseFloat(e.target.value))} className="w-full accent-accent" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-tx-soft mb-1.5">Pitch: {pitch}</label>
-          <input type="range" min={-12} max={12} step={1} value={pitch} onChange={e => setPitch(parseInt(e.target.value))} className="w-full accent-accent" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-tx-soft mb-1.5">Emosi</label>
-          <select value={emotion} onChange={e => setEmotion(e.target.value)} className="w-full px-3 py-2 text-xs rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card">
-            {EMOTIONS.map(em => <option key={em} value={em}>{em}</option>)}
-          </select>
-        </div>
-      </div>
-
-      {/* Action */}
       <div className="flex items-center gap-3 mt-5">
         <button
           onClick={generate}
