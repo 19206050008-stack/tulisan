@@ -1,28 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Text-to-Speech via Pollinations (gen.pollinations.ai).
-// OpenAI-compatible endpoint: POST /v1/audio/speech { model, input, voice }
-// Returns raw audio bytes (mp3). Keeps the API key server-side.
+// Text-to-Speech via self-hosted Coqui Indonesian TTS server (Wikidepia VITS).
+// No API key. The Python service (see /tts-server) loads the model and exposes
+// POST /speak { text, speaker } -> audio/wav.
 //
-// Get a key with pollen balance at https://enter.pollinations.ai
-// TTS models (paid): elevenlabs, elevenflash, eleven-multilingual-v2, qwen-tts, qwen-tts-instruct
+// Configure the server URL via env: LOCAL_TTS_URL=http://localhost:8080
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const BASE_URL = process.env.POLLINATIONS_BASE_URL || 'https://gen.pollinations.ai';
-// Prefer a dedicated server key; fall back to the public cover-gen key.
-const API_KEY = process.env.POLLINATIONS_API_KEY || process.env.NEXT_PUBLIC_POLLINATIONS_KEY || '';
+const LOCAL_TTS_URL = process.env.LOCAL_TTS_URL || '';
 
 interface TTSBody {
   text?: string;
+  speaker?: string;
   voice?: string;
-  model?: string;
 }
 
 export async function POST(req: NextRequest) {
-  if (!API_KEY) {
-    return NextResponse.json({ error: 'TTS belum dikonfigurasi (POLLINATIONS_API_KEY kosong).' }, { status: 500 });
+  if (!LOCAL_TTS_URL) {
+    return NextResponse.json({ error: 'TTS belum dikonfigurasi (set LOCAL_TTS_URL ke server TTS).' }, { status: 500 });
   }
 
   let body: TTSBody;
@@ -36,38 +33,16 @@ export async function POST(req: NextRequest) {
   if (!text) return NextResponse.json({ error: 'Teks wajib diisi' }, { status: 400 });
   if (text.length > 5000) return NextResponse.json({ error: 'Teks terlalu panjang (maks 5000 karakter)' }, { status: 400 });
 
-  const payload = {
-    model: body.model || 'eleven-multilingual-v2',
-    input: text,
-    voice: body.voice || 'nova',
-  };
-
   try {
-    const res = await fetch(`${BASE_URL}/v1/audio/speech`, {
+    const res = await fetch(`${LOCAL_TTS_URL.replace(/\/$/, '')}/speak`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, speaker: body.speaker || body.voice || 'wibowo' }),
     });
 
-    const contentType = res.headers.get('content-type') || '';
-
-    if (!res.ok || contentType.includes('application/json')) {
+    if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      let msg = errText.slice(0, 300);
-      try {
-        const j = JSON.parse(errText);
-        msg = j?.error?.message || j?.error || j?.message || msg;
-      } catch {}
-      const status = res.status === 402 ? 402 : res.status === 401 ? 401 : 502;
-      const friendly = res.status === 401
-        ? 'API key Pollinations tidak valid untuk gen.pollinations.ai. Buat key baru di enter.pollinations.ai.'
-        : res.status === 402
-          ? 'Saldo pollen tidak cukup. Top up di enter.pollinations.ai.'
-          : `Upstream ${res.status}: ${msg}`;
-      return NextResponse.json({ error: friendly }, { status });
+      return NextResponse.json({ error: `TTS server ${res.status}: ${errText.slice(0, 200)}` }, { status: 502 });
     }
 
     const audioBuffer = Buffer.from(await res.arrayBuffer());
@@ -78,11 +53,11 @@ export async function POST(req: NextRequest) {
     return new NextResponse(audioBuffer, {
       status: 200,
       headers: {
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': res.headers.get('content-type') || 'audio/wav',
         'Cache-Control': 'no-store',
       },
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || 'Permintaan TTS gagal' }, { status: 500 });
+    return NextResponse.json({ error: `TTS server tidak terjangkau: ${err?.message || ''}` }, { status: 502 });
   }
 }

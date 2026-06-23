@@ -3,47 +3,18 @@
 import { useState, useRef } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
 
-// Pollinations TTS voices (ElevenLabs-backed)
+// Coqui Indonesian TTS speakers (Wikidepia v1.2)
 const VOICES: { id: string; label: string }[] = [
-  { id: 'nova', label: 'Nova' },
-  { id: 'alloy', label: 'Alloy' },
-  { id: 'echo', label: 'Echo' },
-  { id: 'fable', label: 'Fable' },
-  { id: 'onyx', label: 'Onyx' },
-  { id: 'shimmer', label: 'Shimmer' },
-  { id: 'ash', label: 'Ash' },
-  { id: 'ballad', label: 'Ballad' },
-  { id: 'coral', label: 'Coral' },
-  { id: 'sage', label: 'Sage' },
-  { id: 'verse', label: 'Verse' },
-  { id: 'rachel', label: 'Rachel' },
-  { id: 'bella', label: 'Bella' },
-  { id: 'charlotte', label: 'Charlotte' },
-  { id: 'sarah', label: 'Sarah' },
-  { id: 'emily', label: 'Emily' },
-  { id: 'lily', label: 'Lily' },
-  { id: 'matilda', label: 'Matilda' },
-  { id: 'adam', label: 'Adam' },
-  { id: 'antoni', label: 'Antoni' },
-  { id: 'josh', label: 'Josh' },
-  { id: 'daniel', label: 'Daniel' },
-  { id: 'charlie', label: 'Charlie' },
-  { id: 'james', label: 'James' },
-  { id: 'george', label: 'George' },
-  { id: 'brian', label: 'Brian' },
-];
-
-const MODELS: { id: string; label: string }[] = [
-  { id: 'eleven-multilingual-v2', label: 'Multilingual v2 (terbaik utk Indonesia)' },
-  { id: 'elevenflash', label: 'Flash v2.5 (cepat)' },
-  { id: 'elevenlabs', label: 'ElevenLabs v3 (ekspresif)' },
-  { id: 'qwen-tts', label: 'Qwen3-TTS Flash' },
+  { id: 'wibowo', label: 'Wibowo (Pria)' },
+  { id: 'ardi', label: 'Ardi (Pria)' },
+  { id: 'gadis', label: 'Gadis (Wanita)' },
+  { id: 'juminten', label: 'Juminten (Jawa)' },
+  { id: 'darman', label: 'Darman (Sunda)' },
 ];
 
 export default function TTSDemoPage() {
-  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI dari Pollinations.');
-  const [voice, setVoice] = useState('nova');
-  const [model, setModel] = useState('eleven-multilingual-v2');
+  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
+  const [voice, setVoice] = useState('wibowo');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +31,7 @@ export default function TTSDemoPage() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice, model }),
+        body: JSON.stringify({ text, voice }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -112,12 +83,6 @@ export default function TTSDemoPage() {
         className="w-full px-4 py-3 rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent text-sm resize-y"
       />
       <p className="text-[10px] text-tx-muted mt-1 text-right">{text.length}/5000</p>
-
-      {/* Model */}
-      <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Model</label>
-      <select value={model} onChange={e => setModel(e.target.value)} className="w-full px-3 py-2 text-sm rounded-xl bg-bg-input border border-border focus:outline-none focus:border-accent [&>option]:bg-bg-card">
-        {MODELS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-      </select>
 
       {/* Voice */}
       <label className="block text-xs font-medium text-tx-soft mb-1.5 mt-3">Pilihan Suara</label>
