@@ -46,13 +46,30 @@ def health():
     return {"ok": True, "voices": list(VOICES.keys())}
 
 
-async def _synthesize(text: str, voice: str, rate: str, pitch: str) -> bytes:
+async def _synthesize_once(text: str, voice: str, rate: str, pitch: str) -> bytes:
     communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
     chunks = bytearray()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio":
             chunks.extend(chunk["data"])
     return bytes(chunks)
+
+
+async def _synthesize(text: str, voice: str, rate: str, pitch: str) -> bytes:
+    # Retry a couple of times: the Edge endpoint occasionally returns a
+    # transient 403 (token/clock skew) that succeeds on a fresh connection.
+    last_err: Exception | None = None
+    for _ in range(3):
+        try:
+            audio = await _synthesize_once(text, voice, rate, pitch)
+            if audio:
+                return audio
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            await asyncio.sleep(0.5)
+    if last_err:
+        raise last_err
+    return b""
 
 
 @app.post("/speak")
