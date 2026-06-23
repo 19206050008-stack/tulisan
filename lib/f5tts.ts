@@ -42,39 +42,55 @@ function baseUrl(): string {
 }
 
 // Panggil endpoint Gradio (pola /call async): POST -> event_id, GET -> SSE hasil.
-async function callGradio(api: string, payload: any[]): Promise<any[]> {
+// Gradio 5 memakai prefix /gradio_api; Gradio 4 memakai /call langsung.
+async function callGradio(api: string, payload: any[]): Promise<{ data: any[]; fileBase: string }> {
   const base = baseUrl();
-  const post = await fetch(`${base}/call/${api}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: payload }),
-  });
-  if (!post.ok) throw new Error(`Gagal memulai (${post.status})`);
-  const startJson = await post.json();
-  const eventId = startJson?.event_id || startJson?.hash;
-  if (!eventId) throw new Error('Server tidak mengembalikan event id.');
+  const prefixes = ['/gradio_api', ''];
+  let lastErr: Error | null = null;
 
-  // GET stream menunggu sampai selesai (bisa beberapa menit).
-  const res = await fetch(`${base}/call/${api}/${eventId}`);
-  if (!res.ok) throw new Error(`Gagal mengambil hasil (${res.status})`);
-  const text = await res.text();
-
-  // Parse SSE: cari event "complete".
-  let ev = '';
-  let result: any[] | null = null;
-  for (const line of text.split('\n')) {
-    if (line.startsWith('event:')) {
-      ev = line.slice(6).trim();
-    } else if (line.startsWith('data:')) {
-      const d = line.slice(5).trim();
-      if (ev === 'error') throw new Error(`Server error: ${d || 'tidak diketahui'}`);
-      if (ev === 'complete' && d) {
-        try { result = JSON.parse(d); } catch { /* abaikan */ }
+  for (const pfx of prefixes) {
+    try {
+      const post = await fetch(`${base}${pfx}/call/${api}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: payload }),
+      });
+      if (post.status === 404 || post.status === 405) {
+        lastErr = new Error(`Endpoint ${pfx}/call tidak tersedia (${post.status})`);
+        continue; // coba prefix lain
       }
+      if (!post.ok) throw new Error(`Gagal memulai (${post.status})`);
+      const startJson = await post.json();
+      const eventId = startJson?.event_id || startJson?.hash;
+      if (!eventId) throw new Error('Server tidak mengembalikan event id.');
+
+      // GET stream menunggu sampai selesai (bisa beberapa menit).
+      const res = await fetch(`${base}${pfx}/call/${api}/${eventId}`);
+      if (!res.ok) throw new Error(`Gagal mengambil hasil (${res.status})`);
+      const text = await res.text();
+
+      let ev = '';
+      let result: any[] | null = null;
+      for (const line of text.split('\n')) {
+        if (line.startsWith('event:')) {
+          ev = line.slice(6).trim();
+        } else if (line.startsWith('data:')) {
+          const d = line.slice(5).trim();
+          if (ev === 'error') throw new Error(`Server error: ${d || 'tidak diketahui'}`);
+          if (ev === 'complete' && d) {
+            try { result = JSON.parse(d); } catch { /* abaikan */ }
+          }
+        }
+      }
+      if (!result) throw new Error('Tidak ada hasil dari server.');
+      return { data: result, fileBase: `${base}${pfx}` };
+    } catch (e: any) {
+      lastErr = e;
+      // Kalau bukan sekadar 404/405 (mis. error nyata), hentikan.
+      if (!/tidak tersedia/.test(e?.message || '')) throw e;
     }
   }
-  if (!result) throw new Error('Tidak ada hasil dari server.');
-  return result;
+  throw lastErr || new Error('Gagal memanggil Space.');
 }
 
 /**
@@ -86,15 +102,14 @@ export async function generateF5(voice: string, text: string): Promise<Blob> {
   const trimmed = (text || '').trim();
   if (!trimmed) throw new Error('Teks tidak boleh kosong.');
 
-  const data = await callGradio('infer', [voice, trimmed]);
+  const { data, fileBase } = await callGradio('infer', [voice, trimmed]);
   const out = data[0];
   if (!out) throw new Error('Tidak ada audio dari Space.');
 
-  const base = baseUrl();
   let url: string | undefined;
   if (typeof out === 'string') url = out;
   else if (out.url) url = out.url;
-  else if (out.path) url = `${base}/file=${out.path}`;
+  else if (out.path) url = `${fileBase}/file=${out.path}`;
   if (!url) throw new Error('Format audio tidak dikenal dari Space.');
 
   const r = await fetch(url);
