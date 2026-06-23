@@ -33,6 +33,7 @@ export function useSpeechToText({ lang = 'id-ID', onFinalResult }: UseSpeechToTe
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef(false);
   const onFinalRef = useRef(onFinalResult);
+  const permissionGrantedRef = useRef(false);
 
   useEffect(() => { onFinalRef.current = onFinalResult; }, [onFinalResult]);
 
@@ -68,10 +69,17 @@ export function useSpeechToText({ lang = 'id-ID', onFinalResult }: UseSpeechToTe
     };
 
     recognition.onerror = (event: any) => {
-      if (event.error === 'not-allowed') {
-        setError('Akses mikrofon ditolak. Berikan izin mikrofon di browser.');
-        isListeningRef.current = false;
-        setIsListening(false);
+      // Ignore transient/benign errors that fire even when mic works fine
+      if (event.error === 'no-speech' || event.error === 'aborted' || event.error === 'audio-capture') {
+        return;
+      }
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        // Only treat as denial if we never got permission
+        if (!permissionGrantedRef.current) {
+          setError('Akses mikrofon ditolak. Berikan izin mikrofon di browser.');
+          isListeningRef.current = false;
+          setIsListening(false);
+        }
       } else if (event.error === 'network') {
         setError('Koneksi terputus. Pastikan perangkat online.');
       }
@@ -100,8 +108,20 @@ export function useSpeechToText({ lang = 'id-ID', onFinalResult }: UseSpeechToTe
     };
   }, [lang]);
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     setError(null);
+    // Explicitly request mic permission first (fixes false "not-allowed" errors)
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        permissionGrantedRef.current = true;
+        // Release the stream immediately; SpeechRecognition uses its own
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch {
+      setError('Akses mikrofon ditolak. Berikan izin mikrofon di browser.');
+      return;
+    }
     try {
       isListeningRef.current = true;
       recognitionRef.current?.start();
