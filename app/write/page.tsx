@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createStory, uploadCover, moderateText, getCategories } from '@/lib/supabase';
-import { Save, Send, ArrowLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { Save, Send, ArrowLeft, ChevronRight, X, Plus, Mic, Square } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
+import { useSpeechToText } from '@/lib/useSpeechToText';
 
 // Lazy load TipTap editor - hanya dimuat saat halaman /write dibuka (~200KB savings)
 const RichEditor = dynamic(
@@ -42,6 +43,17 @@ export default function WritePage() {
   const [coverPreview, setCoverPreview] = useState('');
   const [saving, setSaving] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+
+  // Speech-to-text: append transcribed text into the editor content
+  const speech = useSpeechToText({
+    lang: 'id-ID',
+    onFinalResult: (text) => {
+      setContent(prev => {
+        const sep = prev && !prev.endsWith(' ') && !prev.endsWith('>') ? ' ' : '';
+        return prev + sep + text + ' ';
+      });
+    },
+  });
 
   useEffect(() => {
     if (!_hasHydrated) return; // Wait for store hydration
@@ -376,6 +388,46 @@ export default function WritePage() {
             onChange={e => setChapterTitle(e.target.value)}
             className="w-full px-4 py-3 text-lg font-medium rounded-xl bg-white text-gray-900 border border-gray-200 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 placeholder:text-gray-400"
           />
+
+          {/* Speech-to-text toolbar */}
+          {speech.supported && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={speech.toggle}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
+                  speech.isListening
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-accent/10 text-accent hover:bg-accent/20'
+                }`}
+              >
+                {speech.isListening ? (
+                  <>
+                    <span className="relative flex items-center gap-2">
+                      <Square className="w-4 h-4 fill-current" /> Berhenti
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-4 h-4" /> Tulis dengan Suara
+                  </>
+                )}
+              </button>
+              {speech.isListening && (
+                <div className="flex gap-1 items-end h-5">
+                  <span className="w-1.5 h-2 bg-red-400 rounded-full animate-pulse" />
+                  <span className="w-1.5 h-4 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                  <span className="w-1.5 h-3 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                </div>
+              )}
+              {speech.interimText && (
+                <span className="text-xs text-tx-muted italic truncate max-w-[200px]">{speech.interimText}</span>
+              )}
+            </div>
+          )}
+          {speech.error && (
+            <p className="text-xs text-red-500">{speech.error}</p>
+          )}
 
           <Suspense fallback={
             <div className="min-h-[400px] bg-bg-input rounded-xl animate-pulse flex items-center justify-center">
