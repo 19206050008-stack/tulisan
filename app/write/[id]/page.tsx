@@ -5,11 +5,12 @@ import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { createStory, updateStory, getStoryById, uploadCover, createChapter, getChapters, updateChapter, deleteChapter, getCategories } from '@/lib/supabase';
-import { Save, Send, Plus, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Save, Send, Plus, Trash2, ArrowLeft, ChevronRight, Mic, Square } from 'lucide-react';
 import { CoverUpload } from '@/components/CoverUpload';
 import { translations } from '@/lib/i18n';
 import { countWords, determineTier } from '@/lib/tier-utils';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useSpeechToText } from '@/lib/useSpeechToText';
 
 // Lazy load TipTap editor - hanya dimuat saat halaman /write/[id] dibuka (~200KB savings)
 const RichEditor = dynamic(
@@ -50,6 +51,17 @@ export default function WriteEditorPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chapterToDelete, setChapterToDelete] = useState<{ id: string; index: number } | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<any[]>([]);
+
+  // Speech-to-text: append transcribed text into chapter content
+  const speech = useSpeechToText({
+    lang: 'id-ID',
+    onFinalResult: (text) => {
+      setChapterContent(prev => {
+        const sep = prev && !prev.endsWith(' ') && !prev.endsWith('>') ? ' ' : '';
+        return prev + sep + text + ' ';
+      });
+    },
+  });
 
   const normalizeContent = (raw: string): string => {
     if (!raw) return '';
@@ -384,6 +396,40 @@ export default function WriteEditorPage() {
             onChange={e => setChapterTitle(e.target.value)}
             className="w-full px-3 py-2 text-base font-medium rounded-lg bg-white text-gray-900 border border-gray-200 focus:outline-none focus:border-accent dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500"
           />
+
+          {/* Speech-to-text toolbar */}
+          {speech.supported && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={speech.toggle}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95 ${
+                  speech.isListening
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-accent/10 text-accent hover:bg-accent/20'
+                }`}
+              >
+                {speech.isListening ? (
+                  <><Square className="w-4 h-4 fill-current" /> Berhenti</>
+                ) : (
+                  <><Mic className="w-4 h-4" /> Tulis dengan Suara</>
+                )}
+              </button>
+              {speech.isListening && (
+                <div className="flex gap-1 items-end h-5">
+                  <span className="w-1.5 h-2 bg-red-400 rounded-full animate-pulse" />
+                  <span className="w-1.5 h-4 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.15s' }} />
+                  <span className="w-1.5 h-3 bg-red-400 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                </div>
+              )}
+              {speech.interimText && (
+                <span className="text-xs text-tx-muted italic truncate max-w-[200px]">{speech.interimText}</span>
+              )}
+            </div>
+          )}
+          {speech.error && (
+            <p className="text-xs text-red-500">{speech.error}</p>
+          )}
 
           {!loading && (
             <Suspense fallback={
