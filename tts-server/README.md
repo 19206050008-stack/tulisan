@@ -56,3 +56,31 @@ dan fallback ke Pollinations bila tidak.
 
 Service ini butuh host yang mendukung Python/Docker dengan RAM cukup, mis:
 Railway, Render, Fly.io, HuggingFace Spaces, atau VPS. Vercel tidak cocok.
+
+## Deploy ke Railway (langkah demi langkah)
+
+1. **Buat service baru** di Railway → **New** → **Deploy from GitHub repo** →
+   pilih repo `tulisan`.
+2. Di **Settings** service:
+   - **Root Directory**: `tts-server`  (penting — agar Railway pakai Dockerfile di folder ini)
+   - **Builder**: Dockerfile (otomatis terdeteksi via `railway.json`)
+3. Railway akan build image (instal torch + Coqui TTS, unduh model ~300MB).
+   Build pertama lama (~5–10 menit). Pastikan plan punya **RAM ≥ 2–4GB**
+   (model VITS butuh memori; trial gratis bisa kurang — pakai Hobby plan).
+4. Setelah deploy, buka tab **Settings → Networking → Generate Domain** untuk
+   dapat URL publik, mis. `https://ditulis-tts-production.up.railway.app`.
+5. Uji: buka `https://<domain>/health` → harus muncul `{ "ok": true, "speakers": [...] }`.
+
+### Sambungkan ke aplikasi Next.js (Vercel)
+
+Di dashboard **Vercel** project Di.tulis → **Settings → Environment Variables**,
+tambahkan:
+
+```
+LOCAL_TTS_URL = https://<domain-railway-anda>.up.railway.app
+```
+
+Redeploy Vercel. Halaman `/tts-demo` akan memanggil server Railway ini.
+
+> Railway otomatis menyuntik `PORT`; Dockerfile sudah listen ke `$PORT`.
+> Tidak ada API key yang diperlukan.
