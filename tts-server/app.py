@@ -82,10 +82,14 @@ def speak(req: SpeakRequest):
 
     speaker = req.speaker or DEFAULT_SPEAKER
 
-    # Grapheme -> phoneme (Indonesian)
-    phonemes = _g2p(text)
+    # Grapheme -> phoneme (Indonesian). G2p returns a list of words,
+    # each a list of phoneme symbols, e.g. [['a','p','ə','l'], ['i','t','u']].
+    # Coqui's VITS model expects a phoneme STRING (words separated by spaces),
+    # matching the Wikidepia README usage.
+    phoneme_words = _g2p(text)
+    phoneme_str = " ".join("".join(word) for word in phoneme_words)
 
-    wav = _synth.tts(phonemes, speaker_name=speaker)
+    wav = _synth.tts(phoneme_str, speaker_name=speaker)
 
     buf = io.BytesIO()
     _synth.save_wav(wav, buf)

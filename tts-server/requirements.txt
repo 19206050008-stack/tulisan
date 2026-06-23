@@ -1,5 +1,4 @@
 coqui-tts==0.24.1
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-g2p_id_py==0.2.0
-torch==2.2.2
+g2p-id-py==0.4.2
