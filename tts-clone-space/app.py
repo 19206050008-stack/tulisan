@@ -1,21 +1,23 @@
 """
-F5-TTS Indonesia — Hugging Face Space (ZeroGPU).
+F5-TTS Indonesia — Hugging Face Space (CPU Basic, gratis).
 
 Natural Indonesian TTS with zero-shot voice cloning. Reference voices are read
 automatically from the bundled `refs/` folder (drop your sample clips there),
 each becoming a selectable voice. You may also upload a custom reference.
 
+Runs on free CPU Basic hardware (no GPU). Generation is SLOW on CPU (~1-4 min),
+so it's best used to PRE-RENDER story narration once and cache the result.
+
 Model: PapaRazi/Ijazah_Palsu_V2 (F5-TTS finetuned for Indonesian).
 
 API (gradio_client / @gradio/client):
-  predict("/infer", [voice_id, gen_text])            -> wav   (bundled ref voice)
-  predict("/infer_upload", [ref_audio, gen_text, ref_text]) -> wav (custom upload)
+  predict("/infer", [voice_id, gen_text])                    -> wav (bundled ref)
+  predict("/infer_upload", [ref_audio, gen_text, ref_text])  -> wav (custom upload)
 """
 import os
 import tempfile
 
 import gradio as gr
-import spaces
 from huggingface_hub import hf_hub_download
 from f5_tts.api import F5TTS
 
@@ -24,6 +26,8 @@ CKPT_FILE = os.environ.get("F5_CKPT_FILE", "model_last_v2.safetensors")
 VOCAB_FILE = os.environ.get("F5_VOCAB_FILE", "vocab.txt")
 # If you get a config/shape error, try "F5TTS_Base" instead of "F5TTS_v1_Base".
 BASE_CFG = os.environ.get("F5_BASE", "F5TTS_v1_Base")
+# Fewer steps = faster on CPU, slightly lower quality. 16 is a good CPU balance.
+NFE_STEP = int(os.environ.get("F5_NFE_STEP", "16"))
 
 REFS_DIR = os.path.join(os.path.dirname(__file__), "refs")
 AUDIO_EXT = (".mp3", ".wav", ".flac", ".m4a", ".ogg")
@@ -51,6 +55,7 @@ def _load():
     if _model is None:
         ckpt = hf_hub_download(MODEL_REPO, CKPT_FILE)
         vocab = hf_hub_download(MODEL_REPO, VOCAB_FILE)
+        # device=None -> F5TTS auto-selects (cpu when no GPU).
         _model = F5TTS(model=BASE_CFG, ckpt_file=ckpt, vocab_file=vocab)
     return _model
 
@@ -75,13 +80,13 @@ def _synth(ref_file: str, ref_text: str, gen_text: str) -> str:
         ref_file=ref_file,
         ref_text=(ref_text or "").strip(),
         gen_text=gen_text.strip(),
+        nfe_step=NFE_STEP,
         remove_silence=True,
         file_wave=out_path,
     )
     return out_path
 
 
-@spaces.GPU(duration=120)
 def infer(voice_id, gen_text):
     if not (gen_text or "").strip():
         raise gr.Error("Teks wajib diisi.")
@@ -96,7 +101,6 @@ def infer(voice_id, gen_text):
     return _synth(ref_path, _ref_text_for(voice_id, ref_path), gen_text)
 
 
-@spaces.GPU(duration=120)
 def infer_upload(reference_audio, gen_text, reference_text=""):
     if not reference_audio:
         raise gr.Error("Unggah audio referensi (suara yang Anda miliki/izinkan).")
@@ -107,8 +111,10 @@ def infer_upload(reference_audio, gen_text, reference_text=""):
 
 with gr.Blocks(title="F5-TTS Indonesia") as demo:
     gr.Markdown(
-        "# 🎙️ F5-TTS Indonesia — narasi natural + voice cloning\n"
-        "Pilih suara dari koleksi `refs/`, atau unggah referensi sendiri."
+        "# 🎙️ F5-TTS Indonesia — narasi natural + voice cloning (CPU gratis)\n"
+        "Pilih suara dari koleksi `refs/`, atau unggah referensi sendiri.\n\n"
+        "_Catatan: jalan di CPU gratis, jadi proses bisa 1-4 menit. Cocok untuk "
+        "membuat audio narasi sekali lalu disimpan._"
     )
     with gr.Tab("Pilih suara"):
         voice = gr.Dropdown(

@@ -8,7 +8,7 @@ app_file: app.py
 pinned: false
 ---
 
-# F5-TTS Indonesia (ZeroGPU)
+# F5-TTS Indonesia (CPU Basic, gratis)
 
 TTS Bahasa Indonesia yang natural dengan **zero-shot voice cloning** (F5-TTS).
 Unggah klip referensi pendek (suara yang Anda miliki/izinkan), tulis teks, dapat
@@ -17,15 +17,20 @@ suara natural + ekspresif dalam gaya suara itu.
 Model: [`PapaRazi/Ijazah_Palsu_V2`](https://huggingface.co/PapaRazi/Ijazah_Palsu_V2)
 (F5-TTS finetune Indonesia, lisensi CC-BY-NC-4.0 → **non-komersial**).
 
-## Cara deploy
+## Cara deploy (GRATIS — CPU Basic)
 
 1. Buat **Space baru** di Hugging Face → SDK **Gradio**.
-2. **Settings → Hardware → ZeroGPU** (Nvidia, gratis dengan kuota).
+2. **Space hardware: CPU Basic** (gratis). _ZeroGPU sekarang butuh PRO berbayar,
+   jadi kita pakai CPU._
 3. Upload **seluruh isi folder `tts-clone-space/`** ke Space — termasuk
    `app.py`, `requirements.txt`, dan folder **`refs/`** (berisi suara referensi).
 4. Tunggu build. Buka tab **App** untuk uji manual.
 5. Endpoint API tersedia: **`/infer`** (pilih suara dari `refs/`) dan
    **`/infer_upload`** (unggah referensi sendiri).
+
+> ⚠️ **CPU itu lambat** (~1-4 menit per generate). Pakai untuk **pre-render**:
+> buat audio narasi sekali per cerita lalu simpan hasilnya. Atur kecepatan vs
+> kualitas lewat env `F5_NFE_STEP` (default 16; makin kecil makin cepat).
 
 ## Suara referensi (`refs/`)
 

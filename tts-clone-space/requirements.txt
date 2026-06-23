@@ -1,4 +1,3 @@
 f5-tts
-spaces
 soundfile
 huggingface_hub
