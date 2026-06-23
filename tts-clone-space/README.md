@@ -21,22 +21,28 @@ Model: [`PapaRazi/Ijazah_Palsu_V2`](https://huggingface.co/PapaRazi/Ijazah_Palsu
 
 1. Buat **Space baru** di Hugging Face → SDK **Gradio**.
 2. **Settings → Hardware → ZeroGPU** (Nvidia, gratis dengan kuota).
-3. Upload `app.py` + `requirements.txt` (+ README ini) ke Space.
+3. Upload **seluruh isi folder `tts-clone-space/`** ke Space — termasuk
+   `app.py`, `requirements.txt`, dan folder **`refs/`** (berisi suara referensi).
 4. Tunggu build. Buka tab **App** untuk uji manual.
-5. Endpoint API otomatis tersedia dengan nama **`/infer`**.
+5. Endpoint API tersedia: **`/infer`** (pilih suara dari `refs/`) dan
+   **`/infer_upload`** (unggah referensi sendiri).
 
-## Memanggil dari aplikasi (tanpa key berbayar, pakai token HF gratis)
+## Suara referensi (`refs/`)
+
+Tiap file audio di `refs/` otomatis jadi pilihan suara (id = nama file tanpa
+ekstensi), mis. `refs/rosa.mp3` → suara `rosa`. Untuk kualitas terbaik, beri
+transkrip referensi: buat `refs/rosa.txt` berisi teks yang diucapkan di klip
+itu (kalau dikosongkan, F5-TTS auto-transkrip pakai Whisper).
+
+> Etika & lisensi: gunakan hanya suara yang Anda miliki/izinkan.
+
+## Memanggil dari aplikasi (token HF gratis)
 
 ```python
-from gradio_client import Client, handle_file
+from gradio_client import Client
 client = Client("USERNAME/NAMA-SPACE", hf_token="hf_xxx")
-result = client.predict(
-    handle_file("referensi.wav"),  # reference_audio
-    "Halo, ini contoh narasi cerita.",  # gen_text
-    "",  # reference_text (opsional)
-    api_name="/infer",
-)
-print(result)  # path ke wav hasil
+wav = client.predict("rosa", "Halo, ini contoh narasi cerita.", api_name="/infer")
+print(wav)  # path ke wav hasil
 ```
 
 > Catatan lisensi: model ini **non-komersial (CC-BY-NC-4.0)**. Untuk pemakaian

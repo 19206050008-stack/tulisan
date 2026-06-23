@@ -1,20 +1,15 @@
 """
 F5-TTS Indonesia — Hugging Face Space (ZeroGPU).
 
-Natural Indonesian TTS with zero-shot voice cloning. Upload a short reference
-clip (a voice you OWN or are licensed to use), provide the story text, and get
-natural, expressive speech in that voice.
+Natural Indonesian TTS with zero-shot voice cloning. Reference voices are read
+automatically from the bundled `refs/` folder (drop your sample clips there),
+each becoming a selectable voice. You may also upload a custom reference.
 
-Model: PapaRazi/Ijazah_Palsu_V2 (F5-TTS finetuned for Indonesian, base SWivid/F5-TTS).
+Model: PapaRazi/Ijazah_Palsu_V2 (F5-TTS finetuned for Indonesian).
 
-Deploy:
-  - Create a new Space (SDK: Gradio), set Hardware = ZeroGPU.
-  - Upload app.py + requirements.txt (+ this README).
-  - The Space exposes a callable API endpoint named "/infer".
-
-API (via gradio_client / @gradio/client):
-  predict("/infer", [reference_audio, gen_text, reference_text])
-  -> returns a wav file.
+API (gradio_client / @gradio/client):
+  predict("/infer", [voice_id, gen_text])            -> wav   (bundled ref voice)
+  predict("/infer_upload", [ref_audio, gen_text, ref_text]) -> wav (custom upload)
 """
 import os
 import tempfile
@@ -30,7 +25,25 @@ VOCAB_FILE = os.environ.get("F5_VOCAB_FILE", "vocab.txt")
 # If you get a config/shape error, try "F5TTS_Base" instead of "F5TTS_v1_Base".
 BASE_CFG = os.environ.get("F5_BASE", "F5TTS_v1_Base")
 
+REFS_DIR = os.path.join(os.path.dirname(__file__), "refs")
+AUDIO_EXT = (".mp3", ".wav", ".flac", ".m4a", ".ogg")
+
 _model = None
+_ref_text_cache: dict[str, str] = {}
+
+
+def _discover_voices() -> dict[str, str]:
+    """voice_id -> reference audio path, read from refs/."""
+    voices = {}
+    if os.path.isdir(REFS_DIR):
+        for f in sorted(os.listdir(REFS_DIR)):
+            if f.lower().endswith(AUDIO_EXT):
+                vid = os.path.splitext(f)[0]
+                voices[vid] = os.path.join(REFS_DIR, f)
+    return voices
+
+
+VOICES = _discover_voices()
 
 
 def _load():
@@ -42,21 +55,25 @@ def _load():
     return _model
 
 
-@spaces.GPU(duration=120)
-def infer(reference_audio, gen_text, reference_text=""):
-    if not reference_audio:
-        raise gr.Error("Unggah audio referensi (suara yang Anda miliki/izinkan), ~6-12 detik.")
-    if not (gen_text or "").strip():
-        raise gr.Error("Teks wajib diisi.")
-    if len(gen_text) > 5000:
-        raise gr.Error("Teks terlalu panjang (maks 5000 karakter).")
+def _ref_text_for(voice_id: str, ref_path: str) -> str:
+    """Use refs/<id>.txt transcript if provided; else "" (F5 auto-transcribes)."""
+    if voice_id in _ref_text_cache:
+        return _ref_text_cache[voice_id]
+    txt_path = os.path.splitext(ref_path)[0] + ".txt"
+    text = ""
+    if os.path.exists(txt_path):
+        with open(txt_path, encoding="utf-8") as fh:
+            text = fh.read().strip()
+    _ref_text_cache[voice_id] = text
+    return text
 
+
+def _synth(ref_file: str, ref_text: str, gen_text: str) -> str:
     model = _load()
     out_path = tempfile.mktemp(suffix=".wav")
-    # ref_text kosong -> F5-TTS auto-transkrip referensi dengan Whisper.
     model.infer(
-        ref_file=reference_audio,
-        ref_text=(reference_text or "").strip(),
+        ref_file=ref_file,
+        ref_text=(ref_text or "").strip(),
         gen_text=gen_text.strip(),
         remove_silence=True,
         file_wave=out_path,
@@ -64,17 +81,52 @@ def infer(reference_audio, gen_text, reference_text=""):
     return out_path
 
 
+@spaces.GPU(duration=120)
+def infer(voice_id, gen_text):
+    if not (gen_text or "").strip():
+        raise gr.Error("Teks wajib diisi.")
+    if len(gen_text) > 5000:
+        raise gr.Error("Teks terlalu panjang (maks 5000 karakter).")
+    voices = _discover_voices()
+    if voice_id not in voices:
+        if not voices:
+            raise gr.Error("Belum ada suara referensi di folder refs/.")
+        voice_id = next(iter(voices))
+    ref_path = voices[voice_id]
+    return _synth(ref_path, _ref_text_for(voice_id, ref_path), gen_text)
+
+
+@spaces.GPU(duration=120)
+def infer_upload(reference_audio, gen_text, reference_text=""):
+    if not reference_audio:
+        raise gr.Error("Unggah audio referensi (suara yang Anda miliki/izinkan).")
+    if not (gen_text or "").strip():
+        raise gr.Error("Teks wajib diisi.")
+    return _synth(reference_audio, reference_text, gen_text)
+
+
 with gr.Blocks(title="F5-TTS Indonesia") as demo:
     gr.Markdown(
         "# 🎙️ F5-TTS Indonesia — narasi natural + voice cloning\n"
-        "Unggah **suara referensi yang Anda miliki/izinkan** (~6-12 detik), "
-        "tulis teks cerita, lalu hasilkan suara natural dalam gaya suara itu."
+        "Pilih suara dari koleksi `refs/`, atau unggah referensi sendiri."
     )
-    ref = gr.Audio(label="Suara referensi (wav/mp3)", type="filepath")
-    ref_txt = gr.Textbox(label="Transkrip referensi (opsional — kosongkan untuk auto)")
-    txt = gr.Textbox(label="Teks untuk dibacakan", lines=5)
-    btn = gr.Button("Hasilkan suara", variant="primary")
-    out = gr.Audio(label="Hasil")
-    btn.click(infer, [ref, txt, ref_txt], out, api_name="/infer")
+    with gr.Tab("Pilih suara"):
+        voice = gr.Dropdown(
+            choices=list(VOICES.keys()),
+            value=(next(iter(VOICES)) if VOICES else None),
+            label="Suara",
+        )
+        txt = gr.Textbox(label="Teks untuk dibacakan", lines=5)
+        btn = gr.Button("Hasilkan suara", variant="primary")
+        out = gr.Audio(label="Hasil")
+        btn.click(infer, [voice, txt], out, api_name="/infer")
+
+    with gr.Tab("Unggah referensi"):
+        ref = gr.Audio(label="Suara referensi (wav/mp3, ~6-12 dtk)", type="filepath")
+        ref_txt = gr.Textbox(label="Transkrip referensi (opsional)")
+        txt2 = gr.Textbox(label="Teks untuk dibacakan", lines=5)
+        btn2 = gr.Button("Hasilkan suara", variant="primary")
+        out2 = gr.Audio(label="Hasil")
+        btn2.click(infer_upload, [ref, txt2, ref_txt], out2, api_name="/infer_upload")
 
 demo.queue().launch()
