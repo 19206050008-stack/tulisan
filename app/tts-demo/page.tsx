@@ -3,18 +3,15 @@
 import { useState, useRef } from 'react';
 import { Play, Pause, Loader2, Volume2, Download } from 'lucide-react';
 
-// Coqui Indonesian TTS speakers (Wikidepia v1.2)
+// Indonesian Edge TTS voices
 const VOICES: { id: string; label: string }[] = [
-  { id: 'wibowo', label: 'Wibowo (Pria)' },
-  { id: 'ardi', label: 'Ardi (Pria)' },
   { id: 'gadis', label: 'Gadis (Wanita)' },
-  { id: 'juminten', label: 'Juminten (Jawa)' },
-  { id: 'darman', label: 'Darman (Sunda)' },
+  { id: 'ardi', label: 'Ardi (Pria)' },
 ];
 
 export default function TTSDemoPage() {
   const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
-  const [voice, setVoice] = useState('wibowo');
+  const [voice, setVoice] = useState('gadis');
   const [loading, setLoading] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +66,7 @@ export default function TTSDemoPage() {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-serif">Text to Speech</h1>
-          <p className="text-sm text-tx-muted">Baca teks dengan suara AI Pollinations</p>
+          <p className="text-sm text-tx-muted">Baca teks dengan suara AI Bahasa Indonesia</p>
         </div>
       </div>
 

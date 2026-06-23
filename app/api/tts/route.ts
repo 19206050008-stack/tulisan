@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Text-to-Speech via self-hosted Coqui Indonesian TTS server (Wikidepia VITS).
-// No API key. The Python service (see /tts-server) loads the model and exposes
-// POST /speak { text, speaker } -> audio/wav.
+// Text-to-Speech via self-hosted Indonesian TTS server (Microsoft Edge TTS).
+// No API key. The Python service (see /tts-server) exposes
+// POST /speak { text, speaker } -> audio/mpeg.
 //
 // Configure the server URL via env: LOCAL_TTS_URL=http://localhost:8080
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${LOCAL_TTS_URL.replace(/\/$/, '')}/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, speaker: body.speaker || body.voice || 'wibowo' }),
+      body: JSON.stringify({ text, speaker: body.speaker || body.voice || 'gadis' }),
     });
 
     if (!res.ok) {
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse(audioBuffer, {
       status: 200,
       headers: {
-        'Content-Type': res.headers.get('content-type') || 'audio/wav',
+        'Content-Type': res.headers.get('content-type') || 'audio/mpeg',
         'Cache-Control': 'no-store',
       },
     });
