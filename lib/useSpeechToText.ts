@@ -110,7 +110,9 @@ export function useSpeechToText({ lang = 'id-ID', onFinalResult }: UseSpeechToTe
 
   const start = useCallback(async () => {
     setError(null);
-    // Explicitly request mic permission first (fixes false "not-allowed" errors)
+    // Try to pre-request mic permission, but only hard-fail on real permission denial.
+    // Other errors (device busy, not found, etc.) shouldn't block SpeechRecognition,
+    // which manages its own microphone access.
     try {
       if (navigator.mediaDevices?.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -118,13 +120,21 @@ export function useSpeechToText({ lang = 'id-ID', onFinalResult }: UseSpeechToTe
         // Release the stream immediately; SpeechRecognition uses its own
         stream.getTracks().forEach(t => t.stop());
       }
-    } catch {
-      setError('Akses mikrofon ditolak. Berikan izin mikrofon di browser.');
+    } catch (err: any) {
+      const name = err?.name || '';
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        setError('Akses mikrofon ditolak. Berikan izin mikrofon di browser.');
+        return;
+      }
+      // Non-permission error: continue and let SpeechRecognition attempt anyway
+    }
+    if (!recognitionRef.current) {
+      setError('Browser tidak mendukung input suara. Gunakan Chrome, Edge, atau Safari.');
       return;
     }
     try {
       isListeningRef.current = true;
-      recognitionRef.current?.start();
+      recognitionRef.current.start();
       setIsListening(true);
     } catch {
       // already started
