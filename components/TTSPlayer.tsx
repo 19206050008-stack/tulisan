@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square, Loader2 } from 'lucide-react';
 import { loadTTSPrefs, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
 import { decodeHtmlEntities } from '@/lib/tts-text-preprocessor';
 
@@ -75,6 +75,9 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
     genderRef.current = p.gender;
     speedRef.current = p.speed;
     voiceRef.current = p.voice;
+    // Warm up the TTS server (wakes a sleeping Railway container) so the first
+    // "Dengarkan" doesn't pay the cold-start cost.
+    fetch('/api/tts', { method: 'GET', cache: 'no-store' }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -109,7 +112,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
     return new Promise(async (resolve) => {
       const a = audioRef.current;
       const url = await fetchEdgeAudio(sentence);
-      if (!url || !a || abortRef.current) { resolve(); return; }
+      if (!url || !a || abortRef.current) { setLoading(false); resolve(); return; }
       const words = sentence.split(/\s+/).filter(Boolean);
       setWordIdx(0);
       // Karaoke: approximate active word from audio progress.
@@ -120,14 +123,18 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
           setWordIdx(Math.min(words.length - 1, Math.floor(ratio * words.length)));
         }
       };
+      const onPlaying = () => { setLoading(false); a.removeEventListener('playing', onPlaying); };
       const done = () => {
         a.removeEventListener('ended', done);
         a.removeEventListener('error', done);
         a.removeEventListener('timeupdate', onTime);
+        a.removeEventListener('playing', onPlaying);
+        setLoading(false);
         if (resolveRef.current === done) resolveRef.current = null;
         resolve();
       };
       resolveRef.current = done;
+      a.addEventListener('playing', onPlaying);
       a.addEventListener('ended', done);
       a.addEventListener('error', done);
       a.addEventListener('timeupdate', onTime);
@@ -165,6 +172,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
 
     setPlaying(false);
     setCurrentIdx(0);
+    setLoading(false);
     onPlayStateChange?.(false);
   }, [playWithServerTTS, fetchEdgeAudio, onPlayStateChange, onSentenceChange]);
 
@@ -183,6 +191,12 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
       // Start
       setPaused(false);
       pausedRef.current = false;
+      setLoading(true);
+      // Prefetch the first couple of sentences in parallel to cut the gap.
+      const s0 = sentencesRef.current[currentIdx];
+      const s1 = sentencesRef.current[currentIdx + 1];
+      if (s0) fetchEdgeAudio(s0);
+      if (s1) fetchEdgeAudio(s1);
       playSequence(currentIdx);
     }
   };
@@ -209,6 +223,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
     audioRef.current?.pause();
     const next = Math.min(currentIdx + 1, sentencesRef.current.length - 1);
     setCurrentIdx(next);
+    setLoading(true);
     setTimeout(() => playSequence(next), 0);
   };
 
@@ -224,9 +239,9 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
         <button
           onClick={handlePlay}
           className={`p-2 rounded-full transition-colors ${playing && !paused ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
-          title={playing && !paused ? 'Jeda' : paused ? 'Lanjutkan' : 'Dengarkan'}
+          title={loading ? 'Menyiapkan suara…' : playing && !paused ? 'Jeda' : paused ? 'Lanjutkan' : 'Dengarkan'}
         >
-          {playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : playing && !paused ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </button>
 
         {playing && (
@@ -246,7 +261,7 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
                 <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
               <p className="text-[9px] md:text-[10px] text-tx-muted mt-0.5">
-                {loading ? 'Memuat suara...' : paused ? 'Dijeda' : `Kalimat ${currentIdx + 1} / ${sentenceList.length}`}
+                {loading ? 'Menyiapkan suara…' : paused ? 'Dijeda' : `Kalimat ${currentIdx + 1} / ${sentenceList.length}`}
               </p>
             </div>
             <button onClick={handleSkip} className="p-1.5 rounded-full hover:bg-bg-input transition-colors" title="Kalimat berikutnya">
