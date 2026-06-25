@@ -483,7 +483,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold font-serif">Audio Cerita</h1>
-            <p className="text-sm text-tx-muted">{lang === 'en' ? 'Listen to stories narrated by AI' : 'Dengarkan cerita dengan narasi AI'}</p>
+            <p className="text-sm text-tx-muted">{lang === 'en' ? 'Listen to stories with available voices' : 'Dengarkan cerita dengan suara yang tersedia'}</p>
           </div>
         </div>
       </div>
@@ -517,7 +517,7 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
                   {heroActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </button>
               </div>
-              <p className="hidden md:block text-xs md:text-sm text-white/70 line-clamp-2 mb-2">{heroStory.description || (lang === 'en' ? 'Listen to this story narrated by AI.' : 'Dengarkan cerita ini dengan narasi AI.')}</p>
+              <p className="hidden md:block text-xs md:text-sm text-white/70 line-clamp-2 mb-2">{heroStory.description || (lang === 'en' ? 'Listen to this story now.' : 'Dengarkan cerita ini sekarang.')}</p>
               <div className="flex items-center gap-2 md:gap-3">
                 {/* Desktop play button with label */}
                 <button onClick={() => selectAndPlay(heroStory)} className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-sm font-semibold hover:scale-105 transition-transform shrink-0" title={heroActive ? 'Pause' : 'Play'}>

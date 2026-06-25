@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Text-to-Speech via self-hosted Indonesian TTS server (Microsoft Edge TTS).
+// Text-to-Speech via self-hosted Indonesian TTS server.
 // No API key. The Python service (see /tts-server) exposes
 // POST /speak { text, speaker } -> audio/mpeg.
 //

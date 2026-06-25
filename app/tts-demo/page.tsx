@@ -29,7 +29,7 @@ const EXAMPLES: Example[] = [
 ];
 
 export default function TTSDemoPage() {
-  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara AI Bahasa Indonesia.');
+  const [text, setText] = useState('Halo, selamat datang di Di.tulis. Ini adalah contoh pembacaan teks dengan suara Bahasa Indonesia.');
   const [voices, setVoices] = useState<Voice[]>(FALLBACK_VOICES);
   const [voice, setVoice] = useState('sari');
   const [loading, setLoading] = useState(false);
@@ -101,7 +101,7 @@ export default function TTSDemoPage() {
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-serif">Text to Speech</h1>
-          <p className="text-sm text-tx-muted">Baca teks dengan suara AI Bahasa Indonesia</p>
+          <p className="text-sm text-tx-muted">Baca teks dengan suara Bahasa Indonesia</p>
         </div>
       </div>
 

@@ -297,7 +297,7 @@ export default function AdminAudioCeritaPage() {
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               {busy ? 'Membuat audio…' : 'Buat & Unduh'}
             </button>
-            <p className="text-[10px] text-tx-muted text-center">Proses di server gratis (CPU) bisa lama untuk cerita panjang. Jangan tutup halaman.</p>
+            <p className="text-[10px] text-tx-muted text-center">Proses bisa lama untuk cerita panjang. Jangan tutup halaman.</p>
           </div>
         </div>
       )}
