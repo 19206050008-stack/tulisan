@@ -157,6 +157,18 @@ export function cleanTextForTTS(text: string): string {
 
   // Remove triple asterisks, hashes, etc.
   cleaned = cleaned.replace(/(\*{3,}|#{3,})/g, ' ');
+
+  // Strip ALL quotation marks (straight and curly) — TTS reads them as words.
+  // Also strip other decorative Unicode punctuation that shouldn't be spoken.
+  cleaned = cleaned.replace(/[""''«»‹›„‟‛\u201C\u201D\u2018\u2019\u201E\u201F]/g, '');
+  // Remove bullet/dot separators (• • •) used for scene breaks
+  cleaned = cleaned.replace(/[\u2022\u2023\u25E6\u2043\u2219]+/g, ' ');
+  // Remove other decorative chars: —, –, ―, ─, ═ (em/en dash as separator, not speech)
+  // Keep single em-dash within sentences as a pause indicator (comma-like).
+  cleaned = cleaned.replace(/[─═―]{2,}/g, ' ');
+  // Remove remaining straight quotes
+  cleaned = cleaned.replace(/["']/g, '');
+
   // Replace multiple spaces/newlines with single space
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
   // Remove URLs but keep them readable (read as "link" or full URL)

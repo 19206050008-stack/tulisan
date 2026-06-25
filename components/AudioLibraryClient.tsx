@@ -237,8 +237,12 @@ export default function AudioLibraryClient({ stories }: { stories: AudioStory[] 
       while (pausedRef.current && !abortRef.current) {
         await new Promise(r => setTimeout(r, 150));
       }
+      // Natural pause between sentences — longer pause every ~3 sentences
+      // (simulates paragraph break / breath like a storyteller).
       if (!abortRef.current && i + 1 < sentencesRef.current.length) {
-        await new Promise(r => setTimeout(r, 150));
+        const isParagraphBreak = (i + 1) % 3 === 0;
+        const pause = isParagraphBreak ? 500 : 280;
+        await new Promise(r => setTimeout(r, pause));
       }
     }
     if (!abortRef.current && currentIdRef.current) {

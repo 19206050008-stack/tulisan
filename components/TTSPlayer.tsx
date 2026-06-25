@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, VolumeX, Pause, Play, SkipForward, Settings2, Square, Loader2 } from 'lucide-react';
 import { loadTTSPrefs, DEFAULT_VOICE, type TTSGender } from '@/lib/tts-prefs';
-import { decodeHtmlEntities } from '@/lib/tts-text-preprocessor';
+import { decodeHtmlEntities, cleanTextForTTS } from '@/lib/tts-text-preprocessor';
 
 interface TTSPlayerProps {
   text: string;
@@ -37,11 +37,10 @@ const VOICES = {
 };
 
 function splitIntoSentences(text: string): string[] {
-  // Strip HTML tags, then decode entities so "&quot;" etc. aren't read aloud.
-  // Decode twice to catch double-encoded entities (&amp;quot;).
+  // Strip HTML tags, then run full TTS cleaning (decode entities, strip quotes,
+  // bullets, decorative Unicode so nothing is "read" that shouldn't be).
   let cleaned = text.replace(/<[^>]+>/g, ' ');
-  cleaned = decodeHtmlEntities(decodeHtmlEntities(cleaned));
-  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  cleaned = cleanTextForTTS(cleaned);
   const sentences = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
   return sentences.map(s => s.trim()).filter(s => s.length > 2);
 }
@@ -164,9 +163,12 @@ export function TTSPlayer({ text, lang = 'id', genre, onSentenceChange, onPlaySt
         await new Promise(r => setTimeout(r, 150));
       }
 
-      // Natural pause between sentences (breath)
+      // Natural pause between sentences — longer pause every ~3 sentences
+      // (simulates paragraph break / breath like a storyteller).
       if (!abortRef.current && i + 1 < sentencesRef.current.length) {
-        await new Promise(r => setTimeout(r, 150));
+        const isParagraphBreak = (i + 1) % 3 === 0;
+        const pause = isParagraphBreak ? 500 : 280;
+        await new Promise(r => setTimeout(r, pause));
       }
     }
 
