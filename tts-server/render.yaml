@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: tts-server
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: free
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: MODELS_DIR
+        value: models
+    healthCheckPath: /health
+    autoDeploy: false
